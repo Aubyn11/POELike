@@ -1,0 +1,3 @@
+[submodule "Assets/Tools/excelConvert"]
+	path = Assets/Tools/excelConvert
+	url = https://github.com/Aubyn11/excelConvert
