@@ -27,6 +27,30 @@ namespace POELike.ECS.Systems
                 
                 if (!movement.IsEnabled || movement.IsImmobilized) continue;
                 
+                // 点击寻路：根据目标点更新移动方向（对所有移动模式生效）
+                if (movement.HasTarget)
+                {
+                    // 优先使用 UnityTransform 的实际位置，纯逻辑模式则用 TransformComponent.Position
+                    var currentPos = transform.UnityTransform != null
+                        ? transform.UnityTransform.position
+                        : transform.Position;
+                    var targetFlat = new Vector3(movement.TargetPosition.x, currentPos.y, movement.TargetPosition.z);
+                    var toTarget   = targetFlat - currentPos;
+                    float dist     = toTarget.magnitude;
+
+                    if (dist <= movement.ArrivalDistance)
+                    {
+                        // 到达目标，停止
+                        movement.HasTarget     = false;
+                        movement.MoveDirection = Vector3.zero;
+                    }
+                    else
+                    {
+                        // 朝目标点方向移动（转向与移动同时进行）
+                        movement.MoveDirection = toTarget.normalized;
+                    }
+                }
+                
                 // 处理CharacterController移动
                 if (movement.CharacterController != null)
                 {
@@ -89,7 +113,19 @@ namespace POELike.ECS.Systems
         
         private void UpdateLogicMovement(TransformComponent transform, MovementComponent movement, float deltaTime)
         {
-            transform.Position += movement.MoveDirection * movement.CurrentSpeed * deltaTime;
+            // MoveDirection 已由外层统一处理（含HasTarget寻路），直接按方向移动
+            if (movement.MoveDirection.sqrMagnitude > 0.01f)
+            {
+                float step = movement.CurrentSpeed * deltaTime;
+                // 有目标点时限制步长，防止越过目标
+                if (movement.HasTarget)
+                {
+                    var targetFlat = new Vector3(movement.TargetPosition.x, transform.Position.y, movement.TargetPosition.z);
+                    float dist = (targetFlat - transform.Position).magnitude;
+                    step = Mathf.Min(step, dist);
+                }
+                transform.Position += movement.MoveDirection * step;
+            }
         }
     }
 }

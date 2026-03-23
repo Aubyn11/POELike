@@ -16,6 +16,16 @@ namespace POELike.ECS.Components
         public UnityEngine.Vector2 MoveInput { get; set; }
         
         /// <summary>
+        /// 点击寻路目标点（世界坐标）
+        /// </summary>
+        public UnityEngine.Vector3 ClickTargetPosition { get; set; }
+        
+        /// <summary>
+        /// 是否有新的点击寻路目标
+        /// </summary>
+        public bool HasClickTarget { get; set; } = false;
+        
+        /// <summary>
         /// 鼠标世界坐标（用于朝向和技能目标）
         /// </summary>
         public UnityEngine.Vector3 MouseWorldPosition { get; set; }
@@ -62,6 +72,7 @@ namespace POELike.ECS.Components
             SprintHeld = false;
             MouseLeftHeld = false;
             MouseRightHeld = false;
+            HasClickTarget = false;
             for (int i = 0; i < SkillInputs.Length; i++) SkillInputs[i] = false;
             for (int i = 0; i < FlaskInputs.Length; i++) FlaskInputs[i] = false;
         }

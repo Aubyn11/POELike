@@ -1,0 +1,13 @@
+NPCDataConf{
+    int32 NPCID = 1,
+    string NPCName = 2,
+    string NPCPosition = 3
+}
+NPCButtonConf{
+    int32 NPCID = 1,
+    repeated int32 ButtonIDs = 2
+}
+NPCDialogConf{
+    int32 NPCID = 1,
+    string DialogContent = 2
+}

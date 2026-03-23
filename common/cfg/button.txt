@@ -1,0 +1,9 @@
+ButtonDataConf{
+    int32 ButtonID = 1,
+    int32 EventID = 2,
+    string ButtonName = 3
+}
+ButtonEventDataConf{
+    int32 EventID = 1,
+    int32 EventType = 2
+}

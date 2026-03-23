@@ -1,5 +1,10 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using POELike.ECS.Components;
+using POELike.ECS.Core;
+using POELike.ECS.Systems;
 using POELike.Game.Character;
 using POELike.Game.UI;
 using POELike.Managers;
@@ -9,7 +14,7 @@ namespace POELike.Game
     /// <summary>
     /// 游戏场景管理器
     /// 挂载在 GameScene 的 GameSceneManager GameObject 上
-    /// 负责：构建3D场景环境 → 生成玩家 → 启动摄像机跟随
+    /// 负责：构建3D场景环境 → 生成玩家ECS实体 → 启动摄像机跟随
     /// </summary>
     public class GameSceneManager : MonoBehaviour
     {
@@ -19,9 +24,46 @@ namespace POELike.Game
         [Header("场景环境（运行时自动生成，可留空）")]
         [SerializeField] private bool _autoGenerateEnvironment = true;
 
-        // 运行时引用
-        private PlayerController _playerController;
+        // 玩家ECS实体
+        private Entity _playerEntity;
+
+        // NPC实体列表
+        private List<Entity> _npcEntities = new List<Entity>();
+
+        // 玩家输入组件引用（每帧写入）
+        private PlayerInputComponent _inputComp;
+        private MovementComponent _movementComp;
+        private TransformComponent _transformComp;
+        private SkillComponent _skillComp;
+
+        // 摄像机控制器
         private CameraController _cameraController;
+
+        // NPC名称点击寻路：缓存NpcMarkerRenderer引用
+        private NpcMarkerRenderer _npcMarkerRenderer;
+
+        // NPC对话框
+        private NpcDialogPanel _npcDialogPanel;
+
+        // 当前寻路目标NPC实体（点击NPC名称时记录）
+        private Entity _targetNpcEntity;
+        // 是否正在前往NPC（用于到达检测）
+        private bool _walkingToNpc;
+        // 上一帧 HasTarget 状态（用于检测到达时机）
+        private bool _prevHasTarget;
+
+        // Input Actions
+        private InputAction _skill1Action;
+        private InputAction _skill2Action;
+        private InputAction _skill3Action;
+        private InputAction _skill4Action;
+        private InputAction _skill5Action;
+        private InputAction _skill6Action;
+
+        // 鼠标左键点击寻路
+        private InputAction _mouseClickAction;
+
+        private Camera _mainCamera;
 
         // ── 生命周期 ──────────────────────────────────────────────────
 
@@ -30,7 +72,6 @@ namespace POELike.Game
             var data = SceneLoader.PendingCharacterData;
             if (data == null)
             {
-                // 编辑器直接运行 GameScene 时使用默认数据
                 data = new CharacterSaveData("debug", "调试角色", 1, "本地");
                 Debug.LogWarning("[GameSceneManager] 未检测到存档数据，使用默认调试角色");
             }
@@ -41,6 +82,38 @@ namespace POELike.Game
                 BuildEnvironment();
 
             SpawnPlayer(data);
+            SpawnNPCs();
+            SetupInputActions();
+        }
+
+        private void Update()
+        {
+            if (_playerEntity == null || !_playerEntity.IsAlive) return;
+            UpdateInput();
+            UpdateMovementSpeed();
+            ResolveNPCCollisions();
+            CheckNpcArrival();
+        }
+
+        private void OnDestroy()
+        {
+            _mouseClickAction?.Dispose();
+            _skill2Action?.Dispose();
+            _skill3Action?.Dispose();
+            _skill4Action?.Dispose();
+            _skill5Action?.Dispose();
+            _skill6Action?.Dispose();
+
+            if (_playerEntity != null && GameManager.Instance != null)
+                GameManager.Instance.World.DestroyEntity(_playerEntity);
+
+            // 销毁NPC实体
+            if (GameManager.Instance != null)
+            {
+                foreach (var npc in _npcEntities)
+                    GameManager.Instance.World.DestroyEntity(npc);
+            }
+            _npcEntities.Clear();
         }
 
         // ── 场景环境构建 ──────────────────────────────────────────────
@@ -53,11 +126,9 @@ namespace POELike.Game
             // ── 地面 ──────────────────────────────────────────────────
             var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
             ground.name = "Ground";
-            ground.transform.localScale = new Vector3(10f, 1f, 10f); // 100×100 单位
+            ground.transform.localScale = new Vector3(10f, 1f, 10f);
             ground.transform.position   = Vector3.zero;
-            SetMaterialColor(ground, new Color(0.25f, 0.22f, 0.18f)); // 深褐色地面
-
-            // 地面物理层
+            SetMaterialColor(ground, new Color(0.25f, 0.22f, 0.18f));
             ground.layer = LayerMask.NameToLayer("Default");
 
             // ── 方向光 ────────────────────────────────────────────────
@@ -72,15 +143,11 @@ namespace POELike.Game
             RenderSettings.ambientMode  = UnityEngine.Rendering.AmbientMode.Flat;
             RenderSettings.ambientLight = new Color(0.15f, 0.15f, 0.2f);
 
-            // ── 场景装饰：几个石柱 ────────────────────────────────────
             SpawnDecoration();
 
             Debug.Log("[GameSceneManager] 场景环境构建完成");
         }
 
-        /// <summary>
-        /// 生成场景装饰物（石柱）
-        /// </summary>
         private void SpawnDecoration()
         {
             var positions = new Vector3[]
@@ -103,82 +170,508 @@ namespace POELike.Game
             }
         }
 
-        /// <summary>
-        /// 设置 Primitive 的材质颜色（URP 兼容）
-        /// </summary>
         private void SetMaterialColor(GameObject go, Color color)
         {
             var renderer = go.GetComponent<Renderer>();
             if (renderer == null) return;
-
-            // 创建独立材质实例，避免共享材质被修改
             var mat = new Material(renderer.sharedMaterial);
             mat.color = color;
             renderer.material = mat;
         }
 
-        // ── 玩家生成 ──────────────────────────────────────────────────
+        // ── 玩家生成（纯ECS，无GameObject）────────────────────────────
 
         /// <summary>
-        /// 在出生点生成玩家 GameObject，并由 PlayerController 创建 ECS Entity
+        /// 直接创建玩家ECS实体，不生成任何GameObject
         /// </summary>
         private void SpawnPlayer(CharacterSaveData data)
         {
-            // 创建玩家 GameObject
-            var playerGo = new GameObject($"Player_{data.CharacterName}");
-            playerGo.transform.position = _playerSpawnPoint;
+            var world = GameManager.Instance.World;
 
-            // 添加 CharacterController（PlayerController 的 RequireComponent）
-            var cc = playerGo.AddComponent<CharacterController>();
-            cc.height = 1.8f;
-            cc.radius = 0.4f;
-            cc.center = new Vector3(0f, 0.9f, 0f);
+            // 根据存档等级缩放基础属性
+            int lv = Mathf.Max(1, data.Level);
+            float baseHealth    = 100f + (lv - 1) * 5f;
+            float baseMana      = 100f + (lv - 1) * 2f;
+            float baseDamage    = 10f  + (lv - 1) * 0.1f;
+            float baseMoveSpeed = 5f;
 
-            // 添加玩家视觉（胶囊体）
-            var visual = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            visual.name = "Visual";
-            visual.transform.SetParent(playerGo.transform);
-            visual.transform.localPosition = new Vector3(0f, 0.9f, 0f);
-            visual.transform.localScale    = Vector3.one;
-            SetMaterialColor(visual, new Color(0.2f, 0.5f, 0.9f)); // 蓝色玩家
-            // 移除 Capsule 自带的 Collider（由 CharacterController 负责碰撞）
-            Destroy(visual.GetComponent<CapsuleCollider>());
+            _playerEntity = world.CreateEntity("Player");
 
-            // 添加 PlayerController 并传入存档数据
-            _playerController = playerGo.AddComponent<PlayerController>();
-            _playerController.InitFromSaveData(data);
+            // 变换组件（纯逻辑，不绑定Unity Transform）
+            _playerEntity.AddComponent(new TransformComponent
+            {
+                Position = _playerSpawnPoint
+            });
 
-            // 设置摄像机跟随
-            SetupCamera(playerGo.transform);
+            // 属性组件
+            var statsComp = _playerEntity.AddComponent(new StatsComponent());
+            statsComp.SetBaseStat(StatType.MaxHealth,           baseHealth);
+            statsComp.SetBaseStat(StatType.MaxMana,             baseMana);
+            statsComp.SetBaseStat(StatType.MovementSpeed,       baseMoveSpeed);
+            statsComp.SetBaseStat(StatType.PhysicalDamage,      baseDamage);
+            statsComp.SetBaseStat(StatType.HealthRegen,         5f);
+            statsComp.SetBaseStat(StatType.ManaRegen,           10f);
+            statsComp.SetBaseStat(StatType.Armor,               50f);
+            statsComp.SetBaseStat(StatType.FireResistance,      0f);
+            statsComp.SetBaseStat(StatType.ColdResistance,      0f);
+            statsComp.SetBaseStat(StatType.LightningResistance, 0f);
+            statsComp.SetBaseStat(StatType.ChaosResistance,     -60f);
+            statsComp.SetBaseStat(StatType.CriticalChance,      5f);
+            statsComp.SetBaseStat(StatType.CriticalMultiplier,  150f);
 
-            Debug.Log($"[GameSceneManager] 玩家已生成：{data.CharacterName}  位置：{_playerSpawnPoint}");
+            // 生命值组件
+            var healthComp = _playerEntity.AddComponent(new HealthComponent());
+            healthComp.MaxHealth = baseHealth;
+            healthComp.MaxMana   = baseMana;
+            healthComp.FillToMax();
+            healthComp.OnDeath += OnPlayerDeath;
+
+            // 移动组件（不绑定CharacterController）
+            _movementComp = _playerEntity.AddComponent(new MovementComponent
+            {
+                BaseSpeed    = baseMoveSpeed,
+                CurrentSpeed = baseMoveSpeed
+            });
+
+            // 缓存变换组件引用
+            _transformComp = _playerEntity.GetComponent<TransformComponent>();
+
+            // 战斗组件
+            _playerEntity.AddComponent(new CombatComponent());
+
+            // 技能组件
+            _skillComp = _playerEntity.AddComponent(new SkillComponent());
+            _skillComp.InitializeSlots(6);
+
+            // 装备 & 背包组件
+            _playerEntity.AddComponent(new EquipmentComponent());
+            _playerEntity.AddComponent(new InventoryComponent());
+
+            // 输入组件
+            _inputComp = _playerEntity.AddComponent(new PlayerInputComponent());
+
+            // 摄像机（跟随逻辑位置）
+            SetupCamera();
+
+            Debug.Log($"[GameSceneManager] 玩家ECS实体创建完成: {_playerEntity}  角色：{data.CharacterName}  Lv.{lv}");
         }
 
-        /// <summary>
-        /// 设置等距跟随摄像机
-        /// </summary>
-        private void SetupCamera(Transform target)
-        {
-            var camGo = new GameObject("GameCamera");
-            _cameraController = camGo.AddComponent<CameraController>();
-            _cameraController.SetTarget(target);
+        // ── 输入驱动 ──────────────────────────────────────────────────
 
-            // 将主摄像机组件移到 GameCamera（或直接使用 Camera.main）
-            var cam = Camera.main;
-            if (cam != null)
+        private void SetupInputActions()
+        {
+            // 鼠标左键点击寻路
+            _mouseClickAction = new InputAction("MouseClick", InputActionType.Button, "<Mouse>/leftButton");
+            _mouseClickAction.Enable();
+
+            _skill1Action = InputSystem.actions.FindAction("Attack");
+
+            _skill2Action = new InputAction("Skill2", InputActionType.Button, "<Keyboard>/e");
+            _skill3Action = new InputAction("Skill3", InputActionType.Button, "<Keyboard>/r");
+            _skill4Action = new InputAction("Skill4", InputActionType.Button, "<Keyboard>/t");
+            _skill5Action = new InputAction("Skill5", InputActionType.Button, "<Keyboard>/f");
+            _skill6Action = new InputAction("Skill6", InputActionType.Button, "<Keyboard>/g");
+
+            _skill2Action.Enable();
+            _skill3Action.Enable();
+            _skill4Action.Enable();
+            _skill5Action.Enable();
+            _skill6Action.Enable();
+        }
+
+        private void UpdateInput()
+        {
+            // ── 鼠标左键点击寻路 ──────────────────────────────────────
+            _inputComp.MouseScreenPosition = Mouse.current?.position.ReadValue() ?? Vector2.zero;
+            _inputComp.MouseWorldPosition  = GetMouseWorldPosition();
+            _inputComp.MouseLeftHeld       = Mouse.current?.leftButton.isPressed ?? false;
+
+            bool leftHeld = Mouse.current?.leftButton.isPressed ?? false;
+            // 对话框打开时，点击由OnGUI处理（外部点击关闭），不触发地面寻路
+            bool dialogOpen = _npcDialogPanel != null && _npcDialogPanel.IsOpen;
+            // 如果本帧点击了NPC名称标签，跳过普通地面寻路
+            if (leftHeld && !dialogOpen && (_npcMarkerRenderer == null || !_npcMarkerRenderer.ClickConsumedThisFrame))
             {
-                cam.transform.SetParent(null);
-                _cameraController.AssignCamera(cam);
+                var clickPos = GetMouseWorldPosition();
+                // 只有射线命中有效位置时才更新目标（避免未命中时把目标设为世界原点导致突变）
+                if (clickPos != Vector3.zero)
+                {
+                    // 点击或拖动时持续更新寻路目标点，角色跟随鼠标方向移动
+                    _movementComp.TargetPosition = clickPos;
+                    _movementComp.HasTarget      = true;
+
+                    // 普通地面寻路，清除NPC目标（避免到达后误触发对话框）
+                    _targetNpcEntity = null;
+                    _walkingToNpc    = false;
+
+                    // 同步到输入组件
+                    _inputComp.ClickTargetPosition = clickPos;
+                    _inputComp.HasClickTarget      = true;
+                }
             }
             else
             {
-                var newCam = camGo.AddComponent<Camera>();
-                newCam.clearFlags       = CameraClearFlags.Skybox;
-                newCam.fieldOfView      = 60f;
-                newCam.nearClipPlane    = 0.1f;
-                newCam.farClipPlane     = 500f;
-                newCam.tag              = "MainCamera";
+                _inputComp.HasClickTarget = false;
             }
+
+            // ── 技能输入 ──────────────────────────────────────────────
+            _inputComp.SkillInputs[0] = _skill1Action?.WasPressedThisFrame() ?? false;
+            _inputComp.SkillInputs[1] = _skill2Action.WasPressedThisFrame();
+            _inputComp.SkillInputs[2] = _skill3Action.WasPressedThisFrame();
+            _inputComp.SkillInputs[3] = _skill4Action.WasPressedThisFrame();
+            _inputComp.SkillInputs[4] = _skill5Action.WasPressedThisFrame();
+            _inputComp.SkillInputs[5] = _skill6Action.WasPressedThisFrame();
+
+            // 处理技能激活
+            for (int i = 0; i < _inputComp.SkillInputs.Length; i++)
+            {
+                if (_inputComp.SkillInputs[i])
+                {
+                    var slot = _skillComp.GetSlot(i);
+                    if (slot != null)
+                    {
+                        GameManager.Instance.World.EventBus.Publish(new SkillActivateEvent
+                        {
+                            Caster = _playerEntity,
+                            Slot   = slot
+                        });
+                    }
+                }
+            }
+        }
+
+        private void UpdateMovementSpeed()
+        {
+            var stats = _playerEntity.GetComponent<StatsComponent>();
+            if (stats != null)
+                _movementComp.CurrentSpeed = stats.GetStat(StatType.MovementSpeed);
+        }
+
+        private Vector3 GetMouseWorldPosition()
+        {
+            if (_mainCamera == null) return Vector3.zero;
+
+            var mousePos = Mouse.current?.position.ReadValue() ?? Vector2.zero;
+            Ray ray = _mainCamera.ScreenPointToRay(new Vector3(mousePos.x, mousePos.y, 0));
+
+            if (Physics.Raycast(ray, out RaycastHit hit, 100f))
+                return hit.point;
+
+            if (ray.direction.y != 0)
+            {
+                float t = -ray.origin.y / ray.direction.y;
+                return ray.origin + ray.direction * t;
+            }
+
+            return Vector3.zero;
+        }
+
+        // ── NPC 生成 ──────────────────────────────────────────────────
+
+        /// <summary>
+        /// 从 NPCDataConf.pb 加载配置并创建NPC ECS实体
+        /// </summary>
+        private void SpawnNPCs()
+        {
+            var world = GameManager.Instance?.World;
+            if (world == null) return;
+
+            _npcEntities = NPCSpawner.SpawnAllNPCs(world);
+        }
+
+        // ── NPC 碰撞检测 ──────────────────────────────────────────────
+
+        /// <summary>
+        /// 每帧检测玩家与NPC的碰撞，阻止玩家穿越NPC
+        /// </summary>
+        private void ResolveNPCCollisions()
+        {
+            if (_transformComp == null || _movementComp == null) return;
+
+            Vector3 playerPos = _transformComp.Position;
+            float   playerR   = 0.4f; // 玩家碰撞半径
+
+            foreach (var npcEntity in _npcEntities)
+            {
+                if (npcEntity == null || !npcEntity.IsAlive) continue;
+
+                var npcTransform = npcEntity.GetComponent<TransformComponent>();
+                if (npcTransform == null) continue;
+
+                Vector3 npcPos = npcTransform.Position;
+                float   minDist = playerR + NPCSpawner.CollisionRadius;
+
+                // 只在XZ平面检测碰撞
+                Vector3 diff = new Vector3(playerPos.x - npcPos.x, 0f, playerPos.z - npcPos.z);
+                float   dist = diff.magnitude;
+
+                if (dist < minDist && dist > 0.001f)
+                {
+                    // 将玩家推出碰撞区域
+                    Vector3 pushDir = diff.normalized;
+                    Vector3 corrected = npcPos + pushDir * minDist;
+                    _transformComp.Position = new Vector3(corrected.x, playerPos.y, corrected.z);
+
+                    // 如果玩家正在朝NPC方向移动，清除目标点防止持续穿入
+                    if (_movementComp.HasTarget)
+                    {
+                        Vector3 toTarget = _movementComp.TargetPosition - npcPos;
+                        toTarget.y = 0f;
+                        if (toTarget.magnitude < minDist)
+                        {
+                            _movementComp.HasTarget     = false;
+                            _movementComp.MoveDirection = Vector3.zero;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void OnPlayerDeath()
+        {
+            Debug.Log("[GameSceneManager] 玩家死亡！");
+            GameManager.Instance.World.EventBus.Publish(new PlayerDiedEvent { Player = _playerEntity });
+        }
+
+        /// <summary>
+        /// 点击NPC名称标签时，寻路到该NPC附近
+        /// </summary>
+        private void OnNpcLabelClicked(Vector3 npcWorldPos)
+        {
+            if (_movementComp == null) return;
+
+            // 关闭已有对话框
+            _npcDialogPanel?.Close();
+
+            // 找到对应的NPC实体
+            _targetNpcEntity = FindNpcEntityByWorldPos(npcWorldPos);
+
+            // 计算NPC附近的目标点：在玩家与NPC连线方向上，距NPC一个碰撞半径+玩家半径的位置
+            const float playerR = 0.4f;
+            float stopDist = NPCSpawner.CollisionRadius + playerR + 0.1f;
+
+            Vector3 playerPos = _transformComp?.Position ?? Vector3.zero;
+            Vector3 dir = npcWorldPos - playerPos;
+            dir.y = 0f;
+
+            Vector3 targetPos;
+            if (dir.magnitude > stopDist)
+            {
+                // 目标点在NPC前方 stopDist 处
+                targetPos = npcWorldPos - dir.normalized * stopDist;
+            }
+            else
+            {
+                // 已经很近了，直接打开对话框
+                OpenNpcDialog(_targetNpcEntity);
+                return;
+            }
+
+            targetPos.y = playerPos.y;
+            _movementComp.TargetPosition = targetPos;
+            _movementComp.HasTarget      = true;
+            _walkingToNpc                = true;
+            _prevHasTarget               = true;
+        }
+
+        /// <summary>
+        /// 每帧检测是否到达目标NPC（基于距离检测，避免碰撞系统提前清除HasTarget）
+        /// </summary>
+        private void CheckNpcArrival()
+        {
+            if (!_walkingToNpc || _targetNpcEntity == null) return;
+            if (_transformComp == null) return;
+
+            var npcTransform = _targetNpcEntity.GetComponent<TransformComponent>();
+            if (npcTransform == null) return;
+
+            const float playerR = 0.4f;
+            float stopDist = NPCSpawner.CollisionRadius + playerR + 0.3f; // 稍大于停止距离
+
+            Vector3 playerPos = _transformComp.Position;
+            Vector3 npcPos    = npcTransform.Position;
+
+            float dist = Vector3.Distance(
+                new Vector3(playerPos.x, 0f, playerPos.z),
+                new Vector3(npcPos.x,    0f, npcPos.z));
+
+            // 玩家进入停止距离范围内，且不再有寻路目标（已停下）
+            if (dist <= stopDist && !_movementComp.HasTarget)
+            {
+                _walkingToNpc = false;
+                OpenNpcDialog(_targetNpcEntity);
+            }
+            // 如果玩家已停下但距离还不够（被其他原因停止），也触发对话框
+            else if (!_movementComp.HasTarget && _prevHasTarget)
+            {
+                // HasTarget 刚变为 false，检查距离是否足够近
+                if (dist <= stopDist + 1.0f) // 容差范围稍大
+                {
+                    _walkingToNpc = false;
+                    OpenNpcDialog(_targetNpcEntity);
+                }
+            }
+
+            _prevHasTarget = _movementComp.HasTarget;
+        }
+
+        /// <summary>
+        /// 打开NPC对话框
+        /// </summary>
+        private void OpenNpcDialog(Entity npcEntity)
+        {
+            if (_npcDialogPanel == null || npcEntity == null) return;
+
+            var npcComp = npcEntity.GetComponent<NPCComponent>();
+            if (npcComp == null) return;
+
+            string npcName = npcComp.NPCName;
+            int    npcId   = npcComp.NPCID;
+
+            // 从配置文件读取对话内容
+            string dialog = NpcConfigLoader.GetDialog(npcId);
+
+            // 从配置文件读取按钮列表
+            var buttons = NpcConfigLoader.GetButtons(npcId);
+            var options = new List<NpcDialogOption>();
+
+            foreach (var (btnName, eventId) in buttons)
+            {
+                // 捕获局部变量，避免闭包问题
+                string capturedName    = btnName;
+                string capturedEventId = eventId;
+
+                options.Add(new NpcDialogOption(capturedName, () =>
+                {
+                    OnNpcButtonClicked(npcName, capturedName, capturedEventId);
+                }));
+            }
+
+            _npcDialogPanel.Open(npcName, dialog, options);
+            // 通知NpcMarkerRenderer对话框已打开，停止渲染NPC标记
+            if (_npcMarkerRenderer != null)
+                _npcMarkerRenderer.IsDialogOpen = true;
+        }
+
+        /// <summary>
+        /// NPC按钮点击处理（根据 EventID 分发逻辑）
+        /// </summary>
+        private void OnNpcButtonClicked(string npcName, string btnName, string eventId)
+        {
+            Debug.Log($"[NpcDialog] {npcName} 点击按钮: {btnName}（EventID={eventId}）");
+
+            // 将 eventId 字符串解析为枚举
+            if (!System.Enum.TryParse(eventId, out NpcButtonEventType eventType))
+                eventType = NpcButtonEventType.None;
+
+            switch (eventType)
+            {
+                case NpcButtonEventType.CloseDialog:
+                    _npcDialogPanel?.Close();
+                    _targetNpcEntity = null;
+                    _walkingToNpc    = false;
+                    if (_npcMarkerRenderer != null)
+                        _npcMarkerRenderer.IsDialogOpen = false;
+                    break;
+
+                case NpcButtonEventType.EnhanceEquipment:
+                    // TODO: 打开强化装备界面
+                    Debug.Log("[NpcDialog] 强化装备");
+                    break;
+
+                case NpcButtonEventType.OpenShop:
+                    // TODO: 打开商店界面
+                    Debug.Log("[NpcDialog] 打开商店");
+                    break;
+
+                default:
+                    Debug.LogWarning($"[NpcDialog] 未处理的 EventID: {eventId}");
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 根据世界坐标找到最近的NPC实体
+        /// </summary>
+        private Entity FindNpcEntityByWorldPos(Vector3 worldPos)
+        {
+            Entity closest = null;
+            float  minDist = float.MaxValue;
+
+            foreach (var npc in _npcEntities)
+            {
+                if (npc == null || !npc.IsAlive) continue;
+                var t = npc.GetComponent<TransformComponent>();
+                if (t == null) continue;
+
+                float d = Vector3.Distance(
+                    new Vector3(t.Position.x, 0f, t.Position.z),
+                    new Vector3(worldPos.x,   0f, worldPos.z));
+                if (d < minDist)
+                {
+                    minDist = d;
+                    closest = npc;
+                }
+            }
+            return closest;
+        }
+
+        /// <summary>
+        /// 点击对话框外部时：关闭对话框，清除目标NPC
+        /// </summary>
+        private void OnDialogClickOutside()
+        {
+            _targetNpcEntity = null;
+            _walkingToNpc    = false;
+            // 通知NpcMarkerRenderer对话框已关闭，恢复渲染NPC标记
+            if (_npcMarkerRenderer != null)
+                _npcMarkerRenderer.IsDialogOpen = false;
+        }
+
+        // ── 摄像机 ────────────────────────────────────────────────────
+
+        /// <summary>
+        /// 设置等距跟随摄像机（跟随ECS实体的逻辑位置）
+        /// </summary>
+        private void SetupCamera()
+        {
+            Debug.Log("[GameSceneManager] SetupCamera 开始");
+
+            // 销毁场景中已有的 Camera（避免多摄像机冲突）
+            // 使用 DestroyImmediate 确保立即销毁，避免同帧内两个 MainCamera 冲突
+            var existingCam = Camera.main;
+            if (existingCam != null)
+            {
+                Debug.Log($"[GameSceneManager] 销毁已有摄像机: {existingCam.gameObject.name}");
+                DestroyImmediate(existingCam.gameObject);
+            }
+
+            // 创建摄像机 GameObject，CameraController 的 Awake 会自动添加 Camera 和 PlayerMarkerRenderer
+            var camGo = new GameObject("GameCamera");
+            Debug.Log("[GameSceneManager] 创建 GameCamera GameObject");
+
+            _cameraController = camGo.AddComponent<CameraController>();
+            Debug.Log($"[GameSceneManager] CameraController 已添加: {_cameraController}");
+
+            // 缓存摄像机引用（供鼠标射线检测使用）
+            _mainCamera = camGo.GetComponent<Camera>();
+            Debug.Log($"[GameSceneManager] _mainCamera = {_mainCamera}");
+
+            // 设置跟随实体（CameraController.Awake 已执行，_markerRenderer 已就绪）
+            _cameraController.SetPlayerEntity(_playerEntity);
+
+            // 缓存 NpcMarkerRenderer 引用，订阅NPC名称点击事件
+            _npcMarkerRenderer = camGo.GetComponent<NpcMarkerRenderer>();
+            if (_npcMarkerRenderer != null)
+            {
+                _npcMarkerRenderer.OnNpcLabelClicked += OnNpcLabelClicked;
+            }
+
+            // 创建NPC对话框（挂载在摄像机GameObject上）
+            _npcDialogPanel = camGo.AddComponent<NpcDialogPanel>();
+            _npcDialogPanel.OnClickOutside += OnDialogClickOutside;
+
+            Debug.Log("[GameSceneManager] SetupCamera 完成");
         }
     }
 }

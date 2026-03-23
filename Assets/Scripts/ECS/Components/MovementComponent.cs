@@ -32,9 +32,24 @@ namespace POELike.ECS.Components
         public float CurrentSpeed { get; set; } = 5f;
         
         /// <summary>
+        /// 点击寻路目标点（世界坐标）
+        /// </summary>
+        public Vector3 TargetPosition { get; set; }
+        
+        /// <summary>
+        /// 是否有寻路目标点
+        /// </summary>
+        public bool HasTarget { get; set; } = false;
+        
+        /// <summary>
+        /// 到达目标点的判定距离
+        /// </summary>
+        public float ArrivalDistance { get; set; } = 0.15f;
+        
+        /// <summary>
         /// 是否正在移动
         /// </summary>
-        public bool IsMoving => MoveDirection.sqrMagnitude > 0.01f;
+        public bool IsMoving => MoveDirection.sqrMagnitude > 0.01f || HasTarget;
         
         /// <summary>
         /// 是否被禁止移动（眩晕、冰冻等）
@@ -68,6 +83,7 @@ namespace POELike.ECS.Components
             CurrentSpeed = BaseSpeed;
             IsImmobilized = false;
             VerticalVelocity = 0f;
+            HasTarget = false;
         }
     }
 }
