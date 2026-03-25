@@ -61,7 +61,8 @@ namespace POELike.Game
             entity.AddComponent(new NPCComponent
             {
                 NPCID   = data.NPCIDInt,
-                NPCName = data.NPCName
+                NPCName = data.NPCName,
+                NPCMesh = data.NPCMesh ?? ""
             });
 
             Debug.Log($"[NPCSpawner] 创建NPC实体: ID={data.NPCIDInt}, 名称={data.NPCName}, 位置={data.Position}");
@@ -119,6 +120,7 @@ namespace POELike.Game
             public string NPCID;
             public string NPCName;
             public string NPCPosition;
+            public string NPCMesh;
 
             /// <summary>
             /// 将 NPCID 字符串转为 int

@@ -22,8 +22,14 @@ namespace POELike.Game
         // 玩家位置标记渲染器（Shader绘制，无额外GameObject）
         private PlayerMarkerRenderer _markerRenderer;
 
+        // 玩家角色 Mesh 渲染器（Graphics.DrawMesh，无额外GameObject）
+        private PlayerMeshRenderer _meshRenderer;
+
         // NPC标记渲染器
         private NpcMarkerRenderer _npcMarkerRenderer;
+
+        // NPC Mesh 渲染器（Graphics.DrawMesh，无额外GameObject）
+        private NpcMeshRenderer _npcMeshRenderer;
 
         [Header("摄像机参数")]
         [SerializeField] private float  _distance    = 25f;   // 摄像机到角色的距离
@@ -60,10 +66,20 @@ namespace POELike.Game
             if (_markerRenderer == null)
                 _markerRenderer = gameObject.AddComponent<PlayerMarkerRenderer>();
 
+            // 在同一 GameObject 上挂载玩家角色 Mesh 渲染器
+            _meshRenderer = gameObject.GetComponent<PlayerMeshRenderer>();
+            if (_meshRenderer == null)
+                _meshRenderer = gameObject.AddComponent<PlayerMeshRenderer>();
+
             // 在同一 GameObject 上挂载NPC标记渲染器
             _npcMarkerRenderer = gameObject.GetComponent<NpcMarkerRenderer>();
             if (_npcMarkerRenderer == null)
                 _npcMarkerRenderer = gameObject.AddComponent<NpcMarkerRenderer>();
+
+            // 在同一 GameObject 上挂载NPC Mesh渲染器
+            _npcMeshRenderer = gameObject.GetComponent<NpcMeshRenderer>();
+            if (_npcMeshRenderer == null)
+                _npcMeshRenderer = gameObject.AddComponent<NpcMeshRenderer>();
 
             RecalculateOffset();
         }
@@ -86,13 +102,26 @@ namespace POELike.Game
             _playerTransform = entity?.GetComponent<TransformComponent>();
             RecalculateOffset();
 
-            // 同步给标记渲染器
-            if (_markerRenderer != null)
-                _markerRenderer.SetPlayerEntity(entity);
+            // 同步给角色 Mesh 渲染器
+            if (_meshRenderer != null)
+                _meshRenderer.SetPlayerEntity(entity);
 
-            // 同步ECS世界给NPC标记渲染器
-            if (_npcMarkerRenderer != null && Managers.GameManager.Instance != null)
-                _npcMarkerRenderer.SetWorld(Managers.GameManager.Instance.World);
+            // 有真实角色 Mesh 时禁用箭头标记渲染器，避免全屏 Quad 遮挡角色
+            bool hasMesh = _meshRenderer != null && _meshRenderer.HasMesh;
+            if (_markerRenderer != null)
+            {
+                _markerRenderer.enabled = !hasMesh;
+                if (!hasMesh)
+                    _markerRenderer.SetPlayerEntity(entity);
+            }
+
+            // NpcMarkerRenderer 已由 NpcMeshRenderer 的头顶标签取代，禁用圆形标记点
+            if (_npcMarkerRenderer != null)
+                _npcMarkerRenderer.enabled = false;
+
+            // 同步ECS世界给NPC Mesh渲染器（同时负责名称标签和点击检测）
+            if (_npcMeshRenderer != null && Managers.GameManager.Instance != null)
+                _npcMeshRenderer.SetWorld(Managers.GameManager.Instance.World);
         }
 
         // ── 每帧更新 ──────────────────────────────────────────────────

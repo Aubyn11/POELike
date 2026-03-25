@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using POELike.ECS.Components;
@@ -39,8 +40,8 @@ namespace POELike.Game
         // 摄像机控制器
         private CameraController _cameraController;
 
-        // NPC名称点击寻路：缓存NpcMarkerRenderer引用
-        private NpcMarkerRenderer _npcMarkerRenderer;
+        // NPC名称点击寻路：缓存NpcMeshRenderer引用（同时负责头顶名称标签）
+        private NpcMeshRenderer _npcMeshRenderer;
 
         // NPC对话框
         private NpcDialogPanel _npcDialogPanel;
@@ -287,10 +288,17 @@ namespace POELike.Game
             _inputComp.MouseLeftHeld       = Mouse.current?.leftButton.isPressed ?? false;
 
             bool leftHeld = Mouse.current?.leftButton.isPressed ?? false;
-            // 对话框打开时，点击由OnGUI处理（外部点击关闭），不触发地面寻路
-            bool dialogOpen = _npcDialogPanel != null && _npcDialogPanel.IsOpen;
+            bool leftDown = Mouse.current?.leftButton.wasPressedThisFrame ?? false;
+            // 精确判断鼠标是否在任意已打开的 UI 面板范围内，避免全屏 Canvas 误拦截
+            var  mouseScreenPos = Mouse.current?.position.ReadValue() ?? Vector2.zero;
+            bool pointerOverUI  = UIGamePanelManager.IsPointerOverAnyPanel(mouseScreenPos);
+            // 点击面板外时：先关闭对话框（本帧不寻路，下一帧再寻路，避免误触）
+            if (leftDown && !pointerOverUI && UIGamePanelManager.AnyOpen)
+            {
+                UIGamePanelManager.CloseAll();
+            }
             // 如果本帧点击了NPC名称标签，跳过普通地面寻路
-            if (leftHeld && !dialogOpen && (_npcMarkerRenderer == null || !_npcMarkerRenderer.ClickConsumedThisFrame))
+            if (leftHeld && !pointerOverUI && !UIGamePanelManager.AnyOpen && (_npcMeshRenderer == null || !_npcMeshRenderer.ClickConsumedThisFrame))
             {
                 var clickPos = GetMouseWorldPosition();
                 // 只有射线命中有效位置时才更新目标（避免未命中时把目标设为世界原点导致突变）
@@ -548,9 +556,9 @@ namespace POELike.Game
             }
 
             _npcDialogPanel.Open(npcName, dialog, options);
-            // 通知NpcMarkerRenderer对话框已打开，停止渲染NPC标记
-            if (_npcMarkerRenderer != null)
-                _npcMarkerRenderer.IsDialogOpen = true;
+            // 通知 NpcMeshRenderer 当前对话的 NPC，使其平滑转向玩家
+            _npcMeshRenderer?.SetTalkingNpc(npcEntity);
+            // 对话框打开（NpcMeshRenderer 头顶标签仍正常显示）
         }
 
         /// <summary>
@@ -568,10 +576,9 @@ namespace POELike.Game
             {
                 case NpcButtonEventType.CloseDialog:
                     _npcDialogPanel?.Close();
+                    _npcMeshRenderer?.SetTalkingNpc(null);
                     _targetNpcEntity = null;
                     _walkingToNpc    = false;
-                    if (_npcMarkerRenderer != null)
-                        _npcMarkerRenderer.IsDialogOpen = false;
                     break;
 
                 case NpcButtonEventType.EnhanceEquipment:
@@ -621,11 +628,9 @@ namespace POELike.Game
         /// </summary>
         private void OnDialogClickOutside()
         {
+            _npcMeshRenderer?.SetTalkingNpc(null);
             _targetNpcEntity = null;
             _walkingToNpc    = false;
-            // 通知NpcMarkerRenderer对话框已关闭，恢复渲染NPC标记
-            if (_npcMarkerRenderer != null)
-                _npcMarkerRenderer.IsDialogOpen = false;
         }
 
         // ── 摄像机 ────────────────────────────────────────────────────
@@ -660,16 +665,32 @@ namespace POELike.Game
             // 设置跟随实体（CameraController.Awake 已执行，_markerRenderer 已就绪）
             _cameraController.SetPlayerEntity(_playerEntity);
 
-            // 缓存 NpcMarkerRenderer 引用，订阅NPC名称点击事件
-            _npcMarkerRenderer = camGo.GetComponent<NpcMarkerRenderer>();
-            if (_npcMarkerRenderer != null)
+            // 缓存 NpcMeshRenderer 引用，订阅NPC名称点击事件
+            _npcMeshRenderer = camGo.GetComponent<NpcMeshRenderer>();
+            if (_npcMeshRenderer != null)
             {
-                _npcMarkerRenderer.OnNpcLabelClicked += OnNpcLabelClicked;
+                _npcMeshRenderer.OnNpcLabelClicked += OnNpcLabelClicked;
+                _npcMeshRenderer.SetPlayerTransform(_transformComp);
             }
 
-            // 创建NPC对话框（挂载在摄像机GameObject上）
-            _npcDialogPanel = camGo.AddComponent<NpcDialogPanel>();
-            _npcDialogPanel.OnClickOutside += OnDialogClickOutside;
+            // 从 Resources 加载 ChatPanel 预制体，确保 Inspector 绑定的引用有效
+            var chatPanelGo = UIManager.Instance.GetUI("UI/ChatPanel");
+            if (chatPanelGo != null)
+            {
+                _npcDialogPanel = chatPanelGo.GetComponent<NpcDialogPanel>();
+                if (_npcDialogPanel != null)
+                {
+                    _npcDialogPanel.OnClose += OnDialogClickOutside;
+                    // 进入场景时确保对话框处于关闭状态
+                    _npcDialogPanel.Close();
+                }
+                else
+                    Debug.LogError("[GameSceneManager] ChatPanel 预制体上未找到 NpcDialogPanel 组件。");
+            }
+            else
+            {
+                Debug.LogError("[GameSceneManager] 未能加载 UI/ChatPanel，请检查 Resources 路径。");
+            }
 
             Debug.Log("[GameSceneManager] SetupCamera 完成");
         }
