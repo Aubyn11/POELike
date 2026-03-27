@@ -1,0 +1,49 @@
+﻿//装备细节类别
+EquipmentDetailTypeConf{
+    int32 EquipmentDetailTypeId = 1,
+    string EquipmentDetailTypeName = 2,
+    int32 EquipmentDemandLevel = 3,
+    int32 EquipmentHeight = 4,
+    int32 EquipmentWidth = 5,
+    int32 EquipmentBaseValueId = 6,
+    int32 EquipmentPart = 7,
+    repeated int32 EquipmentTypes = 8,
+    int32 EquipmentDemandWisdom = 9,
+    int32 EquipmentDemandStrength = 10,
+    int32 EquipmentDemandIntelligence = 11,
+}
+//装备小类别枚举（对应POE词缀分类）
+//单手武器：1=爪  2=匕首  3=魔杖  4=单手剑  5=单手斧  6=单手锤  7=权杖
+//双手武器：8=弓  9=双手剑  10=双手斧  11=双手锤  12=长矛  13=法杖
+//头盔：14=头盔
+//胸甲：15=胸甲
+//手套：16=手套
+//鞋子：17=鞋子
+//饰品：18=腰带  19=戒指  20=项链
+//副手：21=盾牌  22=箭袋  23=法器
+EquipmentSubCategoryConf{
+    int32 EquipmentSubCategoryId = 1,
+    string EquipmentSubCategoryName = 2,
+    int32 EquipmentCategoryId = 3,
+}
+//词缀类型：前缀/后缀
+//1=前缀  2=后缀
+//词缀定义（每条词缀的基本信息）
+EquipmentModConf{
+    int32 EquipmentModId = 1,
+    string EquipmentModName = 2,
+    int32 EquipmentModType = 3,
+    int32 EquipmentModTier = 4,
+    int32 EquipmentModRequireLevel = 5,
+    repeated int32 EquipmentModSubCategories = 6,
+    int32 EquipmentModWeight = 7,
+}
+//词缀数值范围（每条词缀可能有1~2个数值范围）
+EquipmentModValueConf{
+    int32 EquipmentModValueId = 1,
+    int32 EquipmentModId = 2,
+    int32 EquipmentModValueIndex = 3,
+    int32 EquipmentModMinValue = 4,
+    int32 EquipmentModMaxValue = 5,
+    string EquipmentModValueDesc = 6,
+}

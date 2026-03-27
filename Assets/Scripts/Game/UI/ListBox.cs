@@ -102,9 +102,8 @@ namespace POELike.Game.UI
 
                 if (item == null)
                 {
-                    Debug.LogWarning($"[ListBox] 预制体 {prefab.name} 上未找到 ListBoxItem 组件，已跳过。");
-                    Destroy(go);
-                    continue;
+                    // 预制体上没有 ListBoxItem 组件时自动添加，保证能被 ListBox 管理
+                    item = go.AddComponent<ListBoxItem>();
                 }
 
                 item.Setup(_nextIndex++, type);

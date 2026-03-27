@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using POELike.ECS.Core;
 using POELike.ECS.Components;
+using POELike.Game.UI;
 
 namespace POELike.Game
 {
@@ -212,6 +213,18 @@ namespace POELike.Game
         private void OnGUI()
         {
             if (_labels.Count == 0) return;
+
+            // 有 UI 面板打开时，检测鼠标是否在面板上，若是则不绘制 NPC 名称（防止穿透）
+            if (UIGamePanelManager.AnyOpen)
+            {
+                var mouse2 = Mouse.current;
+                if (mouse2 != null)
+                {
+                    Vector2 mp = mouse2.position.ReadValue();
+                    if (UIGamePanelManager.IsPointerOverAnyPanel(mp))
+                        return;
+                }
+            }
 
             // 延迟初始化 GUIStyle（必须在 OnGUI 上下文中）
             if (_labelStyle == null)

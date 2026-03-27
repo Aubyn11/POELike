@@ -56,7 +56,7 @@ namespace POELike.Game
 
             // 配置摄像机基础参数
             _camera.clearFlags    = CameraClearFlags.Skybox;
-            _camera.fieldOfView   = 60f;
+            _camera.fieldOfView   = 40f;
             _camera.nearClipPlane = 0.1f;
             _camera.farClipPlane  = 500f;
             _camera.tag           = "MainCamera";

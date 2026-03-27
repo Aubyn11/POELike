@@ -46,6 +46,9 @@ namespace POELike.Game
         // NPC对话框
         private NpcDialogPanel _npcDialogPanel;
 
+        // 商店面板
+        private ShopPanel _shopPanel;
+
         // 当前寻路目标NPC实体（点击NPC名称时记录）
         private Entity _targetNpcEntity;
         // 是否正在前往NPC（用于到达检测）
@@ -587,8 +590,7 @@ namespace POELike.Game
                     break;
 
                 case NpcButtonEventType.OpenShop:
-                    // TODO: 打开商店界面
-                    Debug.Log("[NpcDialog] 打开商店");
+                    OpenShop();
                     break;
 
                 default:
@@ -692,7 +694,37 @@ namespace POELike.Game
                 Debug.LogError("[GameSceneManager] 未能加载 UI/ChatPanel，请检查 Resources 路径。");
             }
 
+            // 从 Resources 加载 CustomPanel 预制体（商店面板）
+            var shopPanelGo = UIManager.Instance.GetUI("UI/CustomPanel");
+            if (shopPanelGo != null)
+            {
+                _shopPanel = shopPanelGo.GetComponent<ShopPanel>();
+                if (_shopPanel != null)
+                {
+                    // 进入场景时确保商店处于关闭状态
+                    _shopPanel.Close();
+                }
+                else
+                    Debug.LogError("[GameSceneManager] CustomPanel 预制体上未找到 ShopPanel 组件。");
+            }
+            else
+            {
+                Debug.LogError("[GameSceneManager] 未能加载 UI/CustomPanel，请检查 Resources 路径。");
+            }
+
             Debug.Log("[GameSceneManager] SetupCamera 完成");
+        }
+
+        /// <summary>
+        /// 打开商店面板
+        /// </summary>
+        private void OpenShop()
+        {
+            if (_shopPanel == null) return;
+            // 先关闭对话框，再打开商店，避免两个面板同时打开时 CloseAll 误关商店
+            _npcDialogPanel?.Close();
+            _npcMeshRenderer?.SetTalkingNpc(null);
+            _shopPanel.Open();
         }
     }
 }
