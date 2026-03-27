@@ -12,9 +12,17 @@ namespace POELike.ECS.Systems
     public class AISystem : SystemBase
     {
         public override int Priority => 50;
-        
+
         // 玩家实体引用
         private Entity _playerEntity;
+
+        // 跳帧控制：AI 每隔 N 帧更新一次，降低大量实体时的 CPU 开销
+        private const int AIUpdateInterval = 2; // 每2帧更新一次
+        private int _frameCounter = 0;
+
+        // 零 GC Query 缓冲
+        private readonly System.Collections.Generic.List<Entity> _queryBuffer
+            = new System.Collections.Generic.List<Entity>(4096);
         
         protected override void OnInitialize()
         {
@@ -30,19 +38,26 @@ namespace POELike.ECS.Systems
         
         protected override void OnUpdate(float deltaTime)
         {
+            // 跳帧：每 AIUpdateInterval 帧才执行一次 AI 逻辑
+            _frameCounter++;
+            if (_frameCounter % AIUpdateInterval != 0) return;
+            // 补偿跳帧的 deltaTime
+            float aiDelta = deltaTime * AIUpdateInterval;
+
             // 延迟获取玩家（确保玩家已创建）
             if (_playerEntity == null)
                 _playerEntity = World.FindEntityByTag("Player");
-            
-            var entities = World.Query<AIComponent, MovementComponent, TransformComponent>();
-            
-            foreach (var entity in entities)
+
+            // 零 GC Query
+            World.Query<AIComponent, MovementComponent, TransformComponent>(_queryBuffer);
+
+            foreach (var entity in _queryBuffer)
             {
-                var ai = entity.GetComponent<AIComponent>();
-                var movement = entity.GetComponent<MovementComponent>();
+                var ai        = entity.GetComponent<AIComponent>();
+                var movement  = entity.GetComponent<MovementComponent>();
                 var transform = entity.GetComponent<TransformComponent>();
-                var health = entity.GetComponent<HealthComponent>();
-                
+                var health    = entity.GetComponent<HealthComponent>();
+
                 // 死亡检查
                 if (health != null && !health.IsAlive)
                 {
@@ -53,31 +68,31 @@ namespace POELike.ECS.Systems
                 
                 // 更新冷却
                 if (ai.AttackCooldownTimer > 0)
-                    ai.AttackCooldownTimer -= deltaTime;
-                
-                ai.StateTimer += deltaTime;
+                    ai.AttackCooldownTimer -= aiDelta;
+
+                ai.StateTimer += aiDelta;
                 
                 // 状态机更新
                 switch (ai.CurrentState)
                 {
                     case AIState.Idle:
-                        UpdateIdleState(entity, ai, movement, transform, deltaTime);
+                        UpdateIdleState(entity, ai, movement, transform, aiDelta);
                         break;
                     case AIState.Patrol:
-                        UpdatePatrolState(entity, ai, movement, transform, deltaTime);
+                        UpdatePatrolState(entity, ai, movement, transform, aiDelta);
                         break;
                     case AIState.Chase:
-                        UpdateChaseState(entity, ai, movement, transform, deltaTime);
+                        UpdateChaseState(entity, ai, movement, transform, aiDelta);
                         break;
                     case AIState.Attack:
-                        UpdateAttackState(entity, ai, movement, transform, deltaTime);
+                        UpdateAttackState(entity, ai, movement, transform, aiDelta);
                         break;
                     case AIState.Flee:
-                        UpdateFleeState(entity, ai, movement, transform, deltaTime);
+                        UpdateFleeState(entity, ai, movement, transform, aiDelta);
                         break;
                     case AIState.Stunned:
                         movement.MoveDirection = Vector3.zero;
-                        if (ai.StateTimer >= 1f) // 眩晕1秒
+                        if (ai.StateTimer >= 1f)
                             TransitionTo(ai, AIState.Idle);
                         break;
                 }
@@ -217,9 +232,10 @@ namespace POELike.ECS.Systems
             if (_playerEntity == null) return false;
             var playerTransform = _playerEntity.GetComponent<TransformComponent>();
             if (playerTransform == null) return false;
-            
-            float dist = Vector3.Distance(transform.Position, playerTransform.Position);
-            return dist <= ai.DetectionRange;
+
+            // 用距离平方比较，避免 Sqrt 开销
+            float sqrDist = (transform.Position - playerTransform.Position).sqrMagnitude;
+            return sqrDist <= ai.DetectionRange * ai.DetectionRange;
         }
         
         private void TransitionTo(AIComponent ai, AIState newState)

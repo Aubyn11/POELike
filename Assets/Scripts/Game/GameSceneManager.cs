@@ -43,6 +43,9 @@ namespace POELike.Game
         // NPC名称点击寻路：缓存NpcMeshRenderer引用（同时负责头顶名称标签）
         private NpcMeshRenderer _npcMeshRenderer;
 
+        // GM 面板
+        private GMPanel _gmPanel;
+
         // NPC对话框
         private NpcDialogPanel _npcDialogPanel;
 
@@ -88,6 +91,7 @@ namespace POELike.Game
             SpawnPlayer(data);
             SpawnNPCs();
             SetupInputActions();
+            SetupGMPanel();
         }
 
         private void Update()
@@ -118,6 +122,16 @@ namespace POELike.Game
                     GameManager.Instance.World.DestroyEntity(npc);
             }
             _npcEntities.Clear();
+
+            // 销毁 GM 生成的怪物实体
+            if (_gmPanel != null && GameManager.Instance != null)
+            {
+                foreach (var monster in _gmPanel.GetMonsterEntities())
+                {
+                    if (monster != null && monster.IsAlive)
+                        GameManager.Instance.World.DestroyEntity(monster);
+                }
+            }
         }
 
         // ── 场景环境构建 ──────────────────────────────────────────────
@@ -713,6 +727,20 @@ namespace POELike.Game
             }
 
             Debug.Log("[GameSceneManager] SetupCamera 完成");
+        }
+
+        // ── GM 面板 ────────────────────────────────────────────────
+
+        /// <summary>
+        /// 初始化 GM 面板（挂载在 GameSceneManager 自身 GameObject 上）
+        /// </summary>
+        private void SetupGMPanel()
+        {
+            _gmPanel = gameObject.GetComponent<GMPanel>();
+            if (_gmPanel == null)
+                _gmPanel = gameObject.AddComponent<GMPanel>();
+
+            _gmPanel.Init(GameManager.Instance.World, _playerEntity);
         }
 
         /// <summary>

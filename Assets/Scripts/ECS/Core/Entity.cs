@@ -11,88 +11,74 @@ namespace POELike.ECS.Core
     {
         // 全局唯一ID计数器
         private static int _nextId = 0;
-        
-        /// <summary>
-        /// 实体唯一ID
-        /// </summary>
-        public int Id { get; private set; }
-        
-        /// <summary>
-        /// 实体标签（用于快速分类查找）
-        /// </summary>
-        public string Tag { get; set; }
-        
-        /// <summary>
-        /// 实体是否存活
-        /// </summary>
-        public bool IsAlive { get; internal set; } = true;
-        
+
+        public int    Id      { get; private set; }
+        public string Tag     { get; set; }
+        public bool   IsAlive { get; internal set; } = true;
+
+        // 所属 World（用于回调索引维护）
+        private readonly World _world;
+
         // 组件字典：类型 -> 组件实例
         private readonly Dictionary<Type, IComponent> _components = new Dictionary<Type, IComponent>();
-        
-        public Entity(string tag = "")
+
+        public Entity(string tag = "", World world = null)
         {
-            Id = _nextId++;
-            Tag = tag;
+            Id     = _nextId++;
+            Tag    = tag;
+            _world = world;
         }
-        
-        /// <summary>
-        /// 添加组件
-        /// </summary>
+
+        /// <summary>添加组件，同步通知 World 更新索引</summary>
         public T AddComponent<T>(T component) where T : IComponent
         {
             var type = typeof(T);
             _components[type] = component;
+            _world?.OnComponentAdded(this, type);
             return component;
         }
-        
-        /// <summary>
-        /// 获取组件
-        /// </summary>
+
+        /// <summary>获取组件</summary>
         public T GetComponent<T>() where T : class, IComponent
         {
-            var type = typeof(T);
-            if (_components.TryGetValue(type, out var component))
+            if (_components.TryGetValue(typeof(T), out var component))
                 return component as T;
             return null;
         }
-        
-        /// <summary>
-        /// 是否拥有组件
-        /// </summary>
+
+        /// <summary>是否拥有组件</summary>
         public bool HasComponent<T>() where T : IComponent
         {
             return _components.ContainsKey(typeof(T));
         }
-        
-        /// <summary>
-        /// 移除组件
-        /// </summary>
+
+        /// <summary>移除组件，同步通知 World 更新索引</summary>
         public bool RemoveComponent<T>() where T : IComponent
         {
-            return _components.Remove(typeof(T));
+            var type = typeof(T);
+            bool removed = _components.Remove(type);
+            if (removed) _world?.OnComponentRemoved(this, type);
+            return removed;
         }
-        
-        /// <summary>
-        /// 获取所有组件
-        /// </summary>
+
+        /// <summary>获取所有组件（用于销毁时清理索引）</summary>
         public IEnumerable<IComponent> GetAllComponents()
         {
             return _components.Values;
         }
-        
-        /// <summary>
-        /// 重置所有组件
-        /// </summary>
+
+        /// <summary>获取所有组件类型（用于销毁时清理索引）</summary>
+        internal IEnumerable<Type> GetAllComponentTypes()
+        {
+            return _components.Keys;
+        }
+
         public void ResetAllComponents()
         {
             foreach (var component in _components.Values)
                 component.Reset();
         }
-        
-        public override string ToString()
-        {
-            return $"Entity[{Id}:{Tag}]";
-        }
+
+        public override string ToString() => $"Entity[{Id}:{Tag}]";
     }
 }

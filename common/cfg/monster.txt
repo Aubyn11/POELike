@@ -1,0 +1,5 @@
+﻿MonstDataConf{
+    int32 MonsterID = 1,
+    string MonsterMesh = 2,
+    int32 MonsterHp = 3
+}

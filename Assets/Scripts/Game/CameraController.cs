@@ -31,6 +31,9 @@ namespace POELike.Game
         // NPC Mesh 渲染器（Graphics.DrawMesh，无额外GameObject）
         private NpcMeshRenderer _npcMeshRenderer;
 
+        // 怪物 Mesh 渲染器（Graphics.DrawMesh，无额外GameObject）
+        private MonsterMeshRenderer _monsterMeshRenderer;
+
         [Header("摄像机参数")]
         [SerializeField] private float  _distance    = 25f;   // 摄像机到角色的距离
         [SerializeField] private float  _angle       = 55f;   // 俯视角度（X轴旋转）
@@ -81,6 +84,11 @@ namespace POELike.Game
             if (_npcMeshRenderer == null)
                 _npcMeshRenderer = gameObject.AddComponent<NpcMeshRenderer>();
 
+            // 在同一 GameObject 上挂载怪物 Mesh 渲染器
+            _monsterMeshRenderer = gameObject.GetComponent<MonsterMeshRenderer>();
+            if (_monsterMeshRenderer == null)
+                _monsterMeshRenderer = gameObject.AddComponent<MonsterMeshRenderer>();
+
             RecalculateOffset();
         }
 
@@ -122,6 +130,10 @@ namespace POELike.Game
             // 同步ECS世界给NPC Mesh渲染器（同时负责名称标签和点击检测）
             if (_npcMeshRenderer != null && Managers.GameManager.Instance != null)
                 _npcMeshRenderer.SetWorld(Managers.GameManager.Instance.World);
+
+            // 同步ECS世界给怪物 Mesh 渲染器
+            if (_monsterMeshRenderer != null && Managers.GameManager.Instance != null)
+                _monsterMeshRenderer.SetWorld(Managers.GameManager.Instance.World);
         }
 
         // ── 每帧更新 ──────────────────────────────────────────────────

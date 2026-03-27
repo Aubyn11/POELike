@@ -1,0 +1,99 @@
+// MonsterMatrixCompute.compute
+// GPU 并行计算怪物世界矩阵
+// 每个线程处理一个实体，计算其所有部件的矩阵并写入对应批次的 MatrixBuffer
+
+#pragma kernel CSMain
+
+// ── 输入：每个实体的渲染数据 ──────────────────────────────────────────
+struct MonsterInput
+{
+    float3 position;
+    float  faceYaw;
+    int    meshTypeIndex;
+    int    _pad0;
+    int    _pad1;
+    int    _pad2;
+};
+
+// ── 输入：每种类型的部件本地矩阵（展平数组）────────────────────────────
+// 布局：[type0_part0, type0_part1, ..., type1_part0, ...]
+StructuredBuffer<float4x4>  _LocalMatrices;
+
+// ── 输入：每种类型的部件数量和偏移 ──────────────────────────────────────
+StructuredBuffer<int>       _PartCounts;   // [typeCount]
+StructuredBuffer<int>       _PartOffsets;  // [typeCount]
+
+// ── 输入：每种类型每个部件在输出 buffer 中的写入偏移 ─────────────────────
+// 布局：[typeIdx * maxPartsPerType + partIdx] = 该批次在 _OutputMatrices 中的起始索引
+StructuredBuffer<int>       _BatchOffsets; // [typeCount * maxPartsPerType]
+
+// ── 输入：实体数据 ────────────────────────────────────────────────────
+StructuredBuffer<MonsterInput> _Inputs;
+
+// ── 输出：所有批次的矩阵（展平，按批次连续存放）────────────────────────
+RWStructuredBuffer<float4x4> _OutputMatrices;
+
+// ── 常量 ──────────────────────────────────────────────────────────────
+int   _EntityCount;
+int   _MaxPartsPerType;
+float _YOffset;
+float _RotationOffset;
+float _RotationOffsetX;
+float _ModelScale;
+
+// 构造 TRS 矩阵（列主序，与 Unity 一致）
+float4x4 MakeTRS(float3 pos, float yawRad, float pitchRad, float scale)
+{
+    float cy = cos(yawRad),   sy = sin(yawRad);
+    float cx = cos(pitchRad), sx = sin(pitchRad);
+
+    // 旋转顺序：先 X（pitch），再 Y（yaw）
+    // R = Ry * Rx
+    float4x4 r;
+    r[0] = float4( cy,        0,   sy,       0);
+    r[1] = float4( sy*sx,     cx, -cy*sx,    0);
+    r[2] = float4(-sy*cx,     sx,  cy*cx,    0);
+    r[3] = float4( 0,         0,   0,        1);
+
+    // 应用缩放和平移
+    float4x4 m;
+    m[0] = float4(r[0].xyz * scale, pos.x);
+    m[1] = float4(r[1].xyz * scale, pos.y);
+    m[2] = float4(r[2].xyz * scale, pos.z);
+    m[3] = float4(0, 0, 0, 1);
+    return m;
+}
+
+[numthreads(64, 1, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    uint entityIdx = id.x;
+    if ((int)entityIdx >= _EntityCount) return;
+
+    MonsterInput input = _Inputs[entityIdx];
+    int typeIdx = input.meshTypeIndex;
+    if (typeIdx < 0) return;
+
+    int partCount  = _PartCounts[typeIdx];
+    int partOffset = _PartOffsets[typeIdx];
+
+    float3 pos = input.position + float3(0, _YOffset, 0);
+    float yaw   = radians(input.faceYaw + _RotationOffset);
+    float pitch = radians(_RotationOffsetX);
+
+    float4x4 rootMat = MakeTRS(pos, yaw, pitch, _ModelScale);
+
+    for (int p = 0; p < partCount; p++)
+    {
+        // 该批次在输出 buffer 中的起始位置 + 当前实体在批次内的偏移
+        // _BatchOffsets[typeIdx * _MaxPartsPerType + p] = 该批次的起始索引
+        // 实体在批次内的顺序由 _EntityBatchIndex 决定
+        // 简化方案：直接用 entityIdx 作为批次内偏移（各批次 buffer 独立，entityIdx 可能有空洞）
+        // 使用 entityIdx 直接索引，GPU 端 buffer 按 entityIdx 存放，shader 端按 instanceID 读取
+        int batchStart = _BatchOffsets[typeIdx * _MaxPartsPerType + p];
+        float4x4 localMat = _LocalMatrices[partOffset + p];
+
+        // mul：rootMat * localMat（列主序矩阵乘法）
+        _OutputMatrices[batchStart + entityIdx] = mul(rootMat, localMat);
+    }
+}

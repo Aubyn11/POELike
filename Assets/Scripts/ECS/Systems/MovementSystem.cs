@@ -13,14 +13,18 @@ namespace POELike.ECS.Systems
     public class MovementSystem : SystemBase
     {
         public override int Priority => 100;
-        
+
         private const float Gravity = -9.81f;
-        
+
+        // 零 GC Query 缓冲
+        private readonly System.Collections.Generic.List<Entity> _queryBuffer
+            = new System.Collections.Generic.List<Entity>(4096);
+
         protected override void OnUpdate(float deltaTime)
         {
-            var entities = World.Query<TransformComponent, MovementComponent>();
-            
-            foreach (var entity in entities)
+            World.Query<TransformComponent, MovementComponent>(_queryBuffer);
+
+            foreach (var entity in _queryBuffer)
             {
                 var transform = entity.GetComponent<TransformComponent>();
                 var movement = entity.GetComponent<MovementComponent>();

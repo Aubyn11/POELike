@@ -66,6 +66,9 @@ namespace POELike.Game
         private readonly List<(Vector2 pixel, string name, bool hovered, Vector3 worldPos)> _labels
             = new List<(Vector2, string, bool, Vector3)>();
 
+        // ── 零 GC Query 缓冲 ──────────────────────────────────────────
+        private readonly List<Entity> _queryBuffer = new List<Entity>(256);
+
         // ── GUIStyle（延迟初始化）────────────────────────────────────
         private GUIStyle _labelStyle;
         private GUIStyle _shadowStyle;
@@ -134,9 +137,9 @@ namespace POELike.Game
             // ── 从鼠标位置发射射线（用于 Mesh 包围盒点击检测）────────
             Ray ray = _camera.ScreenPointToRay(new Vector3(mousePixel.x, mousePixel.y, 0f));
 
-            var npcEntities = _world.Query<NPCComponent, TransformComponent>();
+            _world.Query<NPCComponent, TransformComponent>(_queryBuffer);
 
-            foreach (var entity in npcEntities)
+            foreach (var entity in _queryBuffer)
             {
                 if (!entity.IsAlive) continue;
 
