@@ -133,7 +133,11 @@ namespace POELike.Game
 
             // 同步ECS世界给怪物 Mesh 渲染器
             if (_monsterMeshRenderer != null && Managers.GameManager.Instance != null)
+            {
                 _monsterMeshRenderer.SetWorld(Managers.GameManager.Instance.World);
+                // 注入 MovementSystem，启用 GPU 位置直读（零 CPU 中转，消除每帧10000次随机堆访问）
+                _monsterMeshRenderer.SetMovementSystem(Managers.GameManager.Instance.MovementSystem);
+            }
         }
 
         // ── 每帧更新 ──────────────────────────────────────────────────

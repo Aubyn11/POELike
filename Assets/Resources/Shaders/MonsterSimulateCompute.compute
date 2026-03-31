@@ -1,0 +1,95 @@
+// MonsterSimulateCompute.compute
+// 将怪物移动计算和碰撞分离卸载到 GPU，彻底解放 CPU
+//
+// Kernel 0: CSMove      —— 并行计算每只怪物的新位置（移动方向 × 速度 × deltaTime）
+// Kernel 1: CSSeparate  —— 并行计算怪物-玩家分离（只推怪物，不动玩家）
+// 约定：currentSpeed < 0 表示锁定主动移动（例如攻击状态），但仍然允许玩家分离
+
+#pragma kernel CSMove
+#pragma kernel CSSeparate
+
+// ── 每只怪物的动态输入数据（CPU 每帧上传）────────────────────────────
+struct MonsterMoveInput
+{
+    float3 moveDirection;   // 移动方向（归一化，零向量=静止）
+    float  currentSpeed;    // 当前速度，负数表示锁定当前位置
+};
+
+// ── 输出：当前位置（float3，GPU 常驻，CPU 低频回读）──────────────────
+struct MonsterMoveOutput
+{
+    float3 position;
+    float  pad;
+};
+
+// ── Buffers ───────────────────────────────────────────────────────────
+StructuredBuffer<MonsterMoveInput>    _MoveInputs;   // 每帧上传的动态输入
+RWStructuredBuffer<MonsterMoveOutput> _MoveOutputs;  // 常驻 GPU 的怪物位置
+
+// ── 参数 ──────────────────────────────────────────────────────────────
+int    _MonsterCount;
+float  _DeltaTime;
+float3 _PlayerPosition;
+float  _PlayerMonsterMinDist;   // 玩家+怪物碰撞半径之和
+float  _SeparationDiam;         // 怪物直径（碰撞分离距离）
+
+// ═══════════════════════════════════════════════════════════════════════
+// Kernel 0: CSMove —— 并行移动（每线程处理一只怪物）
+// ═══════════════════════════════════════════════════════════════════════
+[numthreads(64, 1, 1)]
+void CSMove(uint3 id : SV_DispatchThreadID)
+{
+    uint idx = id.x;
+    if ((int)idx >= _MonsterCount) return;
+
+    MonsterMoveInput input = _MoveInputs[idx];
+
+    float3 dir    = input.moveDirection;
+    float  lenSq  = dot(dir, dir);
+    float  speed  = input.currentSpeed;
+
+    float3 newPos = _MoveOutputs[idx].position;
+    if (speed >= 0.0f && lenSq > 0.0001f)
+    {
+        float3 normDir = dir * rsqrt(lenSq); // GPU 内置快速归一化
+        newPos += normDir * (speed * _DeltaTime);
+    }
+
+    _MoveOutputs[idx].position = newPos;
+    _MoveOutputs[idx].pad      = 0;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Kernel 1: CSSeparate —— 怪物-玩家分离（每线程处理一只怪物）
+// 注意：怪物间分离在 GPU 上做 O(N²) 代价太高，保留在 CPU 空间网格
+// 这里只做玩家-怪物分离（最影响体验的部分）
+// ═══════════════════════════════════════════════════════════════════════
+[numthreads(64, 1, 1)]
+void CSSeparate(uint3 id : SV_DispatchThreadID)
+{
+    uint idx = id.x;
+    if ((int)idx >= _MonsterCount) return;
+
+    float3 pos = _MoveOutputs[idx].position;
+
+    float dx     = pos.x - _PlayerPosition.x;
+    float dz     = pos.z - _PlayerPosition.z;
+    float sqDist = dx * dx + dz * dz;
+    float minSq  = _PlayerMonsterMinDist * _PlayerMonsterMinDist;
+
+    if (sqDist <= 0.0001f)
+    {
+        float angle = (float)(idx & 1023u) * (6.2831853f / 1024.0f);
+        pos.x = _PlayerPosition.x + sin(angle) * _PlayerMonsterMinDist;
+        pos.z = _PlayerPosition.z + cos(angle) * _PlayerMonsterMinDist;
+    }
+    else if (sqDist < minSq)
+    {
+        float dist = sqrt(sqDist);
+        float push = _PlayerMonsterMinDist - dist;
+        pos.x += (dx / dist) * push;
+        pos.z += (dz / dist) * push;
+    }
+
+    _MoveOutputs[idx].position = pos;
+}

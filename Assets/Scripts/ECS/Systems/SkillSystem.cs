@@ -13,6 +13,8 @@ namespace POELike.ECS.Systems
     public class SkillSystem : SystemBase
     {
         public override int Priority => 150;
+
+        private readonly List<Entity> _skillEntities = new List<Entity>(8);
         
         protected override void OnInitialize()
         {
@@ -21,36 +23,23 @@ namespace POELike.ECS.Systems
         
         protected override void OnUpdate(float deltaTime)
         {
-            UpdateSkillCooldowns(deltaTime);
-            UpdateCasting(deltaTime);
+            UpdateSkills(deltaTime);
         }
-        
-        /// <summary>
-        /// 更新技能冷却
-        /// </summary>
-        private void UpdateSkillCooldowns(float deltaTime)
+
+        private void UpdateSkills(float deltaTime)
         {
-            var entities = World.Query<SkillComponent>();
-            foreach (var entity in entities)
+            World.Query<SkillComponent>(_skillEntities);
+            foreach (var entity in _skillEntities)
             {
                 var skillComp = entity.GetComponent<SkillComponent>();
+                if (skillComp == null) continue;
+
                 foreach (var slot in skillComp.SkillSlots)
                 {
                     if (slot.CooldownTimer > 0)
                         slot.CooldownTimer -= deltaTime;
                 }
-            }
-        }
-        
-        /// <summary>
-        /// 更新施法进度
-        /// </summary>
-        private void UpdateCasting(float deltaTime)
-        {
-            var entities = World.Query<SkillComponent>();
-            foreach (var entity in entities)
-            {
-                var skillComp = entity.GetComponent<SkillComponent>();
+
                 if (!skillComp.IsCasting) continue;
                 
                 skillComp.CastTimer -= deltaTime;

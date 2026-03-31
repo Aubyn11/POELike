@@ -10,12 +10,20 @@ namespace POELike.Game
     /// <summary>
     /// 怪物生成器
     /// 从 Assets/Cfg/MonstDataConf.pb 读取怪物配置，创建 ECS 实体
-    /// 怪物实体：TransformComponent + MonsterComponent + HealthComponent
+    /// 怪物实体：TransformComponent + MonsterComponent + StatsComponent + HealthComponent + AIComponent + MovementComponent
     /// </summary>
     public static class MonsterSpawner
+
     {
         // 怪物碰撞半径（世界单位）
         public const float CollisionRadius = 0.8f;
+
+        private const float DefaultHp          = 100f;
+        private const float DefaultAttack      = 10f;
+        private const float DefaultDefense     = 0f;
+        private const float DefaultMoveSpeed   = 3.5f;
+        private const float DefaultAttackRange = 1.5f;
+        private const float DefaultDetectionRange = 10f;
 
         // ── 配置缓存 ──────────────────────────────────────────────────
         private static Dictionary<int, MonsterData> _configCache;
@@ -23,9 +31,9 @@ namespace POELike.Game
         /// <summary>
         /// 获取所有怪物配置（懒加载）
         /// </summary>
-        public static Dictionary<int, MonsterData> GetAllConfigs()
+        public static Dictionary<int, MonsterData> GetAllConfigs(bool forceReload = false)
         {
-            if (_configCache != null) return _configCache;
+            if (!forceReload && _configCache != null) return _configCache;
 
             _configCache = new Dictionary<int, MonsterData>();
             var list = LoadMonsterData();
@@ -49,7 +57,8 @@ namespace POELike.Game
         {
             var entities = new List<Entity>();
 
-            var configs = GetAllConfigs();
+            // 生成时强制刷新配置，确保运行中修改 MonstDataConf.pb 后下一次生成即可生效
+            var configs = GetAllConfigs(forceReload: true);
             if (!configs.TryGetValue(monsterId, out var data))
             {
                 Debug.LogWarning($"[MonsterSpawner] 找不到 MonsterID={monsterId} 的配置");
@@ -83,6 +92,13 @@ namespace POELike.Game
         /// </summary>
         private static Entity CreateMonsterEntity(World world, MonsterData data, Vector3 position)
         {
+            float maxHp       = Mathf.Max(1f, data.MonsterHpFloat);
+            float attack      = Mathf.Max(1f, data.MonsterAttackFloat);
+            float defense     = Mathf.Max(0f, data.MonsterDefenseFloat);
+            float moveSpeed   = Mathf.Max(0.1f, data.MonsterSpeedFloat);
+            float attackRange = Mathf.Max(0.1f, data.MonsterRadiusFloat);
+            float detectionRange = Mathf.Max(0f, data.MonsterDetectionRangeFloat);
+
             var entity = world.CreateEntity("Monster");
 
             entity.AddComponent(new TransformComponent
@@ -94,13 +110,42 @@ namespace POELike.Game
             {
                 MonsterID   = data.MonsterIDInt,
                 MonsterMesh = data.MonsterMesh ?? "",
-                MaxHp       = data.MonsterHpFloat,
+                MaxHp       = maxHp,
+                Attack      = attack,
+                Defense     = defense,
+                MoveSpeed   = moveSpeed,
+                AttackRange = attackRange,
                 FaceYaw     = UnityEngine.Random.Range(0f, 360f)
             });
 
+            var statsComp = entity.AddComponent(new StatsComponent());
+            statsComp.SetBaseStat(StatType.MaxHealth, maxHp);
+            statsComp.SetBaseStat(StatType.PhysicalDamage, attack);
+            statsComp.SetBaseStat(StatType.Armor, defense);
+            statsComp.SetBaseStat(StatType.MovementSpeed, moveSpeed);
+
             var healthComp = entity.AddComponent(new HealthComponent());
-            healthComp.MaxHealth = data.MonsterHpFloat;
+            healthComp.MaxHealth = maxHp;
             healthComp.FillToMax();
+
+            // AI 组件：检测到玩家后追击，超出范围随机巡逻
+            entity.AddComponent(new AIComponent
+            {
+
+                DetectionRange = detectionRange,
+                ChaseRange     = 100f,  // 追击放弃距离
+                AttackRange    = attackRange,
+                AttackCooldown = 1.5f,
+                SpawnPoint     = position,
+            });
+
+            // 移动组件：纯逻辑移动（无 CharacterController / Rigidbody）
+            entity.AddComponent(new MovementComponent
+            {
+                BaseSpeed    = moveSpeed,
+                CurrentSpeed = moveSpeed,
+                UseGravity   = false,   // GPU 渲染怪物不需要物理重力
+            });
 
             return entity;
         }
@@ -154,9 +199,24 @@ namespace POELike.Game
             public string MonsterID;
             public string MonsterMesh;
             public string MonsterHp;
+            public string MonsterAttack;
+            public string MonsterDefense;
+            public string MonsterSpeed;
+            public string MonsterRadius;
+            public string MonsterDetectionRange;
 
             public int MonsterIDInt => int.TryParse(MonsterID, out int id) ? id : 0;
-            public float MonsterHpFloat => float.TryParse(MonsterHp, out float hp) ? hp : 100f;
+            public float MonsterHpFloat => ParseFloat(MonsterHp, DefaultHp);
+            public float MonsterAttackFloat => ParseFloat(MonsterAttack, DefaultAttack);
+            public float MonsterDefenseFloat => ParseFloat(MonsterDefense, DefaultDefense);
+            public float MonsterSpeedFloat => ParseFloat(MonsterSpeed, DefaultMoveSpeed);
+            public float MonsterRadiusFloat => ParseFloat(MonsterRadius, DefaultAttackRange);
+            public float MonsterDetectionRangeFloat => ParseFloat(MonsterDetectionRange, DefaultDetectionRange);
+
+            private static float ParseFloat(string value, float fallback)
+            {
+                return float.TryParse(value, out float parsed) ? parsed : fallback;
+            }
         }
     }
 }

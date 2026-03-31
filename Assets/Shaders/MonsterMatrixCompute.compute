@@ -10,9 +10,9 @@ struct MonsterInput
     float3 position;
     float  faceYaw;
     int    meshTypeIndex;
+    int    typeInstanceIndex;
     int    _pad0;
     int    _pad1;
-    int    _pad2;
 };
 
 // ── 输入：每种类型的部件本地矩阵（展平数组）────────────────────────────
@@ -74,6 +74,9 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     int typeIdx = input.meshTypeIndex;
     if (typeIdx < 0) return;
 
+    int typeInstanceIndex = input.typeInstanceIndex;
+    if (typeInstanceIndex < 0) return;
+
     int partCount  = _PartCounts[typeIdx];
     int partOffset = _PartOffsets[typeIdx];
 
@@ -85,15 +88,11 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     for (int p = 0; p < partCount; p++)
     {
-        // 该批次在输出 buffer 中的起始位置 + 当前实体在批次内的偏移
-        // _BatchOffsets[typeIdx * _MaxPartsPerType + p] = 该批次的起始索引
-        // 实体在批次内的顺序由 _EntityBatchIndex 决定
-        // 简化方案：直接用 entityIdx 作为批次内偏移（各批次 buffer 独立，entityIdx 可能有空洞）
-        // 使用 entityIdx 直接索引，GPU 端 buffer 按 entityIdx 存放，shader 端按 instanceID 读取
+        // 该批次在输出 buffer 中的起始位置 + 当前实体在该类型内的紧凑实例索引
         int batchStart = _BatchOffsets[typeIdx * _MaxPartsPerType + p];
         float4x4 localMat = _LocalMatrices[partOffset + p];
 
         // mul：rootMat * localMat（列主序矩阵乘法）
-        _OutputMatrices[batchStart + entityIdx] = mul(rootMat, localMat);
+        _OutputMatrices[batchStart + typeInstanceIndex] = mul(rootMat, localMat);
     }
 }

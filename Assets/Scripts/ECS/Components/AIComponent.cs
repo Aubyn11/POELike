@@ -9,69 +9,81 @@ namespace POELike.ECS.Components
     public class AIComponent : IComponent
     {
         public bool IsEnabled { get; set; } = true;
-        
-        /// <summary>
-        /// AI状态机当前状态
-        /// </summary>
+
+        /// <summary>AI状态机当前状态</summary>
         public AIState CurrentState { get; set; } = AIState.Idle;
-        
-        /// <summary>
-        /// 检测范围（发现玩家的距离）
-        /// </summary>
+
+        /// <summary>检测范围（发现玩家的距离）</summary>
         public float DetectionRange { get; set; } = 10f;
-        
-        /// <summary>
-        /// 攻击范围
-        /// </summary>
+
+        /// <summary>攻击范围</summary>
         public float AttackRange { get; set; } = 2f;
-        
-        /// <summary>
-        /// 追击范围（超出此范围放弃追击）
-        /// </summary>
+
+        /// <summary>追击范围（超出此范围放弃追击）</summary>
         public float ChaseRange { get; set; } = 20f;
-        
-        /// <summary>
-        /// 当前目标
-        /// </summary>
+
+        /// <summary>当前目标</summary>
         public Entity Target { get; set; }
-        
-        /// <summary>
-        /// 巡逻目标点
-        /// </summary>
+
+        /// <summary>巡逻目标点</summary>
         public UnityEngine.Vector3 PatrolTarget { get; set; }
-        
-        /// <summary>
-        /// 出生点（用于重置位置）
-        /// </summary>
+
+        /// <summary>出生点（用于重置位置）</summary>
         public UnityEngine.Vector3 SpawnPoint { get; set; }
-        
-        /// <summary>
-        /// 状态计时器
-        /// </summary>
+
+        /// <summary>状态计时器</summary>
         public float StateTimer { get; set; } = 0f;
-        
-        /// <summary>
-        /// 攻击冷却
-        /// </summary>
+
+        /// <summary>攻击冷却</summary>
         public float AttackCooldown { get; set; } = 1f;
-        
-        /// <summary>
-        /// 攻击冷却计时器
-        /// </summary>
+
+        /// <summary>攻击冷却计时器</summary>
         public float AttackCooldownTimer { get; set; } = 0f;
-        
+
+        /// <summary>上一帧分配的编队环索引（-1 表示未参与）</summary>
+        public int PreviousFormationRingIndex { get; set; } = -1;
+
+        /// <summary>当前帧分配的编队环索引（-1 表示未参与）</summary>
+        public int FormationRingIndex { get; set; } = -1;
+
+        /// <summary>上一帧分配的环内槽位索引（-1 表示未参与）</summary>
+        public int PreviousFormationSlotIndex { get; set; } = -1;
+
+        /// <summary>当前帧分配的环内槽位索引（-1 表示未参与）</summary>
+        public int FormationSlotIndex { get; set; } = -1;
+
+        /// <summary>上一帧所在编队环的槽位总数</summary>
+        public int PreviousFormationRingCount { get; set; } = 0;
+
+        /// <summary>当前帧所在编队环的槽位总数</summary>
+        public int FormationRingCount { get; set; } = 0;
+
+        // ── 组件缓存（AISystem 首次访问时初始化，避免每帧 GetComponent 字典查找）──
+        public MovementComponent CachedMovement  { get; set; }
+        public TransformComponent CachedTransform { get; set; }
+        public HealthComponent    CachedHealth    { get; set; }
+        public MonsterComponent   CachedMonster   { get; set; }
+
         public void Reset()
         {
-            CurrentState = AIState.Idle;
-            Target = null;
-            StateTimer = 0f;
+            CurrentState        = AIState.Idle;
+            Target              = null;
+            StateTimer          = 0f;
             AttackCooldownTimer = 0f;
+            PreviousFormationRingIndex = -1;
+            FormationRingIndex  = -1;
+            PreviousFormationSlotIndex = -1;
+            FormationSlotIndex  = -1;
+            PreviousFormationRingCount = 0;
+            FormationRingCount  = 0;
+            CachedMovement      = null;
+            CachedTransform     = null;
+            CachedHealth        = null;
+            CachedMonster       = null;
         }
     }
-    
-    /// <summary>
-    /// AI状态枚举
-    /// </summary>
+
+    /// <summary>AI状态枚举</summary>
     public enum AIState
     {
         Idle,       // 待机

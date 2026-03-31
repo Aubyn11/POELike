@@ -10,9 +10,9 @@ struct MonsterInput
     float3 position;
     float  faceYaw;
     int    meshTypeIndex;
+    int    typeInstanceIndex;
     int    _pad0;
     int    _pad1;
-    int    _pad2;
 };
 
 // ── 输入：每种类型的部件本地矩阵（展平数组）────────────────────────────
@@ -29,6 +29,12 @@ StructuredBuffer<int>       _BatchOffsets; // [typeCount * maxPartsPerType]
 
 // ── 输入：实体数据 ────────────────────────────────────────────────────
 StructuredBuffer<MonsterInput> _Inputs;
+
+// ── 可选：直接从 MovementSystem GPU Buffer 读取位置（float3 + pad）────
+// 当 _UseGpuPosition = 1 时，忽略 _Inputs 中的 position，直接读此 Buffer
+// 布局与 MonsterMoveOutput 一致：float3 position + float pad
+StructuredBuffer<float4> _GpuPositions; // float4 = float3 position + float pad
+int _UseGpuPosition;                    // 0=从_Inputs读位置, 1=从_GpuPositions读位置
 
 // ── 输出：所有批次的矩阵（展平，按批次连续存放）────────────────────────
 RWStructuredBuffer<float4x4> _OutputMatrices;
@@ -74,10 +80,18 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     int typeIdx = input.meshTypeIndex;
     if (typeIdx < 0) return;
 
+    int typeInstanceIndex = input.typeInstanceIndex;
+    if (typeInstanceIndex < 0) return;
+
     int partCount  = _PartCounts[typeIdx];
     int partOffset = _PartOffsets[typeIdx];
 
-    float3 pos = input.position + float3(0, _YOffset, 0);
+    // 位置来源：优先从 MovementSystem GPU Buffer 直接读取（零 CPU 中转）
+    float3 pos;
+    if (_UseGpuPosition == 1)
+        pos = _GpuPositions[entityIdx].xyz + float3(0, _YOffset, 0);
+    else
+        pos = input.position + float3(0, _YOffset, 0);
     float yaw   = radians(input.faceYaw + _RotationOffset);
     float pitch = radians(_RotationOffsetX);
 
@@ -85,15 +99,11 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     for (int p = 0; p < partCount; p++)
     {
-        // 该批次在输出 buffer 中的起始位置 + 当前实体在批次内的偏移
-        // _BatchOffsets[typeIdx * _MaxPartsPerType + p] = 该批次的起始索引
-        // 实体在批次内的顺序由 _EntityBatchIndex 决定
-        // 简化方案：直接用 entityIdx 作为批次内偏移（各批次 buffer 独立，entityIdx 可能有空洞）
-        // 使用 entityIdx 直接索引，GPU 端 buffer 按 entityIdx 存放，shader 端按 instanceID 读取
+        // 该批次在输出 buffer 中的起始位置 + 当前实体在该类型内的紧凑实例索引
         int batchStart = _BatchOffsets[typeIdx * _MaxPartsPerType + p];
         float4x4 localMat = _LocalMatrices[partOffset + p];
 
         // mul：rootMat * localMat（列主序矩阵乘法）
-        _OutputMatrices[batchStart + entityIdx] = mul(rootMat, localMat);
+        _OutputMatrices[batchStart + typeInstanceIndex] = mul(rootMat, localMat);
     }
 }

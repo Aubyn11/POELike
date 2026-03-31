@@ -13,92 +13,107 @@ namespace POELike.ECS.Systems
     public class CombatSystem : SystemBase
     {
         public override int Priority => 200;
+
+        private readonly List<Entity> _combatEntities = new List<Entity>(4096);
         
         protected override void OnInitialize()
         {
             // 订阅伤害事件
             World.EventBus.Subscribe<DamageEvent>(OnDamageEvent);
+            World.EventBus.Subscribe<AIAttackEvent>(OnAIAttackEvent);
         }
         
         protected override void OnUpdate(float deltaTime)
         {
-            UpdateCooldowns(deltaTime);
-            UpdateStatusEffects(deltaTime);
-            UpdateInvincibility(deltaTime);
+            UpdateCombatStates(deltaTime);
         }
-        
-        /// <summary>
-        /// 更新攻击冷却
-        /// </summary>
-        private void UpdateCooldowns(float deltaTime)
+
+        private void UpdateCombatStates(float deltaTime)
         {
-            var entities = World.Query<CombatComponent>();
-            foreach (var entity in entities)
+            World.Query<CombatComponent>(_combatEntities);
+            foreach (var entity in _combatEntities)
             {
                 var combat = entity.GetComponent<CombatComponent>();
+                if (combat == null) continue;
+
                 if (combat.AttackCooldownTimer > 0)
                     combat.AttackCooldownTimer -= deltaTime;
-            }
-        }
-        
-        /// <summary>
-        /// 更新状态效果（Buff/Debuff）
-        /// </summary>
-        private void UpdateStatusEffects(float deltaTime)
-        {
-            var entities = World.Query<CombatComponent, HealthComponent>();
-            foreach (var entity in entities)
-            {
-                var combat = entity.GetComponent<CombatComponent>();
-                var health = entity.GetComponent<HealthComponent>();
-                var stats = entity.GetComponent<StatsComponent>();
-                
-                for (int i = combat.ActiveEffects.Count - 1; i >= 0; i--)
-                {
-                    var effect = combat.ActiveEffects[i];
-                    effect.RemainingTime -= deltaTime;
-                    
-                    // 处理持续伤害效果
-                    if (effect.Type == StatusEffectType.Ignite || 
-                        effect.Type == StatusEffectType.Poison || 
-                        effect.Type == StatusEffectType.Bleed)
-                    {
-                        effect.TickTimer -= deltaTime;
-                        if (effect.TickTimer <= 0)
-                        {
-                            effect.TickTimer = effect.TickInterval;
-                            health.TakeDamage(effect.Value * effect.TickInterval);
-                        }
-                    }
-                    
-                    // 移除过期效果
-                    if (effect.IsExpired)
-                    {
-                        combat.ActiveEffects.RemoveAt(i);
-                        // 移除该效果对应的属性修改器
-                        stats?.RemoveModifiersFromSource(effect.Id);
-                        World.EventBus.Publish(new StatusEffectRemovedEvent { Entity = entity, Effect = effect });
-                    }
-                }
-            }
-        }
-        
-        /// <summary>
-        /// 更新无敌时间
-        /// </summary>
-        private void UpdateInvincibility(float deltaTime)
-        {
-            var entities = World.Query<CombatComponent>();
-            foreach (var entity in entities)
-            {
-                var combat = entity.GetComponent<CombatComponent>();
+
                 if (combat.IsInvincible && combat.InvincibleTimer > 0)
                 {
                     combat.InvincibleTimer -= deltaTime;
                     if (combat.InvincibleTimer <= 0)
                         combat.IsInvincible = false;
                 }
+
+                if (combat.ActiveEffects.Count <= 0)
+                    continue;
+
+                var health = entity.GetComponent<HealthComponent>();
+                var stats  = entity.GetComponent<StatsComponent>();
+                UpdateStatusEffects(entity, combat, health, stats, deltaTime);
             }
+        }
+        
+        /// <summary>
+        /// 更新状态效果（Buff/Debuff）
+        /// </summary>
+        private void UpdateStatusEffects(Entity entity, CombatComponent combat, HealthComponent health, StatsComponent stats, float deltaTime)
+        {
+            if (health == null) return;
+
+            for (int i = combat.ActiveEffects.Count - 1; i >= 0; i--)
+            {
+                var effect = combat.ActiveEffects[i];
+                effect.RemainingTime -= deltaTime;
+                
+                // 处理持续伤害效果
+                if (effect.Type == StatusEffectType.Ignite || 
+                    effect.Type == StatusEffectType.Poison || 
+                    effect.Type == StatusEffectType.Bleed)
+                {
+                    effect.TickTimer -= deltaTime;
+                    if (effect.TickTimer <= 0)
+                    {
+                        effect.TickTimer = effect.TickInterval;
+                        health.TakeDamage(effect.Value * effect.TickInterval);
+                    }
+                }
+                
+                // 移除过期效果
+                if (effect.IsExpired)
+                {
+                    combat.ActiveEffects.RemoveAt(i);
+                    // 移除该效果对应的属性修改器
+                    stats?.RemoveModifiersFromSource(effect.Id);
+                    World.EventBus.Publish(new StatusEffectRemovedEvent { Entity = entity, Effect = effect });
+                }
+            }
+        }
+
+        /// <summary>
+        /// 将怪物 AI 攻击事件转为正式伤害事件
+        /// </summary>
+        private void OnAIAttackEvent(AIAttackEvent evt)
+        {
+            if (evt.Attacker == null || evt.Target == null) return;
+            if (!evt.Attacker.IsAlive || !evt.Target.IsAlive) return;
+            if (evt.Attacker.Tag != "Monster") return;
+
+            var monster = evt.Attacker.GetComponent<MonsterComponent>();
+            if (monster == null) return;
+
+            var stats = evt.Attacker.GetComponent<StatsComponent>();
+            float damage = stats != null ? stats.GetStat(StatType.PhysicalDamage) : monster.Attack;
+            damage = Mathf.Max(1f, damage);
+
+            World.EventBus.Publish(new DamageEvent
+            {
+                Source = evt.Attacker,
+                Target = evt.Target,
+                BaseDamage = damage,
+                DamageType = DamageType.Physical
+            });
         }
         
         /// <summary>
@@ -193,6 +208,7 @@ namespace POELike.ECS.Systems
         protected override void OnDispose()
         {
             World.EventBus.Unsubscribe<DamageEvent>(OnDamageEvent);
+            World.EventBus.Unsubscribe<AIAttackEvent>(OnAIAttackEvent);
         }
     }
     

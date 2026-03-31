@@ -1,5 +1,10 @@
 ﻿MonstDataConf{
     int32 MonsterID = 1,
     string MonsterMesh = 2,
-    int32 MonsterHp = 3
+    int32 MonsterHp = 3,
+    int32 MonsterAttack = 4,
+    int32 MonsterDefense = 5,
+    int32 MonsterSpeed = 6,
+    int32 MonsterRadius = 7,
+    int32 MonsterDetectionRange = 8
 }

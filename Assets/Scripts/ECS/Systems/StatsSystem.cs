@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using POELike.ECS.Core;
 using POELike.ECS.Components;
 
@@ -11,16 +12,56 @@ namespace POELike.ECS.Systems
     public class StatsSystem : SystemBase
     {
         public override int Priority => 10;
+
+        private readonly List<Entity> _regenEntities = new List<Entity>(8);
+        private readonly List<Entity> _queryBuffer   = new List<Entity>(32);
+        private bool _regenCacheDirty = true;
         
         protected override void OnInitialize()
         {
             World.EventBus.Subscribe<EquipmentChangedEvent>(OnEquipmentChanged);
+            World.EventBus.Subscribe<EntityCreatedEvent>(OnEntityCreated);
+            World.EventBus.Subscribe<EntityDestroyedEvent>(OnEntityDestroyed);
         }
         
         protected override void OnUpdate(float deltaTime)
         {
-            // 处理生命/魔力回复
+            SyncRegenCache();
             UpdateRegeneration(deltaTime);
+        }
+
+        private void OnEntityCreated(EntityCreatedEvent evt)
+        {
+            _regenCacheDirty = true;
+        }
+
+        private void OnEntityDestroyed(EntityDestroyedEvent evt)
+        {
+            _regenCacheDirty = true;
+        }
+
+        private void SyncRegenCache()
+        {
+            if (!_regenCacheDirty) return;
+
+            _regenCacheDirty = false;
+            _regenEntities.Clear();
+            World.Query<HealthComponent, StatsComponent>(_queryBuffer);
+
+            foreach (var entity in _queryBuffer)
+            {
+                var stats = entity.GetComponent<StatsComponent>();
+                if (stats == null) continue;
+                if (!HasAnyRegeneration(stats)) continue;
+                _regenEntities.Add(entity);
+            }
+        }
+
+        private static bool HasAnyRegeneration(StatsComponent stats)
+        {
+            return stats.GetStat(StatType.HealthRegen) > 0.001f
+                || stats.GetStat(StatType.ManaRegen) > 0.001f
+                || stats.GetStat(StatType.EnergyShieldRegen) > 0.001f;
         }
         
         /// <summary>
@@ -28,12 +69,11 @@ namespace POELike.ECS.Systems
         /// </summary>
         private void UpdateRegeneration(float deltaTime)
         {
-            var entities = World.Query<HealthComponent, StatsComponent>();
-            foreach (var entity in entities)
+            foreach (var entity in _regenEntities)
             {
                 var health = entity.GetComponent<HealthComponent>();
-                var stats = entity.GetComponent<StatsComponent>();
-                
+                var stats  = entity.GetComponent<StatsComponent>();
+                if (health == null || stats == null) continue;
                 if (!health.IsAlive) continue;
                 
                 // 生命回复
@@ -52,6 +92,7 @@ namespace POELike.ECS.Systems
                     health.CurrentEnergyShield += esRegen * deltaTime;
             }
         }
+
         
         /// <summary>
         /// 装备变化时重新计算属性
@@ -86,12 +127,17 @@ namespace POELike.ECS.Systems
                 if (newMaxMp > 0) health.MaxMana = newMaxMp;
                 if (newMaxEs > 0) health.MaxEnergyShield = newMaxEs;
             }
+
+            _regenCacheDirty = true;
         }
         
         protected override void OnDispose()
         {
             World.EventBus.Unsubscribe<EquipmentChangedEvent>(OnEquipmentChanged);
+            World.EventBus.Unsubscribe<EntityCreatedEvent>(OnEntityCreated);
+            World.EventBus.Unsubscribe<EntityDestroyedEvent>(OnEntityDestroyed);
         }
+
     }
     
     public struct EquipmentChangedEvent

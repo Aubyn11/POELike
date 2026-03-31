@@ -243,6 +243,17 @@ namespace POELike.ECS.Core
             }
         }
 
+        /// <summary>通过ID查找实体</summary>
+        public Entity FindEntityById(int entityId)
+        {
+            if (_entityIndex.TryGetValue(entityId, out int idx))
+            {
+                var entity = _entities[idx];
+                if (entity != null && entity.IsAlive) return entity;
+            }
+            return null;
+        }
+
         /// <summary>通过Tag查找实体</summary>
         public Entity FindEntityByTag(string tag)
         {

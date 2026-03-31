@@ -19,15 +19,31 @@ namespace POELike.ECS.Components
         /// <summary>怪物最大HP</summary>
         public float MaxHp { get; set; } = 100f;
 
+        /// <summary>怪物攻击力</summary>
+        public float Attack { get; set; } = 10f;
+
+        /// <summary>怪物护甲</summary>
+        public float Defense { get; set; } = 0f;
+
+        /// <summary>怪物移动速度</summary>
+        public float MoveSpeed { get; set; } = 3.5f;
+
+        /// <summary>怪物攻击半径</summary>
+        public float AttackRange { get; set; } = 1.5f;
+
         /// <summary>怪物当前朝向角（Y 轴，度）</summary>
         public float FaceYaw { get; set; } = 0f;
 
         public void Reset()
         {
-            MonsterID   = 0;
-            MonsterMesh = "";
-            MaxHp       = 100f;
-            FaceYaw     = 0f;
+            MonsterID    = 0;
+            MonsterMesh  = "";
+            MaxHp        = 100f;
+            Attack       = 10f;
+            Defense      = 0f;
+            MoveSpeed    = 3.5f;
+            AttackRange  = 1.5f;
+            FaceYaw      = 0f;
         }
     }
 }

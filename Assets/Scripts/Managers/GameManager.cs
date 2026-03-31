@@ -21,6 +21,15 @@ namespace POELike.Managers
         /// ECS世界引用
         /// </summary>
         public World World { get; private set; }
+
+        /// <summary>MovementSystem 引用（供 MonsterMeshRenderer 直读 GPU 位置 Buffer）</summary>
+        public MovementSystem MovementSystem { get; private set; }
+
+        // 调试信息限频缓存（每0.2秒更新一次，避免IMGUI每帧重建Mesh）
+        private string _debugEntityCount = "";
+        private string _debugFps         = "";
+        private float  _debugTimer       = 0f;
+        private const float DebugUpdateInterval = 0.2f;
         
         private void Awake()
         {
@@ -60,7 +69,8 @@ namespace POELike.Managers
             // 注册所有系统（按优先级自动排序）
             World.RegisterSystem(new StatsSystem());        // 优先级 10
             World.RegisterSystem(new AISystem());           // 优先级 50
-            World.RegisterSystem(new MovementSystem());     // 优先级 100
+            MovementSystem = new MovementSystem();
+            World.RegisterSystem(MovementSystem);           // 优先级 100
             World.RegisterSystem(new SkillSystem());        // 优先级 150
             World.RegisterSystem(new CombatSystem());       // 优先级 200
             
@@ -73,6 +83,18 @@ namespace POELike.Managers
         private void Update()
         {
             World?.Update(Time.deltaTime);
+
+            // 限频更新调试文本（每0.2秒一次，避免IMGUI每帧重建Mesh）
+            if (_showDebugInfo)
+            {
+                _debugTimer += Time.deltaTime;
+                if (_debugTimer >= DebugUpdateInterval)
+                {
+                    _debugTimer = 0f;
+                    _debugEntityCount = $"实体数量: {World?.EntityCount ?? 0}";
+                    _debugFps         = $"FPS: {(1f / Time.deltaTime):F1}";
+                }
+            }
         }
         
         private void FixedUpdate()
@@ -94,8 +116,8 @@ namespace POELike.Managers
             if (!_showDebugInfo) return;
             
             GUILayout.BeginArea(new Rect(10, 10, 200, 100));
-            GUILayout.Label($"实体数量: {World?.EntityCount ?? 0}");
-            GUILayout.Label($"FPS: {(1f / Time.deltaTime):F1}");
+            GUILayout.Label(_debugEntityCount);
+            GUILayout.Label(_debugFps);
             GUILayout.EndArea();
         }
     }

@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using POELike.ECS.Core;
 using POELike.ECS.Components;
+using POELike.Game;
 
 namespace POELike.Game.UI
 {
@@ -12,8 +13,8 @@ namespace POELike.Game.UI
     ///
     /// 功能：
     ///   - 输入 MonsterID 和数量，点击「生成」按钮在玩家附近创建怪物实体
-    ///   - 显示当前已生成的怪物列表（ID、Mesh、HP）
-    ///   - 支持「清除所有怪物」
+    ///   - 点击「清除所有怪物」销毁当前由 GM 生成的怪物
+    ///   - 不再展示全量怪物详情，避免打开/关闭面板时卡顿
     /// </summary>
     public class GMPanel : MonoBehaviour
     {
@@ -29,16 +30,13 @@ namespace POELike.Game.UI
         private string _monsterIdInput = "1001";
         private string _countInput     = "1";
         private string _statusMsg      = "";
-        private Vector2 _scrollPos     = Vector2.zero;
+        private string _entityIdInput  = "";
 
         // ── 面板尺寸 ──────────────────────────────────────────────────
-        private Rect _windowRect = new Rect(10f, 10f, 320f, 420f);
+        private Rect _windowRect = new Rect(10f, 10f, 300f, 300f);
 
         // ── 快捷键 ────────────────────────────────────────────────────
         private InputAction _toggleAction;
-
-        // ── 配置缓存（用于显示名称）──────────────────────────────────
-        private Dictionary<int, string> _meshNameCache;
 
         // ── 初始化 ────────────────────────────────────────────────────
 
@@ -62,28 +60,48 @@ namespace POELike.Game.UI
         {
             _world         = world;
             _playerEntity  = playerEntity;
-
-            // 预加载配置名称缓存
-            _meshNameCache = new Dictionary<int, string>();
-            var configs = MonsterSpawner.GetAllConfigs();
-            foreach (var kv in configs)
-                _meshNameCache[kv.Key] = kv.Value.MonsterMesh;
         }
 
         /// <summary>
-        /// 获取当前由 GM 生成的怪物实体列表（供 GameSceneManager 管理生命周期）
+        /// 销毁当前由 GM 生成的所有怪物
         /// </summary>
-        public List<Entity> GetMonsterEntities() => _monsterEntities;
+        public void DestroyAllSpawnedMonsters(bool updateStatus = true)
+        {
+            if (_world == null)
+            {
+                if (updateStatus)
+                    _statusMsg = "❌ 未初始化（world 为空）";
+                return;
+            }
+
+            CompactMonsterEntities();
+
+            int count = 0;
+            foreach (var entity in _monsterEntities)
+            {
+                if (entity != null && entity.IsAlive)
+                {
+                    _world.DestroyEntity(entity);
+                    count++;
+                }
+            }
+
+            _monsterEntities.Clear();
+
+            if (updateStatus)
+                _statusMsg = count > 0 ? $"🗑 已清除 {count} 只怪物" : "🗑 当前没有可清除的怪物";
+        }
 
         // ── 每帧更新 ──────────────────────────────────────────────────
 
         private void Update()
         {
             if (_toggleAction.WasPressedThisFrame())
+            {
                 _isVisible = !_isVisible;
-
-            // 清理已销毁的实体引用
-            _monsterEntities.RemoveAll(e => e == null || !e.IsAlive);
+                if (_isVisible)
+                    CompactMonsterEntities();
+            }
         }
 
         // ── IMGUI 渲染 ────────────────────────────────────────────────
@@ -112,21 +130,28 @@ namespace POELike.Game.UI
             _countInput = GUILayout.TextField(_countInput, GUILayout.Width(80f));
             GUILayout.EndHorizontal();
 
-            GUILayout.Space(4f);
+            GUILayout.Space(6f);
+            GUILayout.Label("仅保留生成 / 销毁功能，已移除全量怪物详情显示。");
+            GUILayout.Label($"当前 GM 管理怪物：{_monsterEntities.Count} 只");
 
-            // ── 可用 ID 提示 ──────────────────────────────────────────
-            if (_meshNameCache != null && _meshNameCache.Count > 0)
-            {
-                GUILayout.Label("可用 ID：");
-                foreach (var kv in _meshNameCache)
-                    GUILayout.Label($"  {kv.Key}  →  {kv.Value}", GUI.skin.label);
-            }
+            GUILayout.Space(6f);
+
+            // ── 实体销毁区域 ──────────────────────────────────────────
+            GUILayout.Label("── 销毁实体 ──────────────────");
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("实体ID:", GUILayout.Width(80f));
+            _entityIdInput = GUILayout.TextField(_entityIdInput, GUILayout.Width(80f));
+            GUILayout.EndHorizontal();
 
             GUILayout.Space(6f);
 
             // ── 生成按钮 ──────────────────────────────────────────────
             if (GUILayout.Button("生成怪物", GUILayout.Height(28f)))
                 OnSpawnClicked();
+
+            if (GUILayout.Button("销毁实体", GUILayout.Height(28f)))
+                OnDestroyEntityClicked();
 
             // ── 清除按钮 ──────────────────────────────────────────────
             if (GUILayout.Button("清除所有怪物", GUILayout.Height(28f)))
@@ -138,26 +163,6 @@ namespace POELike.Game.UI
                 GUILayout.Space(4f);
                 GUILayout.Label(_statusMsg);
             }
-
-            // ── 怪物列表 ──────────────────────────────────────────────
-            GUILayout.Space(6f);
-            GUILayout.Label($"── 当前怪物（{_monsterEntities.Count} 只）──────");
-
-            _scrollPos = GUILayout.BeginScrollView(_scrollPos, GUILayout.Height(120f));
-            foreach (var entity in _monsterEntities)
-            {
-                if (entity == null || !entity.IsAlive) continue;
-                var mc = entity.GetComponent<MonsterComponent>();
-                var hc = entity.GetComponent<HealthComponent>();
-                var tc = entity.GetComponent<TransformComponent>();
-                if (mc == null) continue;
-
-                float hp    = hc != null ? hc.CurrentHealth : 0f;
-                float maxHp = hc != null ? hc.MaxHealth : mc.MaxHp;
-                string pos  = tc != null ? $"({tc.Position.x:F1},{tc.Position.z:F1})" : "";
-                GUILayout.Label($"ID={mc.MonsterID} {mc.MonsterMesh}  HP:{hp:F0}/{maxHp:F0}  {pos}");
-            }
-            GUILayout.EndScrollView();
 
             // ── 允许拖动窗口 ──────────────────────────────────────────
             GUI.DragWindow(new Rect(0f, 0f, _windowRect.width, 20f));
@@ -185,6 +190,8 @@ namespace POELike.Game.UI
                 return;
             }
 
+            CompactMonsterEntities();
+
             // 获取玩家位置作为生成中心
             Vector3 center = Vector3.zero;
             if (_playerEntity != null && _playerEntity.IsAlive)
@@ -204,19 +211,38 @@ namespace POELike.Game.UI
 
         private void OnClearClicked()
         {
-            if (_world == null) return;
+            DestroyAllSpawnedMonsters();
+        }
 
-            int count = 0;
-            foreach (var entity in _monsterEntities)
+        private void OnDestroyEntityClicked()
+        {
+            if (_world == null)
             {
-                if (entity != null && entity.IsAlive)
-                {
-                    _world.DestroyEntity(entity);
-                    count++;
-                }
+                _statusMsg = "❌ 未初始化（world 为空）";
+                return;
             }
-            _monsterEntities.Clear();
-            _statusMsg = $"🗑 已清除 {count} 只怪物";
+
+            if (!int.TryParse(_entityIdInput.Trim(), out int entityId) || entityId < 0)
+            {
+                _statusMsg = "❌ 实体ID 格式错误";
+                return;
+            }
+
+            var entity = _world.FindEntityById(entityId);
+            if (entity == null)
+            {
+                _statusMsg = $"❌ 未找到实体 ID={entityId}";
+                return;
+            }
+
+            _world.DestroyEntity(entity);
+            _monsterEntities.Remove(entity);
+            _statusMsg = $"🗑 已销毁实体 ID={entityId}（Tag={entity.Tag}）";
+        }
+
+        private void CompactMonsterEntities()
+        {
+            _monsterEntities.RemoveAll(e => e == null || !e.IsAlive);
         }
     }
 }

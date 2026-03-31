@@ -126,11 +126,7 @@ namespace POELike.Game
             // 销毁 GM 生成的怪物实体
             if (_gmPanel != null && GameManager.Instance != null)
             {
-                foreach (var monster in _gmPanel.GetMonsterEntities())
-                {
-                    if (monster != null && monster.IsAlive)
-                        GameManager.Instance.World.DestroyEntity(monster);
-                }
+                _gmPanel.DestroyAllSpawnedMonsters(false);
             }
         }
 
@@ -432,12 +428,7 @@ namespace POELike.Game
 
                 if (dist < minDist && dist > 0.001f)
                 {
-                    // 将玩家推出碰撞区域
-                    Vector3 pushDir = diff.normalized;
-                    Vector3 corrected = npcPos + pushDir * minDist;
-                    _transformComp.Position = new Vector3(corrected.x, playerPos.y, corrected.z);
-
-                    // 如果玩家正在朝NPC方向移动，清除目标点防止持续穿入
+                    // 只阻止玩家继续走入 NPC，不直接修改玩家位置（避免被推着走）
                     if (_movementComp.HasTarget)
                     {
                         Vector3 toTarget = _movementComp.TargetPosition - npcPos;
@@ -447,6 +438,14 @@ namespace POELike.Game
                             _movementComp.HasTarget     = false;
                             _movementComp.MoveDirection = Vector3.zero;
                         }
+                    }
+                    else
+                    {
+                        // 玩家已停止但仍重叠（被推进来的），将玩家推出
+                        Vector3 pushDir   = diff.normalized;
+                        Vector3 corrected = npcPos + pushDir * minDist;
+                        _transformComp.Position = new Vector3(corrected.x, playerPos.y, corrected.z);
+                        playerPos = _transformComp.Position; // 更新本帧后续迭代用的 playerPos
                     }
                 }
             }
