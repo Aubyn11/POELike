@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace POELike.Game.UI
 {
@@ -13,6 +12,8 @@ namespace POELike.Game.UI
     public static class UIGamePanelManager
     {
         private static readonly List<UIGamePanel> _openPanels = new List<UIGamePanel>();
+        private static readonly List<RectTransform> _extraOccluderRects = new List<RectTransform>();
+        private static readonly Vector3[] _worldCorners = new Vector3[4];
 
         // ── 注册 / 注销（由 UIGamePanel 内部调用）────────────────────
 
@@ -27,27 +28,169 @@ namespace POELike.Game.UI
             _openPanels.Remove(panel);
         }
 
+        public static void RegisterOccluder(RectTransform rectTransform)
+        {
+            if (rectTransform != null && !_extraOccluderRects.Contains(rectTransform))
+                _extraOccluderRects.Add(rectTransform);
+        }
+
+        public static void UnregisterOccluder(RectTransform rectTransform)
+        {
+            _extraOccluderRects.Remove(rectTransform);
+        }
+
         // ── 公开查询 ──────────────────────────────────────────────────
 
         /// <summary>
-        /// 判断给定屏幕坐标是否落在任意已打开面板的矩形范围内。
-        /// 精确命中检测，不依赖 EventSystem.IsPointerOverGameObject()。
+        /// 判断给定屏幕坐标是否落在任意已打开 UI 的可见范围内。
+        /// 既包含继承 <see cref="UIGamePanel"/> 的面板，也包含额外注册的 UGUI 遮挡区域与 IMGUI 窗口。
         /// </summary>
         public static bool IsPointerOverAnyPanel(Vector2 screenPoint)
+        {
+            if (IsPointOverRegisteredPanels(screenPoint))
+                return true;
+
+            if (IsPointOverExtraOccluders(screenPoint))
+                return true;
+
+            return GMPanel.TryGetVisibleScreenRect(out var gmPanelRect)
+                && gmPanelRect.Contains(screenPoint);
+        }
+
+        /// <summary>
+        /// 判断给定屏幕矩形是否与任意已打开 UI 的遮挡范围发生重叠。
+        /// 传入的 <paramref name="screenRect"/> 使用屏幕坐标系（左下为原点）。
+        /// </summary>
+        public static bool IsScreenRectOverAnyPanel(Rect screenRect)
+        {
+            if (screenRect.width <= 0f || screenRect.height <= 0f)
+                return false;
+
+            if (IsScreenRectOverRegisteredPanels(screenRect))
+                return true;
+
+            if (IsScreenRectOverExtraOccluders(screenRect))
+                return true;
+
+            return GMPanel.TryGetVisibleScreenRect(out var gmPanelRect)
+                && gmPanelRect.Overlaps(screenRect, true);
+        }
+
+        /// <summary>
+        /// 将 IMGUI 的 GUI 坐标矩形（左上为原点）转换为屏幕坐标矩形（左下为原点）。
+        /// </summary>
+        public static Rect GuiRectToScreenRect(Rect guiRect)
+        {
+            return new Rect(
+                guiRect.xMin,
+                Screen.height - guiRect.yMax,
+                guiRect.width,
+                guiRect.height);
+        }
+
+        private static bool IsPointOverRegisteredPanels(Vector2 screenPoint)
         {
             for (int i = _openPanels.Count - 1; i >= 0; i--)
             {
                 var panel = _openPanels[i];
-                // 清理已销毁的引用
                 if (panel == null)
                 {
                     _openPanels.RemoveAt(i);
                     continue;
                 }
+
                 if (panel.ContainsScreenPoint(screenPoint))
                     return true;
             }
+
             return false;
+        }
+
+        private static bool IsPointOverExtraOccluders(Vector2 screenPoint)
+        {
+            for (int i = _extraOccluderRects.Count - 1; i >= 0; i--)
+            {
+                var rectTransform = _extraOccluderRects[i];
+                if (rectTransform == null || !rectTransform.gameObject.activeInHierarchy)
+                {
+                    _extraOccluderRects.RemoveAt(i);
+                    continue;
+                }
+
+                if (RectTransformUtility.RectangleContainsScreenPoint(rectTransform, screenPoint, null))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsScreenRectOverRegisteredPanels(Rect screenRect)
+        {
+            for (int i = _openPanels.Count - 1; i >= 0; i--)
+            {
+                var panel = _openPanels[i];
+                if (panel == null)
+                {
+                    _openPanels.RemoveAt(i);
+                    continue;
+                }
+
+                if (TryGetScreenRect(panel.transform as RectTransform, out var panelRect)
+                    && panelRect.Overlaps(screenRect, true))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsScreenRectOverExtraOccluders(Rect screenRect)
+        {
+            for (int i = _extraOccluderRects.Count - 1; i >= 0; i--)
+            {
+                var rectTransform = _extraOccluderRects[i];
+                if (rectTransform == null || !rectTransform.gameObject.activeInHierarchy)
+                {
+                    _extraOccluderRects.RemoveAt(i);
+                    continue;
+                }
+
+                if (TryGetScreenRect(rectTransform, out var occluderRect)
+                    && occluderRect.Overlaps(screenRect, true))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryGetScreenRect(RectTransform rectTransform, out Rect screenRect)
+        {
+            screenRect = default;
+
+            if (rectTransform == null || !rectTransform.gameObject.activeInHierarchy)
+                return false;
+
+            rectTransform.GetWorldCorners(_worldCorners);
+
+            float xMin = float.MaxValue;
+            float yMin = float.MaxValue;
+            float xMax = float.MinValue;
+            float yMax = float.MinValue;
+
+            for (int i = 0; i < _worldCorners.Length; i++)
+            {
+                Vector2 corner = RectTransformUtility.WorldToScreenPoint(null, _worldCorners[i]);
+                xMin = Mathf.Min(xMin, corner.x);
+                yMin = Mathf.Min(yMin, corner.y);
+                xMax = Mathf.Max(xMax, corner.x);
+                yMax = Mathf.Max(yMax, corner.y);
+            }
+
+            screenRect = Rect.MinMaxRect(xMin, yMin, xMax, yMax);
+            return true;
         }
 
         /// <summary>当前已打开的面板数量</summary>

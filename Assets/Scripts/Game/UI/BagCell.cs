@@ -109,17 +109,19 @@ namespace POELike.Game.UI
 
         public void OnPointerEnter(PointerEventData eventData)
         {
-            if (_bgImage == null) return;
-            // 拖拽中由 BagBox 控制高亮，不在此覆盖
-            if (eventData.dragging) return;
-            _bgImage.color = _colorHover;
             _owner?.OnCellPointerEnter(this);
+
+            if (_bgImage == null) return;
+            if (BagItemView.CurrentDraggingItem != null || eventData.dragging) return;
+            _bgImage.color = _colorHover;
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            RefreshVisual();
             _owner?.OnCellPointerExit(this);
+
+            if (BagItemView.CurrentDraggingItem != null || eventData.dragging) return;
+            RefreshVisual();
         }
 
         public void OnPointerClick(PointerEventData eventData)

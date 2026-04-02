@@ -140,19 +140,8 @@ namespace POELike.Game
         {
             if (_npcLabels.Count == 0) return;
 
-            // 有 UI 面板打开时，检测鼠标是否在面板上，若是则不绘制 NPC 名称（防止穿透）
-            if (UIGamePanelManager.AnyOpen)
-            {
-                var mouse2 = Mouse.current;
-                if (mouse2 != null)
-                {
-                    Vector2 mp = mouse2.position.ReadValue();
-                    if (UIGamePanelManager.IsPointerOverAnyPanel(mp))
-                        return;
-                }
-            }
-
             // 延迟初始化 GUIStyle（必须在 OnGUI 上下文中创建）
+
             if (_labelStyle == null)
             {
                 _labelStyle = new GUIStyle(GUI.skin.label)
@@ -182,10 +171,13 @@ namespace POELike.Game
                         pixel.x - texSize * 0.5f,
                         guiY    - texSize * 0.5f,
                         texSize, texSize);
-                    Color tint = hovered ? Color.Lerp(_npcColor, Color.white, 0.25f) : _npcColor;
-                    GUI.color = tint;
-                    GUI.DrawTexture(circleRect, _circleTexture);
-                    GUI.color = Color.white;
+                    if (!IsGuiRectOccluded(circleRect))
+                    {
+                        Color tint = hovered ? Color.Lerp(_npcColor, Color.white, 0.25f) : _npcColor;
+                        GUI.color = tint;
+                        GUI.DrawTexture(circleRect, _circleTexture);
+                        GUI.color = Color.white;
+                    }
                 }
 
                 // ── 圆形区域点击检测（透明Button覆盖圆形）────────────────
@@ -195,11 +187,14 @@ namespace POELike.Game
                         pixel.x - btnSize * 0.5f,
                         guiY    - btnSize * 0.5f,
                         btnSize, btnSize);
-                    GUIStyle transparentBtn = new GUIStyle(GUIStyle.none);
-                    if (GUI.Button(circleClickRect, GUIContent.none, transparentBtn))
+                    if (!IsGuiRectOccluded(circleClickRect))
                     {
-                        ClickConsumedThisFrame = true;
-                        OnNpcLabelClicked?.Invoke(worldPos);
+                        GUIStyle transparentBtn = new GUIStyle(GUIStyle.none);
+                        if (GUI.Button(circleClickRect, GUIContent.none, transparentBtn))
+                        {
+                            ClickConsumedThisFrame = true;
+                            OnNpcLabelClicked?.Invoke(worldPos);
+                        }
                     }
                 }
 
@@ -214,6 +209,8 @@ namespace POELike.Game
                 float labelY = guiY - _radius - _labelOffsetY - labelH;
 
                 Rect rect = new Rect(labelX, labelY, labelW, labelH);
+                if (IsGuiRectOccluded(rect))
+                    continue;
 
                 // 悬停时文字变亮
                 if (hovered)
@@ -246,9 +243,27 @@ namespace POELike.Game
             }
         }
 
+        private bool IsCircleOccluded(Vector2 pixel)
+        {
+            float extent = _radius + _outlineWidth + 2f;
+            Rect circleRect = Rect.MinMaxRect(
+                pixel.x - extent,
+                pixel.y - extent,
+                pixel.x + extent,
+                pixel.y + extent);
+            return UIGamePanelManager.IsScreenRectOverAnyPanel(circleRect);
+        }
+
+        private static bool IsGuiRectOccluded(Rect guiRect)
+        {
+            return UIGamePanelManager.IsScreenRectOverAnyPanel(
+                UIGamePanelManager.GuiRectToScreenRect(guiRect));
+        }
+
         /// <summary>
         /// 生成一张圆形纹理（用于对话框打开时替代GL绘制）
         /// </summary>
+
         private static Texture2D MakeCircleTexture(int size)
         {
             var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
@@ -312,13 +327,17 @@ namespace POELike.Game
                 // 视口坐标 → 像素坐标（用于悬停检测）
                 // 注意：鼠标坐标 Y 轴从底部为 0（与 WorldToViewportPoint 一致），无需翻转
                 Vector2 npcPixel = new Vector2(screenPos.x * Screen.width, screenPos.y * Screen.height);
+                bool isOccluded = IsCircleOccluded(npcPixel);
 
                 // 悬停检测
-                bool isHovered = (mousePixel - npcPixel).magnitude <= HoverRadiusPx;
+                bool isHovered = !isOccluded && (mousePixel - npcPixel).magnitude <= HoverRadiusPx;
                 npcComp.IsHovered = isHovered;
 
                 // 缓存标签信息（OnGUI 中绘制文字）
                 _npcLabels.Add((npcPixel, npcComp.NPCName, isHovered, worldPos));
+
+                if (isOccluded)
+                    continue;
 
                 // D3D11 平台 Shader UV 的 Y 轴从顶部为 0，而 WorldToViewportPoint 的 Y 从底部为 0
                 // Shader 内部已对 UV.y 做了 UNITY_UV_STARTS_AT_TOP 翻转，
@@ -348,6 +367,7 @@ namespace POELike.Game
                 GL.End();
 
                 GL.PopMatrix();
+
             }
         }
     }

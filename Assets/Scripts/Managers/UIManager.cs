@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using POELike.Game.UI;
 
 namespace POELike.Managers
@@ -18,6 +19,7 @@ namespace POELike.Managers
         [Header("UI Prefab 路径（相对 Resources 目录）")]
         [SerializeField] private string _characterSelectPanelPath = "UI/CharacterSelectPanel";
         [SerializeField] private string _chatPanelPath            = "UI/ChatPanel";
+        [SerializeField] private string _bagPanelPath             = "UI/Bag";
 
         // ── 内部引用 ──────────────────────────────────────────────────
         private Canvas               _rootCanvas;
@@ -26,6 +28,9 @@ namespace POELike.Managers
         // 运行时面板引用
         private CharacterSelectPanel _characterSelectPanel;
         private NpcDialogPanel       _chatPanel;
+        private GameObject           _bagPanel;
+        private InputAction          _bagToggleAction;
+        private int                  _lastBagToggleFrame = -1;
 
         // ── 生命周期 ──────────────────────────────────────────────────
 
@@ -41,22 +46,72 @@ namespace POELike.Managers
 
             EnsureRootCanvas();
             InitPool();
+            SetupInputActions();
+            SceneManager.activeSceneChanged += OnActiveSceneChanged;
+        }
+
+        private void Update()
+        {
+            HandleBagHotkey();
+        }
+
+        private void OnGUI()
+        {
+            var currentEvent = Event.current;
+            if (currentEvent == null || currentEvent.type != EventType.KeyDown || currentEvent.keyCode != KeyCode.I)
+                return;
+
+            TryToggleBagPanel();
+            currentEvent.Use();
         }
 
         private void OnDestroy()
         {
+            SceneManager.activeSceneChanged -= OnActiveSceneChanged;
+
+            if (_bagToggleAction != null)
+            {
+                _bagToggleAction.performed -= OnBagTogglePerformed;
+                _bagToggleAction.Dispose();
+            }
+
             if (Instance == this)
             {
+                HideBagPanel();
                 _uiPool?.Clear();
                 Instance = null;
             }
+        }
+
+        private void SetupInputActions()
+        {
+            _bagToggleAction = new InputAction("BagToggle", InputActionType.Button, "<Keyboard>/i");
+            _bagToggleAction.performed += OnBagTogglePerformed;
+            _bagToggleAction.Enable();
+        }
+
+        private void OnBagTogglePerformed(InputAction.CallbackContext context)
+        {
+            TryToggleBagPanel();
+        }
+
+        private void TryToggleBagPanel()
+        {
+            if (!CanUseGameplayPanels())
+                return;
+
+            if (_lastBagToggleFrame == Time.frameCount)
+                return;
+
+            _lastBagToggleFrame = Time.frameCount;
+            ToggleBagPanel();
         }
 
         // ── 通用 UI 加载接口 ──────────────────────────────────────────
 
         /// <summary>
         /// 从 UIPool 或 Resources 获取一个 UI GameObject 并挂到根 Canvas 下。
-        /// 优先从池中取；池中没有时从 Resources 加载预制体并实例化。
+        /// 优先从池中取；池中没有时从 Resources 加载并实例化。
         /// </summary>
         /// <param name="path">Resources 相对路径，例如 "UI/CharacterSelectPanel"</param>
         /// <returns>激活后的 GameObject，失败返回 null</returns>
@@ -165,6 +220,49 @@ namespace POELike.Managers
             Debug.Log($"[UIManager] ChatPanel 已打开：{npcName}");
         }
 
+        /// <summary>显示背包面板</summary>
+        public void ShowBagPanel()
+        {
+            if (!CanUseGameplayPanels())
+                return;
+
+            if (_bagPanel != null)
+            {
+                _bagPanel.SetActive(true);
+                EnsureBagPanelController();
+                RegisterBagOccluder();
+                return;
+            }
+
+            _bagPanel = GetUI(_bagPanelPath);
+            if (_bagPanel == null) return;
+
+            EnsureBagPanelController();
+            RegisterBagOccluder();
+            Debug.Log("[UIManager] Bag 已打开");
+        }
+
+        /// <summary>隐藏背包面板（归还到池）</summary>
+        public void HideBagPanel()
+        {
+            if (_bagPanel == null) return;
+            UnregisterBagOccluder();
+            ReturnUI(_bagPanelPath, _bagPanel);
+            _bagPanel = null;
+        }
+
+        /// <summary>切换背包面板显示状态</summary>
+        public void ToggleBagPanel()
+        {
+            if (_bagPanel != null)
+            {
+                HideBagPanel();
+                return;
+            }
+
+            ShowBagPanel();
+        }
+
         /// <summary>隐藏对话框面板（归还到池）</summary>
         public void HideChatPanel()
         {
@@ -197,9 +295,66 @@ namespace POELike.Managers
             // TODO：显示创建角色面板
         }
 
+        private void OnActiveSceneChanged(Scene previousScene, Scene newScene)
+        {
+            if (newScene.name != SceneLoader.SceneGame)
+                HideBagPanel();
+        }
+
         // ── 内部辅助 ──────────────────────────────────────────────────
 
+        private void HandleBagHotkey()
+        {
+            var keyboard = Keyboard.current;
+            if (keyboard == null || !keyboard.iKey.wasPressedThisFrame)
+                return;
+
+            TryToggleBagPanel();
+        }
+
+        private bool CanUseGameplayPanels()
+        {
+            if (SceneManager.GetActiveScene().name != SceneLoader.SceneGame)
+                return false;
+
+            if (_characterSelectPanel != null && _characterSelectPanel.gameObject.activeInHierarchy)
+                return false;
+
+            return true;
+        }
+
+        private void EnsureBagPanelController()
+        {
+            if (_bagPanel == null)
+                return;
+
+            var bagPanel = _bagPanel.GetComponent<BagPanel>();
+            if (bagPanel == null)
+                bagPanel = _bagPanel.AddComponent<BagPanel>();
+
+            bagPanel.EnsureInitialized();
+        }
+
+        private void RegisterBagOccluder()
+        {
+            if (_bagPanel == null) return;
+
+            var rectTransform = _bagPanel.GetComponent<RectTransform>();
+            if (rectTransform != null)
+                UIGamePanelManager.RegisterOccluder(rectTransform);
+        }
+
+        private void UnregisterBagOccluder()
+        {
+            if (_bagPanel == null) return;
+
+            var rectTransform = _bagPanel.GetComponent<RectTransform>();
+            if (rectTransform != null)
+                UIGamePanelManager.UnregisterOccluder(rectTransform);
+        }
+
         /// <summary>确保场景中存在一个持久化的根 Canvas</summary>
+
         private void EnsureRootCanvas()
         {
             // 不使用 FindFirstObjectByType，避免找到场景中会随场景销毁的 Canvas

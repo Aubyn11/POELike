@@ -156,13 +156,18 @@ namespace POELike.Game
                 if (screenPos.z > 0f)
                 {
                     Vector2 pixel     = new Vector2(screenPos.x, screenPos.y);
-                    bool    isHovered = (mousePixel - pixel).magnitude <= HoverRadiusPx;
+                    bool    isOccluded = IsLabelOccluded(pixel);
+                    bool    isHovered = !isOccluded && (mousePixel - pixel).magnitude <= HoverRadiusPx;
                     npcComp.IsHovered = isHovered;
                     _labels.Add((pixel, npcComp.NPCName, isHovered, npcBase));
                 }
+                else
+                {
+                    npcComp.IsHovered = false;
+                }
 
                 // ── Mesh 包围盒点击检测 ───────────────────────────────
-                if (mouseDown && !ClickConsumedThisFrame)
+                if (mouseDown && !ClickConsumedThisFrame && !UIGamePanelManager.IsPointerOverAnyPanel(mousePixel))
                 {
                     var bounds = new Bounds(
                         new Vector3(npcBase.x, npcBase.y + _hitBoxHeight * 0.5f + _yOffset, npcBase.z),
@@ -217,19 +222,8 @@ namespace POELike.Game
         {
             if (_labels.Count == 0) return;
 
-            // 有 UI 面板打开时，检测鼠标是否在面板上，若是则不绘制 NPC 名称（防止穿透）
-            if (UIGamePanelManager.AnyOpen)
-            {
-                var mouse2 = Mouse.current;
-                if (mouse2 != null)
-                {
-                    Vector2 mp = mouse2.position.ReadValue();
-                    if (UIGamePanelManager.IsPointerOverAnyPanel(mp))
-                        return;
-                }
-            }
-
             // 延迟初始化 GUIStyle（必须在 OnGUI 上下文中）
+
             if (_labelStyle == null)
             {
                 _labelStyle = new GUIStyle(GUI.skin.label)
@@ -254,6 +248,9 @@ namespace POELike.Game
                 float labelY = guiY - labelH * 0.5f;
                 Rect  rect   = new Rect(labelX, labelY, labelW, labelH);
 
+                if (IsGuiRectOccluded(rect))
+                    continue;
+
                 if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
                 {
                     ClickConsumedThisFrame = true;
@@ -273,6 +270,24 @@ namespace POELike.Game
                 // ── 正文 ─────────────────────────────────────────────
                 GUI.Label(rect, name, _labelStyle);
             }
+        }
+
+        private bool IsLabelOccluded(Vector2 pixel)
+        {
+            const float labelW = 120f;
+            const float labelH = 20f;
+            Rect labelRect = Rect.MinMaxRect(
+                pixel.x - labelW * 0.5f,
+                pixel.y - labelH * 0.5f,
+                pixel.x + labelW * 0.5f,
+                pixel.y + labelH * 0.5f);
+            return UIGamePanelManager.IsScreenRectOverAnyPanel(labelRect);
+        }
+
+        private static bool IsGuiRectOccluded(Rect guiRect)
+        {
+            return UIGamePanelManager.IsScreenRectOverAnyPanel(
+                UIGamePanelManager.GuiRectToScreenRect(guiRect));
         }
 
         // ── Bundle 加载 ───────────────────────────────────────────────

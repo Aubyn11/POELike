@@ -1,7 +1,13 @@
+using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using POELike.ECS.Core;
 using POELike.ECS.Systems;
 using POELike.Managers;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace POELike.Managers
 {
@@ -30,6 +36,13 @@ namespace POELike.Managers
         private string _debugFps         = "";
         private float  _debugTimer       = 0f;
         private const float DebugUpdateInterval = 0.2f;
+
+#if UNITY_EDITOR
+        private bool _hasCachedEditorInputSettings;
+        private InputSettings.UpdateMode _cachedUpdateMode;
+        private InputSettings.BackgroundBehavior _cachedBackgroundBehavior;
+        private InputSettings.EditorInputBehaviorInPlayMode _cachedEditorInputBehavior;
+#endif
         
         private void Awake()
         {
@@ -42,9 +55,84 @@ namespace POELike.Managers
             Instance = this;
             DontDestroyOnLoad(gameObject);
 
+            SceneManager.sceneLoaded += OnSceneLoaded;
+
+            ConfigureInputSystem();
             InitializeECS();
             InitializeUI();
+            FocusGameViewInEditor();
         }
+
+        private void ConfigureInputSystem()
+        {
+            var inputSettings = InputSystem.settings;
+            if (inputSettings != null)
+            {
+#if UNITY_EDITOR
+                if (!_hasCachedEditorInputSettings)
+                {
+                    _cachedUpdateMode = inputSettings.updateMode;
+                    _cachedBackgroundBehavior = inputSettings.backgroundBehavior;
+                    _cachedEditorInputBehavior = inputSettings.editorInputBehaviorInPlayMode;
+                    _hasCachedEditorInputSettings = true;
+                }
+#endif
+
+                // 当前项目的所有键盘轮询都发生在 Update 里，因此必须使用 Dynamic Update。
+                inputSettings.updateMode = InputSettings.UpdateMode.ProcessEventsInDynamicUpdate;
+
+#if UNITY_EDITOR
+                // 解决 Editor 下 GameView 未聚焦时键盘热键（如 F1 / I）不进入游戏的问题。
+                inputSettings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+                inputSettings.editorInputBehaviorInPlayMode =
+                    InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+#endif
+            }
+
+            // 确保项目级 Input Actions 资源处于启用状态，避免 Move / Attack 一直读到默认值。
+            InputSystem.actions?.Enable();
+        }
+
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            FocusGameViewInEditor();
+        }
+
+#if UNITY_EDITOR
+        private void FocusGameViewInEditor()
+        {
+            EditorApplication.delayCall -= FocusGameViewWindow;
+            EditorApplication.delayCall += FocusGameViewWindow;
+        }
+
+        private void FocusGameViewWindow()
+        {
+            var gameViewType = Type.GetType("UnityEditor.GameView, UnityEditor");
+            if (gameViewType == null)
+                return;
+
+            var gameViewWindow = EditorWindow.GetWindow(gameViewType);
+            gameViewWindow?.Focus();
+        }
+
+        private void RestoreEditorInputSystemSettings()
+        {
+            EditorApplication.delayCall -= FocusGameViewWindow;
+
+            if (!_hasCachedEditorInputSettings)
+                return;
+
+            var inputSettings = InputSystem.settings;
+            if (inputSettings != null)
+            {
+                inputSettings.updateMode = _cachedUpdateMode;
+                inputSettings.backgroundBehavior = _cachedBackgroundBehavior;
+                inputSettings.editorInputBehaviorInPlayMode = _cachedEditorInputBehavior;
+            }
+
+            _hasCachedEditorInputSettings = false;
+        }
+#endif
 
         private void InitializeUI()
         {
@@ -106,6 +194,10 @@ namespace POELike.Managers
         {
             if (Instance == this)
             {
+                SceneManager.sceneLoaded -= OnSceneLoaded;
+#if UNITY_EDITOR
+                RestoreEditorInputSystemSettings();
+#endif
                 World?.Dispose();
                 Instance = null;
             }

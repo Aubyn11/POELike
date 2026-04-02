@@ -18,6 +18,8 @@ namespace POELike.Game.UI
     /// </summary>
     public class GMPanel : MonoBehaviour
     {
+        private static GMPanel _activeInstance;
+
         // ── 外部依赖（由 GameSceneManager 注入）──────────────────────
         private World  _world;
         private Entity _playerEntity;
@@ -37,18 +39,28 @@ namespace POELike.Game.UI
 
         // ── 快捷键 ────────────────────────────────────────────────────
         private InputAction _toggleAction;
+        private int _lastToggleFrame = -1;
 
         // ── 初始化 ────────────────────────────────────────────────────
 
         private void Awake()
         {
+            _activeInstance = this;
             _toggleAction = new InputAction("GMToggle", InputActionType.Button, "<Keyboard>/f1");
+            _toggleAction.performed += OnTogglePerformed;
             _toggleAction.Enable();
         }
 
         private void OnDestroy()
         {
-            _toggleAction?.Dispose();
+            if (_activeInstance == this)
+                _activeInstance = null;
+
+            if (_toggleAction != null)
+            {
+                _toggleAction.performed -= OnTogglePerformed;
+                _toggleAction.Dispose();
+            }
         }
 
         // ── 公开接口 ──────────────────────────────────────────────────
@@ -62,8 +74,26 @@ namespace POELike.Game.UI
             _playerEntity  = playerEntity;
         }
 
+        public static bool TryGetVisibleScreenRect(out Rect screenRect)
+        {
+            screenRect = default;
+
+            if (_activeInstance == null || !_activeInstance._isVisible)
+                return false;
+
+            var guiRect = _activeInstance._windowRect;
+            screenRect = new Rect(
+                guiRect.xMin,
+                Screen.height - guiRect.yMax,
+                guiRect.width,
+                guiRect.height);
+
+            return true;
+        }
+
         /// <summary>
         /// 销毁当前由 GM 生成的所有怪物
+
         /// </summary>
         public void DestroyAllSpawnedMonsters(bool updateStatus = true)
         {
@@ -96,18 +126,37 @@ namespace POELike.Game.UI
 
         private void Update()
         {
-            if (_toggleAction.WasPressedThisFrame())
-            {
-                _isVisible = !_isVisible;
-                if (_isVisible)
-                    CompactMonsterEntities();
-            }
+            if (_toggleAction != null && _toggleAction.WasPressedThisFrame())
+                ToggleVisibility();
+        }
+
+        private void OnTogglePerformed(InputAction.CallbackContext context)
+        {
+            ToggleVisibility();
+        }
+
+        private void ToggleVisibility()
+        {
+            if (_lastToggleFrame == Time.frameCount)
+                return;
+
+            _lastToggleFrame = Time.frameCount;
+            _isVisible = !_isVisible;
+            if (_isVisible)
+                CompactMonsterEntities();
         }
 
         // ── IMGUI 渲染 ────────────────────────────────────────────────
 
         private void OnGUI()
         {
+            var currentEvent = Event.current;
+            if (currentEvent != null && currentEvent.type == EventType.KeyDown && currentEvent.keyCode == KeyCode.F1)
+            {
+                ToggleVisibility();
+                currentEvent.Use();
+            }
+
             if (!_isVisible) return;
 
             _windowRect = GUI.Window(9999, _windowRect, DrawWindow, "GM 面板  [F1 关闭]");

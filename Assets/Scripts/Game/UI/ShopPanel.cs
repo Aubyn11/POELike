@@ -33,8 +33,11 @@ namespace POELike.Game.UI
         /// <summary>页签条目列表（用于切换选中状态）</summary>
         private readonly List<ShopTabItem> _tabItems = new List<ShopTabItem>();
 
-        /// <summary>当前页签实例化的装备 GameObject 列表（用于切换时销毁）</summary>
-        private readonly List<GameObject> _equipmentViews = new List<GameObject>();
+        /// <summary>当前页签正在使用的装备视图</summary>
+        private readonly List<GameObject> _activeEquipmentViews = new List<GameObject>();
+
+        /// <summary>可复用的装备视图对象池</summary>
+        private readonly Stack<GameObject> _pooledEquipmentViews = new Stack<GameObject>();
 
         // ── 生命周期 ──────────────────────────────────────────────────
 
@@ -89,12 +92,11 @@ namespace POELike.Game.UI
             GenerateAllTabEquipments();
             BuildTabs();
             _currentTab = 0;
-            // 只在打开时建一次格子，切换页签不重建
             if (_bag != null)
             {
                 // ShopPanel 自行管理 Equipment 预制体视图，不需要 BagBox 额外创建 ItemView
                 _bag.AutoCreateItemView = false;
-                _bag.BuildGrid();
+                _bag.EnsureGridBuilt();
             }
             RefreshTabSelection();
             RefreshBag();
@@ -102,10 +104,7 @@ namespace POELike.Game.UI
 
         protected override void OnClose_Internal()
         {
-            // 清理装备视图
-            foreach (var go in _equipmentViews)
-                if (go != null) Destroy(go);
-            _equipmentViews.Clear();
+            ReleaseActiveEquipmentViews();
             _bag?.ClearItems();
 
             // 清理页签
@@ -179,6 +178,33 @@ namespace POELike.Game.UI
                 _tabItems[i]?.SetSelected(i == _currentTab);
         }
 
+        private GameObject AcquireEquipmentView()
+        {
+            while (_pooledEquipmentViews.Count > 0)
+            {
+                var go = _pooledEquipmentViews.Pop();
+                if (go == null) continue;
+
+                go.transform.SetParent(_bag.GridRoot, false);
+                go.SetActive(true);
+                return go;
+            }
+
+            return Object.Instantiate(_equipmentPrefab, _bag.GridRoot, false);
+        }
+
+        private void ReleaseActiveEquipmentViews()
+        {
+            foreach (var go in _activeEquipmentViews)
+            {
+                if (go == null) continue;
+                go.SetActive(false);
+                _pooledEquipmentViews.Push(go);
+            }
+
+            _activeEquipmentViews.Clear();
+        }
+
         /// <summary>
         /// 根据当前页签刷新背包中的装备
         /// </summary>
@@ -190,18 +216,16 @@ namespace POELike.Game.UI
                 return;
             }
 
-            // 销毁 ShopPanel 自己实例化的装备 GO
-            foreach (var go in _equipmentViews)
-                if (go != null) Destroy(go);
-            _equipmentViews.Clear();
+            // 回收当前页的装备视图，避免切页时反复 Destroy / Instantiate
+            ReleaseActiveEquipmentViews();
 
-            // 只清空道具视图，保留格子（避免切换页签时重建格子）
+            // 只清空道具占用数据，保留格子
             _bag.ClearItems();
 
             var equipments = _tabEquipments[_currentTab];
             if (equipments == null || equipments.Count == 0) return;
 
-            if (_equipmentPrefab == null)
+            if (_equipmentPrefab == null && _pooledEquipmentViews.Count == 0)
             {
                 Debug.LogError("[ShopPanel] _equipmentPrefab 未赋值！");
                 return;
@@ -216,7 +240,6 @@ namespace POELike.Game.UI
                 w = Mathf.Max(1, w);
                 h = Mathf.Max(1, h);
 
-                // 构建 BagItemData
                 var bagData = new BagItemData(
                     itemId:     equip.DetailType.EquipmentDetailTypeId,
                     name:       equip.DisplayName,
@@ -225,26 +248,20 @@ namespace POELike.Game.UI
                 );
                 bagData.ItemColor = equip.QualityColor;
 
-                // 尝试放入背包
                 if (!_bag.TryAutoPlaceItem(bagData)) continue;
 
-                // 实例化 Equipment 预制体并设置尺寸
-                // 必须挂在 GridRoot 下，与格子处于同一坐标系
-                var go = Object.Instantiate(_equipmentPrefab,
-                    _bag.GridRoot, false);
-                _equipmentViews.Add(go);
+                var go = AcquireEquipmentView();
+                _activeEquipmentViews.Add(go);
 
                 var equipItem = go.GetComponent<EquipmentItem>();
                 if (equipItem != null)
                 {
-                    // 使用 GeneratedEquipment 重载，确保 Tips 能获取到完整装备数据
                     equipItem.Init(equip);
                     equipItem.SetupInBag(_bag.CellSize, _bag.CellSpacing,
                         bagData.GridCol, bagData.GridRow);
                 }
                 else
                 {
-                    // 没有 EquipmentItem 组件时，直接设置 RectTransform
                     var rt = go.GetComponent<RectTransform>();
                     if (rt != null)
                     {
@@ -261,12 +278,10 @@ namespace POELike.Game.UI
                         );
                     }
 
-                    // 设置颜色
-                    var img = go.GetComponent<UnityEngine.UI.Image>();
+                    var img = go.GetComponent<Image>();
                     if (img != null) img.color = equip.QualityColor;
                 }
 
-                // 置顶显示（在格子上方）
                 go.transform.SetAsLastSibling();
             }
         }

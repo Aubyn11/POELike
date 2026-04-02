@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using POELike.ECS.Core;
 using POELike.ECS.Components;
+using POELike.Game.UI;
 
 namespace POELike.Game
 {
@@ -132,6 +133,10 @@ namespace POELike.Game
             // 玩家在摄像机背后时不绘制
             if (screenPos.z < 0f) return;
 
+            Rect markerRect = GetMarkerScreenRect(screenPos);
+            if (UIGamePanelManager.IsScreenRectOverAnyPanel(markerRect))
+                return;
+
             // ── 计算 Forward 在屏幕上的角度 ──────────────────────────
             // 将玩家 forward 方向投影到屏幕，计算相对屏幕 +Y 轴的顺时针角度
             float forwardAngle = 0f;
@@ -192,6 +197,18 @@ namespace POELike.Game
             GL.End();
 
             GL.PopMatrix();
+        }
+
+        private Rect GetMarkerScreenRect(Vector3 viewportPos)
+        {
+            float centerX = viewportPos.x * Screen.width;
+            float centerY = viewportPos.y * Screen.height;
+            float extent = _radius + _lineWidth + 4f;
+            return Rect.MinMaxRect(
+                centerX - extent,
+                centerY - extent,
+                centerX + extent,
+                centerY + extent);
         }
     }
 }

@@ -6,5 +6,6 @@
     int32 MonsterDefense = 5,
     int32 MonsterSpeed = 6,
     int32 MonsterRadius = 7,
-    int32 MonsterDetectionRange = 8
+    int32 MonsterDetectionRange = 8,
+    int32 MonsterBaseExp = 9
 }

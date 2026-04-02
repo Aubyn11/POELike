@@ -1,0 +1,81 @@
+﻿// 主动技能宝石基础信息
+// SkillColor：与装备孔颜色保持一致，0=Red 1=Green 2=Blue 3=White
+// SkillCastType / SkillTags：与 ECS.Components.SkillType 对齐
+// 0=Attack 1=Spell 2=Projectile 3=AoE 4=Movement 5=Aura 6=Totem 7=Mine 8=Trap 9=Summon 10=Channeling
+// SkillShapeType：0=None 1=Circle 2=Rectangle 3=Projectile 4=Self
+ActiveSkillStoneConf{
+    int32 ActiveSkillStoneId = 1,
+    string ActiveSkillStoneCode = 2,
+    string ActiveSkillStoneName = 3,
+    string ActiveSkillStoneDesc = 4,
+    int32 SkillColor = 5,
+    int32 SkillCastType = 6,
+    repeated int32 SkillTags = 7,
+    int32 SkillShapeType = 8
+}
+
+// 主动技能宝石每级成长
+// DamageType：与 ECS.Systems.DamageType 对齐
+// 0=Physical 1=Fire 2=Cold 3=Lightning 4=Chaos 5=True
+ActiveSkillStoneLevelConf{
+    int32 ActiveSkillStoneLevelId = 1,
+    int32 ActiveSkillStoneId = 2,
+    int32 SkillLevel = 3,
+    int32 SkillDemandLevel = 4,
+    int32 SkillDemandWisdom = 5,
+    int32 SkillDemandStrength = 6,
+    int32 SkillDemandIntelligence = 7,
+    int32 ManaCost = 8,
+    int32 CooldownMs = 9,
+    int32 CastTimeMs = 10,
+    int32 SkillRange = 11,
+    int32 SkillRadius = 12,
+    int32 SkillWidth = 13,
+    int32 SkillLength = 14,
+    int32 ProjectileCount = 15,
+    int32 DurationMs = 16,
+    int32 SkillBaseMinValue = 17,
+    int32 SkillBaseMaxValue = 18,
+    int32 DamageType = 19
+}
+
+// 辅助技能宝石基础信息
+// SupportType：与 ECS.Components.SupportGemType 对齐
+// 0=MultiProjectile 1=Fork 2=Chain 3=Pierce 4=SpellEcho 5=GMP 6=LMP 7=IncreasedAoE 8=ConcentratedEffect
+// 9=AddedFireDamage 10=AddedColdDamage 11=AddedLightningDamage 12=Faster 13=CriticalStrike 14=Culling
+SupportSkillStoneConf{
+    int32 SupportSkillStoneId = 1,
+    string SupportSkillStoneCode = 2,
+    string SupportSkillStoneName = 3,
+    string SupportSkillStoneDesc = 4,
+    int32 SkillColor = 5,
+    int32 SupportType = 6,
+    repeated int32 SupportedTags = 7,
+    repeated int32 ExcludedTags = 8
+}
+
+// 辅助技能宝石每级成长
+// ManaMultiplier：百分比，100=原始消耗，140=140%消耗
+SupportSkillStoneLevelConf{
+    int32 SupportSkillStoneLevelId = 1,
+    int32 SupportSkillStoneId = 2,
+    int32 SkillLevel = 3,
+    int32 SkillDemandLevel = 4,
+    int32 SkillDemandWisdom = 5,
+    int32 SkillDemandStrength = 6,
+    int32 SkillDemandIntelligence = 7,
+    int32 ManaMultiplier = 8
+}
+
+// 辅助技能宝石效果定义
+// EffectTargetType：0=Damage 1=ProjectileCount 2=AreaRadius 3=CastTime 4=Cooldown 5=ChainCount 6=PierceCount
+// 7=AddedFireDamage 8=AddedColdDamage 9=AddedLightningDamage 10=CriticalChance 11=CullingThreshold
+// EffectOpType：与 ModifierType 思路保持一致，0=Flat 1=PercentAdd 2=PercentMore
+SupportSkillStoneEffectConf{
+    int32 SupportSkillStoneEffectId = 1,
+    int32 SupportSkillStoneLevelId = 2,
+    int32 EffectTargetType = 3,
+    int32 EffectOpType = 4,
+    int32 EffectMinValue = 5,
+    int32 EffectMaxValue = 6
+}

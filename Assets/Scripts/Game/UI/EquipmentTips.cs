@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text;
+using POELike.ECS.Components;
 using POELike.Game.Equipment;
 using TMPro;
 using UnityEngine;
@@ -119,6 +120,29 @@ namespace POELike.Game.UI
             RefreshLayout();
         }
 
+        /// <summary>
+        /// 使用背包基础数据填充装备提示。
+        /// 适用于尚未生成完整词缀数据的背包装备。
+        /// </summary>
+        public void Setup(BagItemData item)
+        {
+            if (item == null) return;
+
+            if (_nameText != null)
+                _nameText.text = string.IsNullOrWhiteSpace(item.Name) ? "未知装备" : item.Name;
+
+            if (_baseValueText != null)
+                _baseValueText.text = string.Empty;
+
+            if (_donationText != null)
+                _donationText.text = string.Empty;
+
+            if (_valueText != null)
+                _valueText.text = BuildBagItemModText(item);
+
+            RefreshLayout();
+        }
+
         // ── 文本构建 ──────────────────────────────────────────────────
 
         private static string BuildBaseValueText(EquipmentDetailTypeData detail)
@@ -191,6 +215,121 @@ namespace POELike.Game.UI
                 }
             }
             return sb.ToString().TrimEnd();
+        }
+
+        private static string BuildBagItemModText(BagItemData item)
+        {
+            if (item == null)
+                return string.Empty;
+
+            var sb = new StringBuilder();
+            AppendAffixLines(sb, item.PrefixDescriptions, "[前缀]");
+            AppendAffixLines(sb, item.SuffixDescriptions, "[后缀]");
+            return sb.ToString().TrimEnd();
+        }
+
+        private static void AppendAffixLines(StringBuilder sb, List<string> descriptions, string tag)
+        {
+            if (sb == null || descriptions == null)
+                return;
+
+            for (int i = 0; i < descriptions.Count; i++)
+            {
+                var description = descriptions[i];
+                if (string.IsNullOrWhiteSpace(description))
+                    continue;
+
+                sb.AppendLine($"{tag} {description}");
+            }
+        }
+
+        private static string BuildBagItemBaseText(BagItemData item)
+        {
+            if (item == null)
+                return string.Empty;
+
+            var sb = new StringBuilder();
+            sb.AppendLine($"占用尺寸：{item.GridWidth} × {item.GridHeight}");
+            sb.AppendLine($"道具类型：{GetItemKindLabel(item)}");
+            return sb.ToString().TrimEnd();
+        }
+
+        private static string BuildBagItemRequirementText(BagItemData item)
+        {
+            if (item == null || !item.AcceptedEquipmentSlot.HasValue)
+                return string.Empty;
+
+            return $"装备槽位：{GetEquipmentSlotLabel(item.AcceptedEquipmentSlot.Value)}";
+        }
+
+        private static string BuildBagItemExtraText(BagItemData item)
+        {
+            if (item == null)
+                return string.Empty;
+
+            var sb = new StringBuilder();
+            if (item.Sockets != null && item.Sockets.Count > 0)
+            {
+                sb.Append("插槽：");
+                for (int i = 0; i < item.Sockets.Count; i++)
+                {
+                    if (i > 0)
+                        sb.Append(" / ");
+
+                    sb.Append(GetSocketColorLabel(item.Sockets[i].Color));
+                }
+            }
+
+            return sb.ToString().TrimEnd();
+        }
+
+        private static string GetItemKindLabel(BagItemData item)
+        {
+            if (item == null)
+                return string.Empty;
+
+            return item.ItemKind switch
+            {
+                BagItemKind.Equipment => "装备",
+                BagItemKind.Gem       => "宝石",
+                BagItemKind.Misc      => "杂项",
+                _                     => "未知",
+            };
+        }
+
+        private static string GetEquipmentSlotLabel(EquipmentSlot slot)
+        {
+            return slot switch
+            {
+                EquipmentSlot.Helmet      => "头盔",
+                EquipmentSlot.BodyArmour  => "胸甲",
+                EquipmentSlot.Gloves      => "手套",
+                EquipmentSlot.Boots       => "鞋子",
+                EquipmentSlot.Belt        => "腰带",
+                EquipmentSlot.Amulet      => "项链",
+                EquipmentSlot.RingLeft    => "左戒指",
+                EquipmentSlot.RingRight   => "右戒指",
+                EquipmentSlot.MainHand    => "主手",
+                EquipmentSlot.OffHand     => "副手",
+                EquipmentSlot.Flask1      => "药剂槽1",
+                EquipmentSlot.Flask2      => "药剂槽2",
+                EquipmentSlot.Flask3      => "药剂槽3",
+                EquipmentSlot.Flask4      => "药剂槽4",
+                EquipmentSlot.Flask5      => "药剂槽5",
+                _                         => slot.ToString(),
+            };
+        }
+
+        private static string GetSocketColorLabel(SocketColor color)
+        {
+            return color switch
+            {
+                SocketColor.Red   => "红孔",
+                SocketColor.Green => "绿孔",
+                SocketColor.Blue  => "蓝孔",
+                SocketColor.White => "白孔",
+                _                 => color.ToString(),
+            };
         }
 
         // ── 布局自适应 ────────────────────────────────────────────────

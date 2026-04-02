@@ -8,7 +8,8 @@
       "MonsterDefense": "100",
       "MonsterSpeed": "15",
       "MonsterRadius": "5",
-      "MonsterDetectionRange": "10"
+      "MonsterDetectionRange": "10",
+      "MonsterBaseExp": "100"
     },
     {
       "MonsterID": "2001",
@@ -18,7 +19,8 @@
       "MonsterDefense": "80",
       "MonsterSpeed": "13",
       "MonsterRadius": "6",
-      "MonsterDetectionRange": "12"
+      "MonsterDetectionRange": "12",
+      "MonsterBaseExp": "150"
     },
     {
       "MonsterID": "3001",
@@ -28,7 +30,8 @@
       "MonsterDefense": "60",
       "MonsterSpeed": "11",
       "MonsterRadius": "7",
-      "MonsterDetectionRange": "14"
+      "MonsterDetectionRange": "14",
+      "MonsterBaseExp": "300"
     },
     {
       "MonsterID": "4001",
@@ -38,7 +41,8 @@
       "MonsterDefense": "40",
       "MonsterSpeed": "9",
       "MonsterRadius": "9",
-      "MonsterDetectionRange": "18"
+      "MonsterDetectionRange": "18",
+      "MonsterBaseExp": "600"
     }
   ]
 }

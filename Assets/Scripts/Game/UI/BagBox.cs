@@ -79,6 +79,22 @@ namespace POELike.Game.UI
 
         private void Awake()
         {
+            EnsureGridBuilt();
+        }
+
+        /// <summary>
+        /// 确保格子网格已构建。仅当当前网格不存在或尺寸变化时才重建。
+        /// </summary>
+        public void EnsureGridBuilt()
+        {
+            if (_cells != null &&
+                _cells.GetLength(0) == _cols &&
+                _cells.GetLength(1) == _rows &&
+                _cells[0, 0] != null)
+            {
+                return;
+            }
+
             BuildGrid();
         }
 
@@ -87,6 +103,9 @@ namespace POELike.Game.UI
         /// </summary>
         public void BuildGrid()
         {
+            // 清理旧道具视图和占用状态，避免重建网格时残留对象
+            ClearItems();
+
             // 清理旧格子
             if (_cells != null)
             {
@@ -94,8 +113,6 @@ namespace POELike.Game.UI
                     if (cell != null) Destroy(cell.gameObject);
             }
             _cells = new BagCell[_cols, _rows];
-            _items.Clear();
-            _itemViews.Clear();
 
             var root = _gridRoot != null ? _gridRoot : (RectTransform)transform;
 
@@ -301,6 +318,51 @@ namespace POELike.Game.UI
             return false;
         }
 
+        /// <summary>
+        /// 根据屏幕坐标获取背包中的格子坐标。
+        /// </summary>
+        public bool TryGetCellCoordFromScreenPoint(Vector2 screenPoint, Camera eventCamera, out int col, out int row)
+        {
+            col = -1;
+            row = -1;
+
+            var root = GridRoot;
+            if (root == null)
+                return false;
+
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(root, screenPoint, eventCamera, out var localPoint))
+                return false;
+
+            var rect = root.rect;
+            float xFromLeft = localPoint.x + rect.width * root.pivot.x;
+            float yFromTop  = rect.height * (1f - root.pivot.y) - localPoint.y;
+
+            if (xFromLeft < 0f || yFromTop < 0f)
+                return false;
+
+            float step = _cellSize + _cellSpacing;
+            col = Mathf.FloorToInt(xFromLeft / step);
+            row = Mathf.FloorToInt(yFromTop  / step);
+
+            if (col < 0 || col >= _cols || row < 0 || row >= _rows)
+            {
+                col = -1;
+                row = -1;
+                return false;
+            }
+
+            float xInCell = xFromLeft - col * step;
+            float yInCell = yFromTop  - row * step;
+            if (xInCell >= _cellSize || yInCell >= _cellSize)
+            {
+                col = -1;
+                row = -1;
+                return false;
+            }
+
+            return true;
+        }
+
         // ── 高亮预览 ──────────────────────────────────────────────────
 
         /// <summary>
@@ -396,20 +458,53 @@ namespace POELike.Game.UI
 
         // ── BagCell 回调（由 BagCell 调用）──────────────────────────
 
-        internal void OnCellPointerEnter(BagCell cell) { }
+        internal void OnCellPointerEnter(BagCell cell)
+        {
+            var draggingItem = BagItemView.CurrentDraggingItem;
+            if (draggingItem == null || draggingItem.Data == null)
+                return;
 
-        internal void OnCellPointerExit(BagCell cell) { }
+            ShowPlacementPreview(draggingItem.Data, cell.Col, cell.Row);
+        }
+
+        internal void OnCellPointerExit(BagCell cell)
+        {
+            if (BagItemView.CurrentDraggingItem != null)
+                ClearAllHighlights();
+        }
 
         internal void OnCellClick(BagCell cell, PointerEventData eventData)
         {
+            var movingItem = BagItemView.CurrentDraggingItem;
+            if (movingItem != null && movingItem.Data != null)
+            {
+                if (!movingItem.TryDropToBag(this, cell.Col, cell.Row))
+                    ShowPlacementPreview(movingItem.Data, cell.Col, cell.Row);
+                else
+                    ClearAllHighlights();
+
+                eventData?.Use();
+                return;
+            }
+
             OnCellClicked?.Invoke(cell, eventData);
         }
 
         internal void OnCellDrop(BagCell cell, PointerEventData eventData)
         {
-            // 从拖拽数据中获取道具（需配合拖拽系统使用）
-            // 此处提供扩展点，具体拖拽逻辑由外部实现
-            Debug.Log($"[BagBox] Drop on cell ({cell.Col}, {cell.Row})");
+            var draggingItem = BagItemView.CurrentDraggingItem;
+            if (draggingItem == null || draggingItem.Data == null)
+                return;
+
+            if (!draggingItem.TryDropToBag(this, cell.Col, cell.Row))
+                ShowPlacementPreview(draggingItem.Data, cell.Col, cell.Row);
+            else
+                ClearAllHighlights();
+        }
+
+        private void OnDisable()
+        {
+            ClearAllHighlights();
         }
 
 #if UNITY_EDITOR
