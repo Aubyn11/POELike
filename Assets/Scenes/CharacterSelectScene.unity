@@ -287,6 +287,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _characterSelectPanelPath: UI/CharacterSelectPanel
   _chatPanelPath: UI/ChatPanel
+  _bagPanelPath: UI/Bag
 --- !u!4 &373237371
 Transform:
   m_ObjectHideFlags: 0

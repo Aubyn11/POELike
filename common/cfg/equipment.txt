@@ -1,4 +1,53 @@
-﻿//装备细节类别
+﻿// 装备词条属性
+EquipmentValueConf{
+    int32 EquipmentValueId = 1,
+    string EquipmentValueDesc = 2,
+    bool isPrefix = 3,
+}
+
+// 装备词条等阶
+EquipmentValueLevelConf{
+    int32 EquipmentValueLevelId = 1,
+    float EquipmentFloatMinValue = 2,
+    float EquipmentFloatMaxValue = 3,
+    string EquipmentValueName = 4,
+}
+
+// 装备势力
+EquipmentForceConf{
+    int32 EquipmentForceId = 1,
+    string EquipmentForceAtlas = 2,
+    string EquipmentForceSprite = 3,
+}
+
+// 装备类型扩展定义
+EquipmentTypeConf{
+    int32 EquipmentTypeId = 1,
+    int32 EquipmentBaseType = 2,
+    string EquipmentTypeName = 3,
+}
+
+// 装备基底属性
+EquipmentBaseValueConf{
+    int32 EquipmentBaseValueId = 1,
+    int32 EquipmentBaseMinValue = 2,
+    int32 EquipmentBaseMaxValue = 3,
+    string EquipmentBaseValueDesc = 4,
+}
+
+// 装备大类基础定义
+EquipmentBaseTypeConf{
+    int32 EquipmentBaseTypeId = 1,
+    string EquipmentBaseTypeName = 2,
+}
+
+// 装备插槽颜色
+EquipmentSlotConf{
+    int32 EquipmentSlotId = 1,
+    string EquipmentSlotColor = 2,
+}
+
+// 装备细节类别
 EquipmentDetailTypeConf{
     int32 EquipmentDetailTypeId = 1,
     string EquipmentDetailTypeName = 2,
@@ -12,23 +61,38 @@ EquipmentDetailTypeConf{
     int32 EquipmentDemandStrength = 10,
     int32 EquipmentDemandIntelligence = 11,
 }
-//装备小类别枚举（对应POE词缀分类）
-//单手武器：1=爪  2=匕首  3=魔杖  4=单手剑  5=单手斧  6=单手锤  7=权杖
-//双手武器：8=弓  9=双手剑  10=双手斧  11=双手锤  12=长矛  13=法杖
-//头盔：14=头盔
-//胸甲：15=胸甲
-//手套：16=手套
-//鞋子：17=鞋子
-//饰品：18=腰带  19=戒指  20=项链
-//副手：21=盾牌  22=箭袋  23=法器
+
+// 装备部位
+EquipmentPartConf{
+    int32 EquipmentPartId = 1,
+    string EquipmentPartName = 2,
+    bool CanDualWield = 3,
+}
+
+// 装备大类别
+EquipmentCategoryConf{
+    int32 EquipmentCategoryId = 1,
+    string EquipmentCategoryName = 2,
+    int32 EquipmentPart = 3,
+    int32 EquipmentMaxSlot = 4,
+}
+
+// 装备小类别枚举（对应 POE 词缀分类）
+// 单手武器：1=爪 2=匕首 3=魔杖 4=单手剑 5=单手斧 6=单手锤 7=权杖
+// 双手武器：8=弓 9=双手剑 10=双手斧 11=双手锤 12=长矛 13=法杖
+// 头盔：14=头盔
+// 胸甲：15=胸甲
+// 手套：16=手套
+// 鞋子：17=鞋子
+// 饰品：18=腰带 19=戒指 20=项链
+// 副手：21=盾牌 22=箭袋 23=法器
 EquipmentSubCategoryConf{
     int32 EquipmentSubCategoryId = 1,
     string EquipmentSubCategoryName = 2,
     int32 EquipmentCategoryId = 3,
 }
-//词缀类型：前缀/后缀
-//1=前缀  2=后缀
-//词缀定义（每条词缀的基本信息）
+
+// 词缀类型：1=前缀 2=后缀
 EquipmentModConf{
     int32 EquipmentModId = 1,
     string EquipmentModName = 2,
@@ -38,7 +102,8 @@ EquipmentModConf{
     repeated int32 EquipmentModSubCategories = 6,
     int32 EquipmentModWeight = 7,
 }
-//词缀数值范围（每条词缀可能有1~2个数值范围）
+
+// 词缀数值范围（每条词缀可能有 1~2 个数值范围）
 EquipmentModValueConf{
     int32 EquipmentModValueId = 1,
     int32 EquipmentModId = 2,
@@ -46,4 +111,30 @@ EquipmentModValueConf{
     int32 EquipmentModMinValue = 4,
     int32 EquipmentModMaxValue = 5,
     string EquipmentModValueDesc = 6,
+}
+
+// 药剂基底定义
+// FlaskType：0=Life 1=Mana 2=Hybrid 3=Utility
+// FlaskUtilityEffectType：0=None 1=MoveSpeed 2=Armour 3=Evasion 4=FireResistance 5=ColdResistance
+// 6=LightningResistance 7=ChaosResistance 8=PhysicalDamageReduction 9=ConsecratedGround 10=Phasing 11=Onslaught
+// FlaskAllowedSlots 对应 EquipmentSlot 枚举：Flask1=10 Flask2=11 Flask3=12 Flask4=13 Flask5=14
+FlaskBaseConf{
+    int32 FlaskBaseId = 1,
+    string FlaskCode = 2,
+    string FlaskName = 3,
+    int32 FlaskType = 4,
+    int32 FlaskRequireLevel = 5,
+    int32 FlaskWidth = 6,
+    int32 FlaskHeight = 7,
+    int32 FlaskRecoverLife = 8,
+    int32 FlaskRecoverMana = 9,
+    int32 FlaskDurationMs = 10,
+    int32 FlaskMaxCharges = 11,
+    int32 FlaskChargesPerUse = 12,
+    bool FlaskIsInstant = 13,
+    int32 FlaskInstantPercent = 14,
+    int32 FlaskUtilityEffectType = 15,
+    int32 FlaskUtilityEffectValue = 16,
+    repeated int32 FlaskAllowedSlots = 17,
+    string FlaskEffectDesc = 18,
 }

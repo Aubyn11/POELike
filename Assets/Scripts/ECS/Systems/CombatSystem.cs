@@ -66,17 +66,33 @@ namespace POELike.ECS.Systems
             {
                 var effect = combat.ActiveEffects[i];
                 effect.RemainingTime -= deltaTime;
+                effect.TickTimer -= deltaTime;
                 
                 // 处理持续伤害效果
                 if (effect.Type == StatusEffectType.Ignite || 
                     effect.Type == StatusEffectType.Poison || 
                     effect.Type == StatusEffectType.Bleed)
                 {
-                    effect.TickTimer -= deltaTime;
                     if (effect.TickTimer <= 0)
                     {
                         effect.TickTimer = effect.TickInterval;
                         health.TakeDamage(effect.Value * effect.TickInterval);
+                    }
+                }
+                else if (effect.Type == StatusEffectType.LifeRecovery)
+                {
+                    if (effect.TickTimer <= 0)
+                    {
+                        effect.TickTimer = effect.TickInterval;
+                        health.Heal(effect.Value * effect.TickInterval);
+                    }
+                }
+                else if (effect.Type == StatusEffectType.ManaRecovery)
+                {
+                    if (effect.TickTimer <= 0)
+                    {
+                        effect.TickTimer = effect.TickInterval;
+                        health.CurrentMana += effect.Value * effect.TickInterval;
                     }
                 }
                 

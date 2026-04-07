@@ -94,6 +94,9 @@ namespace POELike.ECS.Components
         Haste,          // 加速
         Fortify,        // 强化（减少受到的伤害）
         Onslaught,      // 猛攻（增加攻击速度和移动速度）
+        UtilityFlask,   // 功能药剂效果
+        LifeRecovery,   // 药剂生命恢复
+        ManaRecovery,   // 药剂魔力恢复
         
         // Debuff
         Ignite,         // 点燃（持续火焰伤害）

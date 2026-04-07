@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using POELike.ECS.Components;
 
 namespace POELike.Game.Equipment
 {
@@ -65,6 +66,42 @@ namespace POELike.Game.Equipment
     }
 
     /// <summary>
+    /// 生成的药剂运行时数据
+    /// </summary>
+    public class GeneratedFlask
+    {
+        public FlaskBaseData BaseData;
+        public FlaskKind FlaskType;
+        public FlaskUtilityEffectKind UtilityEffectType;
+        public List<EquipmentSlot> AllowedSlots = new List<EquipmentSlot>();
+        public int GridWidth = 1;
+        public int GridHeight = 1;
+        public int RequireLevel;
+        public int RecoverLife;
+        public int RecoverMana;
+        public int DurationMs;
+        public int MaxCharges;
+        public int CurrentCharges;
+        public int ChargesPerUse;
+        public bool IsInstant;
+        public int InstantPercent;
+        public int UtilityEffectValue;
+        public string EffectDescription;
+
+        public string Code => BaseData?.FlaskCode ?? string.Empty;
+        public string DisplayName => BaseData?.FlaskName ?? "未知药剂";
+
+        public Color QualityColor => FlaskType switch
+        {
+            FlaskKind.Life    => new Color(0.86f, 0.32f, 0.32f),
+            FlaskKind.Mana    => new Color(0.34f, 0.55f, 0.95f),
+            FlaskKind.Hybrid  => new Color(0.63f, 0.46f, 0.86f),
+            FlaskKind.Utility => new Color(0.36f, 0.80f, 0.48f),
+            _                 => Color.white,
+        };
+    }
+
+    /// <summary>
     /// 已随机出的词缀及其数值
     /// </summary>
     public class RolledMod
@@ -90,20 +127,22 @@ namespace POELike.Game.Equipment
         // ── 大类别 ID 常量 ────────────────────────────────────────────
         // 1=单手武器  2=双手武器  3=头盔  4=胸甲  5=手套  6=鞋子  7=饰品  8=副手
 
+        public const int FlaskTabIndex = 4;
+
         /// <summary>
-        /// 商店页签定义：每个页签对应的大类别 ID 列表
+        /// 商店装备页签定义：每个页签对应的大类别 ID 列表
         /// </summary>
         public static readonly int[][] TabCategories = new int[][]
         {
             new[] { 1, 2 },   // Tab0: 武器（单手+双手）
-            new[] { 4 },       // Tab1: 胸甲
-            new[] { 3, 5, 6 }, // Tab2: 头盔+手套+鞋子
-            new[] { 7 },       // Tab3: 饰品
+            new[] { 4 },      // Tab1: 胸甲
+            new[] { 3, 5, 6 },// Tab2: 头盔+手套+鞋子
+            new[] { 7 },      // Tab3: 饰品
         };
 
         public static readonly string[] TabNames = new[]
         {
-            "武器", "胸甲", "防具", "饰品"
+            "武器", "胸甲", "防具", "饰品", "药剂"
         };
 
         // ── 品质规则 ──────────────────────────────────────────────────
@@ -191,7 +230,117 @@ namespace POELike.Game.Equipment
             return equip;
         }
 
+        /// <summary>
+        /// 按配置生成单个药剂运行时数据。
+        /// </summary>
+        public static GeneratedFlask GenerateFlask(FlaskBaseData baseData)
+        {
+            if (baseData == null)
+                return null;
+
+            return new GeneratedFlask
+            {
+                BaseData = baseData,
+                FlaskType = ParseFlaskKind(baseData.FlaskType),
+                UtilityEffectType = ParseFlaskUtilityEffectKind(baseData.FlaskUtilityEffectType),
+                AllowedSlots = ParseAllowedSlots(baseData.FlaskAllowedSlots),
+                GridWidth = Mathf.Max(1, ParseInt(baseData.FlaskWidth, 1)),
+                GridHeight = Mathf.Max(1, ParseInt(baseData.FlaskHeight, 1)),
+                RequireLevel = ParseInt(baseData.FlaskRequireLevel),
+                RecoverLife = Mathf.Max(0, ParseInt(baseData.FlaskRecoverLife)),
+                RecoverMana = Mathf.Max(0, ParseInt(baseData.FlaskRecoverMana)),
+                DurationMs = Mathf.Max(0, ParseInt(baseData.FlaskDurationMs)),
+                MaxCharges = Mathf.Max(0, ParseInt(baseData.FlaskMaxCharges)),
+                CurrentCharges = Mathf.Max(0, ParseInt(baseData.FlaskMaxCharges)),
+                ChargesPerUse = Mathf.Max(0, ParseInt(baseData.FlaskChargesPerUse)),
+                IsInstant = ParseBool(baseData.FlaskIsInstant),
+                InstantPercent = Mathf.Clamp(ParseInt(baseData.FlaskInstantPercent), 0, 100),
+                UtilityEffectValue = ParseInt(baseData.FlaskUtilityEffectValue),
+                EffectDescription = baseData.FlaskEffectDesc ?? string.Empty,
+            };
+        }
+
+        /// <summary>
+        /// 按配置编码生成指定药剂。
+        /// </summary>
+        public static GeneratedFlask GenerateFlaskByCode(string flaskCode)
+        {
+            if (string.IsNullOrWhiteSpace(flaskCode))
+                return null;
+
+            var baseData = EquipmentConfigLoader.FlaskBases
+                .FirstOrDefault(f => string.Equals(f?.FlaskCode, flaskCode, StringComparison.OrdinalIgnoreCase));
+            return GenerateFlask(baseData);
+        }
+
+        /// <summary>
+        /// 为商店随机挑选一批药剂。
+        /// </summary>
+        public static List<GeneratedFlask> GenerateFlasksForShop(int maxCount = 15)
+        {
+            var pool = EquipmentConfigLoader.FlaskBases
+                .Where(f => f != null)
+                .OrderBy(_ => UnityEngine.Random.value)
+                .Take(Mathf.Max(1, maxCount))
+                .ToList();
+
+            var result = new List<GeneratedFlask>(pool.Count);
+            foreach (var baseData in pool)
+            {
+                var generated = GenerateFlask(baseData);
+                if (generated != null)
+                    result.Add(generated);
+            }
+
+            result.Sort((a, b) => a.RequireLevel.CompareTo(b.RequireLevel));
+            return result;
+        }
+
         // ── 内部辅助 ──────────────────────────────────────────────────
+
+        private static int ParseInt(string value, int fallback = 0)
+        {
+            return int.TryParse(value, out var parsed) ? parsed : fallback;
+        }
+
+        private static bool ParseBool(string value)
+        {
+            if (bool.TryParse(value, out var parsed))
+                return parsed;
+
+            return value == "1";
+        }
+
+        private static FlaskKind ParseFlaskKind(string value)
+        {
+            int kindValue = ParseInt(value);
+            return System.Enum.IsDefined(typeof(FlaskKind), kindValue)
+                ? (FlaskKind)kindValue
+                : FlaskKind.Life;
+        }
+
+        private static FlaskUtilityEffectKind ParseFlaskUtilityEffectKind(string value)
+        {
+            int kindValue = ParseInt(value);
+            return System.Enum.IsDefined(typeof(FlaskUtilityEffectKind), kindValue)
+                ? (FlaskUtilityEffectKind)kindValue
+                : FlaskUtilityEffectKind.None;
+        }
+
+        private static List<EquipmentSlot> ParseAllowedSlots(List<int> slotIds)
+        {
+            var result = new List<EquipmentSlot>();
+            if (slotIds == null)
+                return result;
+
+            foreach (var slotId in slotIds)
+            {
+                if (System.Enum.IsDefined(typeof(EquipmentSlot), slotId))
+                    result.Add((EquipmentSlot)slotId);
+            }
+
+            return result;
+        }
 
         /// <summary>
         /// 根据装备尺寸和属性需求随机生成插槽列表。

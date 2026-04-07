@@ -289,6 +289,53 @@ namespace POELike.Game.UI
             return true;
         }
 
+        public bool CanPlaceOrReplaceItem(BagItemData item, int col, int row)
+        {
+            return CanPlaceItem(item, col, row) ||
+                   TryGetReplaceCandidate(item, col, row, out _);
+        }
+
+        public bool TryGetReplaceCandidate(BagItemData item, int col, int row, out BagItemData replacedItem)
+        {
+            replacedItem = null;
+
+            if (item == null) return false;
+            if (col < 0 || row < 0) return false;
+            if (col + item.GridWidth  > _cols) return false;
+            if (row + item.GridHeight > _rows) return false;
+
+            BagItemData candidate = null;
+
+            for (int r = row; r < row + item.GridHeight; r++)
+            {
+                for (int c = col; c < col + item.GridWidth; c++)
+                {
+                    var cell = _cells[c, r];
+                    if (cell == null)
+                        return false;
+
+                    var occupiedItem = cell.OccupiedItem;
+                    if (occupiedItem == null || occupiedItem == item)
+                        continue;
+
+                    if (candidate == null)
+                    {
+                        candidate = occupiedItem;
+                        continue;
+                    }
+
+                    if (candidate != occupiedItem)
+                        return false;
+                }
+            }
+
+            if (candidate == null)
+                return false;
+
+            replacedItem = candidate;
+            return true;
+        }
+
         /// <summary>
         /// 获取指定坐标的格子
         /// </summary>
@@ -376,7 +423,7 @@ namespace POELike.Game.UI
             ClearAllHighlights();
             if (item == null) return;
 
-            bool canPlace = CanPlaceItem(item, col, row);
+            bool canPlace = CanPlaceOrReplaceItem(item, col, row);
 
             int endCol = Mathf.Min(col + item.GridWidth,  _cols);
             int endRow = Mathf.Min(row + item.GridHeight, _rows);
@@ -478,7 +525,7 @@ namespace POELike.Game.UI
             var movingItem = BagItemView.CurrentDraggingItem;
             if (movingItem != null && movingItem.Data != null)
             {
-                if (!movingItem.TryDropToBag(this, cell.Col, cell.Row))
+                if (!movingItem.TryDropToBag(this, cell.Col, cell.Row, eventData))
                     ShowPlacementPreview(movingItem.Data, cell.Col, cell.Row);
                 else
                     ClearAllHighlights();
@@ -496,7 +543,7 @@ namespace POELike.Game.UI
             if (draggingItem == null || draggingItem.Data == null)
                 return;
 
-            if (!draggingItem.TryDropToBag(this, cell.Col, cell.Row))
+            if (!draggingItem.TryDropToBag(this, cell.Col, cell.Row, eventData))
                 ShowPlacementPreview(draggingItem.Data, cell.Col, cell.Row);
             else
                 ClearAllHighlights();

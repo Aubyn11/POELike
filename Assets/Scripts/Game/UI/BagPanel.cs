@@ -104,7 +104,7 @@ namespace POELike.Game.UI
 
         private void RegisterSlot(string nodeName, EquipmentSlot slot)
         {
-            var node = _equipmentRoot.Find(nodeName);
+            var node = FindChildRecursive(_equipmentRoot, nodeName);
             if (node == null)
                 return;
 
@@ -114,6 +114,24 @@ namespace POELike.Game.UI
 
             slotView.Setup(slot);
             _slotViews[slot] = slotView;
+        }
+
+        private static Transform FindChildRecursive(Transform root, string nodeName)
+        {
+            if (root == null || string.IsNullOrWhiteSpace(nodeName))
+                return null;
+
+            if (root.name == nodeName)
+                return root;
+
+            for (int i = 0; i < root.childCount; i++)
+            {
+                var found = FindChildRecursive(root.GetChild(i), nodeName);
+                if (found != null)
+                    return found;
+            }
+
+            return null;
         }
 
         private void PopulateDemoItems()
@@ -187,6 +205,12 @@ namespace POELike.Game.UI
             );
             SpawnItemInBag(ringData, 9, 0);
 
+            SpawnFlaskDemoItem("life_medium", 0, 3);
+            SpawnFlaskDemoItem("mana_medium", 1, 3);
+            SpawnFlaskDemoItem("utility_quicksilver", 2, 3);
+            SpawnFlaskDemoItem("utility_granite", 3, 3);
+            SpawnFlaskDemoItem("hybrid_medium", 4, 3);
+
             var gem1 = CreateGemData("gem_fireball", "火球术", _primaryGemColor, new Color(0.92f, 0.30f, 0.24f));
             SpawnItemInBag(gem1, 10, 0);
 
@@ -252,6 +276,16 @@ namespace POELike.Game.UI
             };
         }
 
+        private void SpawnFlaskDemoItem(string flaskCode, int col, int row)
+        {
+            var flask = EquipmentGenerator.GenerateFlaskByCode(flaskCode);
+            var data = BagItemData.CreateFromGeneratedFlask(flask);
+            if (data == null)
+                return;
+
+            SpawnItemInBag(data, col, row);
+        }
+
         private void SpawnItemInBag(BagItemData data, int col, int row)
         {
             if (_bag == null || data == null)
@@ -271,21 +305,13 @@ namespace POELike.Game.UI
         {
             GameObject go;
 
-            if (data.IsEquipment && _equipmentPrefab != null)
+            if ((data.IsEquipment || data.IsFlask) && _equipmentPrefab != null)
             {
                 go = Instantiate(_equipmentPrefab, _bag.GridRoot, false);
                 var equipmentItem = go.GetComponent<EquipmentItem>();
                 if (equipmentItem != null)
                 {
-                    equipmentItem.Init(
-                        detailTypeId: 0,
-                        gridWidth: data.GridWidth,
-                        gridHeight: data.GridHeight,
-                        itemName: data.Name,
-                        icon: data.Icon,
-                        itemColor: data.ItemColor,
-                        sockets: data.Sockets
-                    );
+                    equipmentItem.Init(data);
                 }
             }
             else

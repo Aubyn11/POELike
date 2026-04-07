@@ -50,6 +50,36 @@ namespace POELike.ECS.Components
         Map,
         Misc,
     }
+
+    /// <summary>
+    /// 药剂类型
+    /// </summary>
+    public enum FlaskKind
+    {
+        Life,
+        Mana,
+        Hybrid,
+        Utility,
+    }
+
+    /// <summary>
+    /// 功能药剂效果类型
+    /// </summary>
+    public enum FlaskUtilityEffectKind
+    {
+        None,
+        MoveSpeed,
+        Armour,
+        Evasion,
+        FireResistance,
+        ColdResistance,
+        LightningResistance,
+        ChaosResistance,
+        PhysicalDamageReduction,
+        ConsecratedGround,
+        Phasing,
+        Onslaught,
+    }
     
     /// <summary>
     /// 物品数据
@@ -66,6 +96,20 @@ namespace POELike.ECS.Components
         public int RequiredStrength { get; set; }
         public int RequiredDexterity { get; set; }
         public int RequiredIntelligence { get; set; }
+
+        // 药剂字段（对齐 POE 的基础药剂结构）
+        public FlaskKind? FlaskType { get; set; }
+        public int FlaskRecoverLife { get; set; }
+        public int FlaskRecoverMana { get; set; }
+        public int FlaskDurationMs { get; set; }
+        public int FlaskMaxCharges { get; set; }
+        public int FlaskCurrentCharges { get; set; }
+        public int FlaskChargesPerUse { get; set; }
+        public bool FlaskIsInstant { get; set; }
+        public int FlaskInstantPercent { get; set; }
+        public FlaskUtilityEffectKind FlaskUtilityEffectType { get; set; } = FlaskUtilityEffectKind.None;
+        public int FlaskUtilityEffectValue { get; set; }
+        public string FlaskEffectDescription { get; set; }
         
         // 词缀（类似POE的词缀系统）
         public List<StatModifier> Prefixes { get; } = new List<StatModifier>(); // 前缀（最多3个）

@@ -171,6 +171,32 @@ namespace POELike.Game.UI
                 _tooltipBagData = BagData;
         }
 
+        /// <summary>
+        /// 使用 UI 层道具数据初始化视图。
+        /// 适用于背包装备、药剂等已经具备完整展示数据的物品。
+        /// </summary>
+        public void Init(BagItemData itemData, Sprite icon = null)
+        {
+            if (itemData == null)
+                return;
+
+            DetailTypeId = int.TryParse(itemData.ItemId, out int id) ? id : 0;
+            GridWidth    = Mathf.Max(1, itemData.GridWidth);
+            GridHeight   = Mathf.Max(1, itemData.GridHeight);
+            _sockets     = itemData.Sockets;
+            _generatedEquipment = null;
+
+            BagData = itemData;
+            if (icon != null)
+                BagData.Icon = icon;
+
+            _tooltipBagData = BagData;
+            ApplyItemVisuals(BagData.Icon, BagData.ItemColor);
+            HideSockets();
+            HideTips();
+            _tipsShown = false;
+        }
+
         public void Init(int detailTypeId, int gridWidth, int gridHeight,
                          string itemName, Sprite icon = null, Color? itemColor = null,
                          List<SocketData> sockets = null)
@@ -194,8 +220,15 @@ namespace POELike.Game.UI
                 BagData.Sockets.AddRange(sockets);
             _tooltipBagData = BagData;
 
-            Color col = itemColor ?? Color.white;
+            ApplyItemVisuals(BagData.Icon, BagData.ItemColor);
 
+            HideSockets();
+            HideTips();
+            _tipsShown = false;
+        }
+
+        private void ApplyItemVisuals(Sprite icon, Color col)
+        {
             // 设置根节点背景色（始终生效，确保色块可见）
             if (_bgImage != null)
                 _bgImage.color = col;
@@ -206,10 +239,6 @@ namespace POELike.Game.UI
                 _icon.sprite = icon;
                 _icon.color  = col;
             }
-
-            HideSockets();
-            HideTips();
-            _tipsShown = false;
         }
 
         /// <summary>
@@ -410,7 +439,7 @@ namespace POELike.Game.UI
             else
             {
                 var bagData = ResolveTooltipBagData();
-                if (bagData == null || !bagData.IsEquipment)
+                if (bagData == null || (!bagData.IsEquipment && !bagData.IsFlask))
                     return;
 
                 _tipsInstance.Setup(bagData);

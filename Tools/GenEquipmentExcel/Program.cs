@@ -6,6 +6,8 @@ ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 string outputPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
     "..", "..", "..", "..", "..", "common", "excel", "xls", "equipment.xlsx"));
+string legacyOutputPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
+    "..", "..", "..", "..", "..", "common", "excel", "xls", "equipment_new.xlsx"));
 
 Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
 
@@ -751,5 +753,62 @@ SetupSheet("装备插槽", "equipment.txt", "EquipmentSlotConf.pb", "EquipmentSl
     });
 }
 
+// ===== Sheet 14: 药剂基底（FlaskBaseConf）=====
+// FlaskType: 0=Life 1=Mana 2=Hybrid 3=Utility
+// FlaskUtilityEffectType: 0=None 1=MoveSpeed 2=Armour 3=Evasion 4=FireResistance 5=ColdResistance
+// 6=LightningResistance 7=ChaosResistance 8=PhysicalDamageReduction 9=ConsecratedGround 10=Phasing 11=Onslaught
+// FlaskAllowedSlots: 药剂可放入的槽位，使用逗号分隔，对应 EquipmentSlot.Flask1~Flask5 => 10,11,12,13,14
+{
+    SetupSheet("药剂基底", "equipment.txt", "FlaskBaseConf.pb", "FlaskBaseConf",
+        new[]
+        {
+            "FlaskBaseId", "FlaskCode", "FlaskName", "FlaskType", "FlaskRequireLevel",
+            "FlaskWidth", "FlaskHeight", "FlaskRecoverLife", "FlaskRecoverMana", "FlaskDurationMs",
+            "FlaskMaxCharges", "FlaskChargesPerUse", "FlaskIsInstant", "FlaskInstantPercent",
+            "FlaskUtilityEffectType", "FlaskUtilityEffectValue", "FlaskAllowedSlots", "FlaskEffectDesc"
+        });
+    var ws = pkg.Workbook.Worksheets["药剂基底"]!;
+    const string allFlaskSlots = "10,11,12,13,14";
+    WriteRows(ws, new object[][]
+    {
+        new object[] {  1, "life_small",          "小型生命药剂",       0,  1, 1, 2,  70,   0, 4000, 21,  7, false,   0, 0,  0, allFlaskSlots, "4.00 秒内恢复 70 点生命" },
+        new object[] {  2, "life_medium",         "中型生命药剂",       0,  6, 1, 2, 150,   0, 4500, 24,  8, false,   0, 0,  0, allFlaskSlots, "4.50 秒内恢复 150 点生命" },
+        new object[] {  3, "life_large",          "大型生命药剂",       0, 12, 1, 2, 260,   0, 5000, 28, 10, false,   0, 0,  0, allFlaskSlots, "5.00 秒内恢复 260 点生命" },
+        new object[] {  4, "life_greater",        "巨型生命药剂",       0, 18, 1, 2, 430,   0, 5500, 32, 11, false,   0, 0,  0, allFlaskSlots, "5.50 秒内恢复 430 点生命" },
+        new object[] {  5, "life_grand",          "宏伟生命药剂",       0, 24, 1, 2, 620,   0, 6000, 36, 12, false,   0, 0,  0, allFlaskSlots, "6.00 秒内恢复 620 点生命" },
+        new object[] {  6, "life_divine",         "圣神生命药剂",       0, 36, 1, 2, 980,   0, 7000, 45, 15, false,   0, 0,  0, allFlaskSlots, "7.00 秒内恢复 980 点生命" },
+        new object[] {  7, "life_hallowed",       "祝福生命药剂",       0, 50, 1, 2, 1460,  0, 7000, 50, 15, false,   0, 0,  0, allFlaskSlots, "7.00 秒内恢复 1460 点生命" },
+        new object[] {  8, "life_panicked",       "惊惧生命药剂",       0, 20, 1, 2, 520,   0, 2500, 32, 10, true,   70, 0,  0, allFlaskSlots, "瞬间恢复 70% 生命，剩余部分在 2.50 秒内恢复" },
+
+        new object[] {  9, "mana_small",          "小型魔力药剂",       1,  1, 1, 2,   0,  50, 5000, 28,  6, false,   0, 0,  0, allFlaskSlots, "5.00 秒内恢复 50 点魔力" },
+        new object[] { 10, "mana_medium",         "中型魔力药剂",       1,  6, 1, 2,   0, 110, 5000, 32,  7, false,   0, 0,  0, allFlaskSlots, "5.00 秒内恢复 110 点魔力" },
+        new object[] { 11, "mana_large",          "大型魔力药剂",       1, 12, 1, 2,   0, 180, 5000, 36,  8, false,   0, 0,  0, allFlaskSlots, "5.00 秒内恢复 180 点魔力" },
+        new object[] { 12, "mana_greater",        "巨型魔力药剂",       1, 18, 1, 2,   0, 290, 5500, 40,  9, false,   0, 0,  0, allFlaskSlots, "5.50 秒内恢复 290 点魔力" },
+        new object[] { 13, "mana_grand",          "宏伟魔力药剂",       1, 24, 1, 2,   0, 430, 6000, 44, 10, false,   0, 0,  0, allFlaskSlots, "6.00 秒内恢复 430 点魔力" },
+        new object[] { 14, "mana_divine",         "圣神魔力药剂",       1, 36, 1, 2,   0, 680, 7000, 50, 12, false,   0, 0,  0, allFlaskSlots, "7.00 秒内恢复 680 点魔力" },
+        new object[] { 15, "mana_eternal",        "永恒魔力药剂",       1, 50, 1, 2,   0, 920, 7000, 55, 12, false,   0, 0,  0, allFlaskSlots, "7.00 秒内恢复 920 点魔力" },
+
+        new object[] { 16, "hybrid_small",        "小型复合药剂",       2, 10, 1, 2,  80,  50, 5000, 30, 10, false,   0, 0,  0, allFlaskSlots, "5.00 秒内同时恢复 80 点生命与 50 点魔力" },
+        new object[] { 17, "hybrid_medium",       "中型复合药剂",       2, 20, 1, 2, 160, 100, 5000, 36, 11, false,   0, 0,  0, allFlaskSlots, "5.00 秒内同时恢复 160 点生命与 100 点魔力" },
+        new object[] { 18, "hybrid_large",        "大型复合药剂",       2, 30, 1, 2, 300, 180, 5500, 40, 12, false,   0, 0,  0, allFlaskSlots, "5.50 秒内同时恢复 300 点生命与 180 点魔力" },
+        new object[] { 19, "hybrid_greater",      "巨型复合药剂",       2, 42, 1, 2, 470, 280, 6000, 46, 13, false,   0, 0,  0, allFlaskSlots, "6.00 秒内同时恢复 470 点生命与 280 点魔力" },
+        new object[] { 20, "hybrid_divine",       "圣神复合药剂",       2, 54, 1, 2, 720, 430, 6500, 52, 14, false,   0, 0,  0, allFlaskSlots, "6.50 秒内同时恢复 720 点生命与 430 点魔力" },
+
+        new object[] { 21, "utility_quicksilver", "水银药剂",           3,  4, 1, 2,   0,   0, 5000, 60, 30, false,   0, 1, 40, allFlaskSlots, "持续时间内移动速度提高 40%" },
+        new object[] { 22, "utility_granite",     "坚岩药剂",           3, 18, 1, 2,   0,   0, 4000, 60, 30, false,   0, 2,1500, allFlaskSlots, "持续时间内获得 +1500 护甲" },
+        new object[] { 23, "utility_jade",        "翠玉药剂",           3, 27, 1, 2,   0,   0, 4000, 60, 30, false,   0, 3,1500, allFlaskSlots, "持续时间内获得 +1500 闪避" },
+        new object[] { 24, "utility_ruby",        "红玉药剂",           3, 18, 1, 2,   0,   0, 5000, 50, 30, false,   0, 4,  40, allFlaskSlots, "持续时间内火焰抗性 +40%" },
+        new object[] { 25, "utility_sapphire",    "蓝玉药剂",           3, 18, 1, 2,   0,   0, 5000, 50, 30, false,   0, 5,  40, allFlaskSlots, "持续时间内冰霜抗性 +40%" },
+        new object[] { 26, "utility_topaz",       "黄玉药剂",           3, 18, 1, 2,   0,   0, 5000, 50, 30, false,   0, 6,  40, allFlaskSlots, "持续时间内闪电抗性 +40%" },
+        new object[] { 27, "utility_amethyst",    "紫晶药剂",           3, 18, 1, 2,   0,   0, 5000, 50, 30, false,   0, 7,  35, allFlaskSlots, "持续时间内混沌抗性 +35%" },
+        new object[] { 28, "utility_basalt",      "玄武岩药剂",         3, 27, 1, 2,   0,   0, 4000, 40, 40, false,   0, 8,  20, allFlaskSlots, "持续时间内承受的物理伤害额外降低 20%" },
+        new object[] { 29, "utility_sulphur",     "硫磺药剂",           3, 35, 1, 2,   0,   0, 4000, 50, 30, false,   0, 9,   1, allFlaskSlots, "使用时制造奉献地面，持续 4 秒" },
+        new object[] { 30, "utility_quartz",      "石英药剂",           3, 27, 1, 2,   0,   0, 4000, 50, 30, false,   0,10,   1, allFlaskSlots, "持续时间内获得穿相效果" },
+        new object[] { 31, "utility_silver",      "白银药剂",           3, 40, 1, 2,   0,   0, 4000, 40, 40, false,   0,11,   1, allFlaskSlots, "持续时间内获得猛攻" },
+    });
+}
+
 pkg.Save();
+File.Copy(outputPath, legacyOutputPath, true);
 Console.WriteLine($"已更新: {outputPath}");
+Console.WriteLine($"已同步: {legacyOutputPath}");

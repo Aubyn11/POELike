@@ -2,6 +2,8 @@ using POELike.ECS.Components;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using POELike.ECS.Systems;
+using POELike.Managers;
 
 namespace POELike.Game.UI
 {
@@ -49,12 +51,11 @@ namespace POELike.Game.UI
         {
             return itemView != null &&
                    itemView.Data != null &&
-                   itemView.Data.IsEquipment &&
-                   itemView.Data.AcceptedEquipmentSlot == SlotType &&
-                   (PlacedItem == null || PlacedItem == itemView);
+                   itemView.Data.IsEquippable &&
+                   itemView.Data.CanEquipToSlot(SlotType);
         }
 
-        public bool TryAccept(BagItemView itemView)
+        public bool TryAccept(BagItemView itemView, PointerEventData eventData = null)
         {
             if (!CanAccept(itemView))
                 return false;
@@ -62,6 +63,8 @@ namespace POELike.Game.UI
             var sourceBag    = itemView.CurrentBag;
             var sourceSlot   = itemView.CurrentSlot;
             var sourceSocket = itemView.CurrentSocket;
+            var replacedItem = PlacedItem != null && PlacedItem != itemView ? PlacedItem : null;
+            var replacedRuntimeItem = replacedItem != null ? GetEquippedItemData() : null;
 
             if (sourceSlot == this && PlacedItem == itemView)
             {
@@ -72,9 +75,6 @@ namespace POELike.Game.UI
                 return true;
             }
 
-            if (PlacedItem != null && PlacedItem != itemView)
-                return false;
-
             if (sourceBag != null)
                 sourceBag.RemoveItem(itemView.Data);
             if (sourceSlot != null && sourceSlot != this)
@@ -84,9 +84,17 @@ namespace POELike.Game.UI
 
             PlacedItem = itemView;
             itemView.BindToEquipmentSlot(this);
+            SyncEquippedItem(itemView);
             itemView.MarkDropHandled();
             itemView.CompleteMove();
             RefreshVisual();
+
+            if (replacedItem?.Data != null)
+                replacedItem.Data.RuntimeItemData = replacedRuntimeItem;
+
+            if (replacedItem != null)
+                replacedItem.TryBeginMove(eventData);
+
             return true;
         }
 
@@ -95,7 +103,9 @@ namespace POELike.Game.UI
             if (itemView != null && PlacedItem != itemView)
                 return;
 
+            var removedItem = PlacedItem;
             PlacedItem = null;
+            SyncUnequippedItem(removedItem);
             RefreshVisual();
         }
 
@@ -123,7 +133,7 @@ namespace POELike.Game.UI
                 return;
             }
 
-            if (!TryAccept(movingItem))
+            if (!TryAccept(movingItem, eventData))
                 SetHighlight(false);
 
             eventData?.Use();
@@ -131,7 +141,7 @@ namespace POELike.Game.UI
 
         public void OnDrop(PointerEventData eventData)
         {
-            if (!TryAccept(BagItemView.CurrentDraggingItem))
+            if (!TryAccept(BagItemView.CurrentDraggingItem, eventData))
                 SetHighlight(false);
         }
 
@@ -149,6 +159,66 @@ namespace POELike.Game.UI
                 return;
 
             _bgImage.color = _normalColor;
+        }
+
+        private void SyncEquippedItem(BagItemView itemView)
+        {
+            if (itemView?.Data == null)
+                return;
+
+            var world = GameManager.Instance?.World;
+            var playerEntity = world?.FindEntityByTag("Player");
+            var equipment = playerEntity?.GetComponent<EquipmentComponent>();
+            if (world == null || playerEntity == null || equipment == null)
+                return;
+
+            var oldItem = equipment.GetEquipped(SlotType);
+            var newItem = itemView.Data.ToItemData();
+            equipment.Equip(SlotType, newItem);
+
+            world.EventBus.Publish(new EquipmentChangedEvent
+            {
+                Entity = playerEntity,
+                Slot = SlotType,
+                OldItem = oldItem,
+                NewItem = newItem,
+            });
+        }
+
+        private void SyncUnequippedItem(BagItemView itemView)
+        {
+            var world = GameManager.Instance?.World;
+            var playerEntity = world?.FindEntityByTag("Player");
+            var equipment = playerEntity?.GetComponent<EquipmentComponent>();
+            if (world == null || playerEntity == null || equipment == null)
+                return;
+
+            var oldItem = equipment.GetEquipped(SlotType);
+            if (oldItem == null)
+                return;
+
+            equipment.Unequip(SlotType);
+            if (itemView?.Data != null)
+                itemView.Data.RuntimeItemData = oldItem;
+
+            world.EventBus.Publish(new EquipmentChangedEvent
+            {
+                Entity = playerEntity,
+                Slot = SlotType,
+                OldItem = oldItem,
+                NewItem = null,
+            });
+        }
+
+        private ItemData GetEquippedItemData()
+        {
+            var world = GameManager.Instance?.World;
+            var playerEntity = world?.FindEntityByTag("Player");
+            var equipment = playerEntity?.GetComponent<EquipmentComponent>();
+            if (world == null || playerEntity == null || equipment == null)
+                return null;
+
+            return equipment.GetEquipped(SlotType);
         }
     }
 }

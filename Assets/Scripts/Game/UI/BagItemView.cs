@@ -29,9 +29,11 @@ namespace POELike.Game.UI
         private float         _lastKnownBagCellSpacing;
         private readonly Vector3[] _worldCorners = new Vector3[4];
         private static readonly List<RaycastResult> s_raycastResults = new List<RaycastResult>();
-
+        
         /// <summary>当前正在移动的道具（全局唯一）</summary>
         public static BagItemView CurrentDraggingItem { get; private set; }
+
+        private static readonly Dictionary<BagItemData, BagItemView> s_itemViewsByData = new Dictionary<BagItemData, BagItemView>();
 
         /// <summary>当前道具的数据</summary>
         public BagItemData Data { get; private set; }
@@ -62,6 +64,7 @@ namespace POELike.Game.UI
             if (data == null)
                 return;
 
+            s_itemViewsByData[data] = this;
             gameObject.name = $"BagItem_{data.Name}";
 
             if (_equipmentItem == null && _image != null)
@@ -70,6 +73,17 @@ namespace POELike.Game.UI
                     _image.sprite = data.Icon;
                 _image.color = data.ItemColor;
             }
+        }
+
+        public static BagItemView FindByData(BagItemData data)
+        {
+            if (data == null)
+                return null;
+
+            if (s_itemViewsByData.TryGetValue(data, out var itemView) && itemView != null)
+                return itemView;
+
+            return null;
         }
 
         /// <summary>
@@ -159,6 +173,11 @@ namespace POELike.Game.UI
         /// </summary>
         public bool TryDropToBag(BagBox bag, int col, int row)
         {
+            return TryDropToBag(bag, col, row, null);
+        }
+
+        public bool TryDropToBag(BagBox bag, int col, int row, PointerEventData eventData)
+        {
             if (bag == null || Data == null)
                 return false;
 
@@ -190,6 +209,35 @@ namespace POELike.Game.UI
 
         public void OnPointerClick(PointerEventData eventData)
         {
+            var draggingItem = CurrentDraggingItem;
+            if (draggingItem != null && draggingItem != this)
+            {
+                if (CurrentBag != null)
+                {
+                    int targetCol = Data.GridCol;
+                    int targetRow = Data.GridRow;
+                    var eventCamera = ResolveEventCamera(eventData);
+                    if (CurrentBag.TryGetCellCoordFromScreenPoint(eventData.position, eventCamera, out int hoveredCol, out int hoveredRow))
+                    {
+                        targetCol = hoveredCol;
+                        targetRow = hoveredRow;
+                    }
+
+                    draggingItem.TryDropToBag(CurrentBag, targetCol, targetRow, eventData);
+                }
+                else if (CurrentSlot != null)
+                {
+                    CurrentSlot.TryAccept(draggingItem, eventData);
+                }
+                else if (CurrentSocket != null)
+                {
+                    CurrentSocket.TryAccept(draggingItem, eventData);
+                }
+
+                eventData?.Use();
+                return;
+            }
+
             TryBeginMove(eventData);
         }
 
@@ -536,6 +584,12 @@ namespace POELike.Game.UI
                 _canvasGroup.alpha          = 1f;
                 _canvasGroup.blocksRaycasts = true;
             }
+        }
+
+        private void OnDestroy()
+        {
+            if (Data != null && s_itemViewsByData.TryGetValue(Data, out var itemView) && itemView == this)
+                s_itemViewsByData.Remove(Data);
         }
     }
 }

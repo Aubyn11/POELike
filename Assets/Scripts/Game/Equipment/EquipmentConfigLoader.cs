@@ -63,6 +63,29 @@ namespace POELike.Game.Equipment
         public string EquipmentBaseValueDesc;
     }
 
+    [Serializable]
+    public class FlaskBaseData
+    {
+        public string FlaskBaseId;
+        public string FlaskCode;
+        public string FlaskName;
+        public string FlaskType;
+        public string FlaskRequireLevel;
+        public string FlaskWidth;
+        public string FlaskHeight;
+        public string FlaskRecoverLife;
+        public string FlaskRecoverMana;
+        public string FlaskDurationMs;
+        public string FlaskMaxCharges;
+        public string FlaskChargesPerUse;
+        public string FlaskIsInstant;
+        public string FlaskInstantPercent;
+        public string FlaskUtilityEffectType;
+        public string FlaskUtilityEffectValue;
+        public List<int> FlaskAllowedSlots = new List<int>();
+        public string FlaskEffectDesc;
+    }
+
     // ── Wrapper ───────────────────────────────────────────────────────
 
     [Serializable]
@@ -75,6 +98,8 @@ namespace POELike.Game.Equipment
     class SubCategoryWrapper  { public List<EquipmentSubCategoryData>  EquipmentSubCategoryConf; }
     [Serializable]
     class BaseValueWrapper    { public List<EquipmentBaseValueData>    EquipmentBaseValueConf; }
+    [Serializable]
+    class FlaskBaseWrapper    { public List<FlaskBaseData>             FlaskBaseConf; }
 
     /// <summary>
     /// 装备配置加载器（静态单例，首次访问时自动加载）
@@ -88,12 +113,14 @@ namespace POELike.Game.Equipment
         private static List<EquipmentModValueData>     _modValues;
         private static List<EquipmentSubCategoryData>  _subCategories;
         private static List<EquipmentBaseValueData>    _baseValues;
+        private static List<FlaskBaseData>             _flaskBases;
 
         public static IReadOnlyList<EquipmentDetailTypeData>  DetailTypes    => _detailTypes  ??= LoadDetailTypes();
         public static IReadOnlyList<EquipmentModData>          Mods           => _mods         ??= LoadMods();
         public static IReadOnlyList<EquipmentModValueData>     ModValues      => _modValues    ??= LoadModValues();
         public static IReadOnlyList<EquipmentSubCategoryData>  SubCategories  => _subCategories ??= LoadSubCategories();
         public static IReadOnlyList<EquipmentBaseValueData>    BaseValues     => _baseValues   ??= LoadBaseValues();
+        public static IReadOnlyList<FlaskBaseData>             FlaskBases     => _flaskBases   ??= LoadFlaskBases();
 
         // ── 加载方法 ──────────────────────────────────────────────────
 
@@ -191,6 +218,22 @@ namespace POELike.Game.Equipment
             }
         }
 
+        private static List<FlaskBaseData> LoadFlaskBases()
+        {
+            var json = ReadCfg("FlaskBaseConf.pb");
+            if (json == null) return new List<FlaskBaseData>();
+            try
+            {
+                var w = JsonUtility.FromJson<FlaskBaseWrapper>(json);
+                return w?.FlaskBaseConf ?? new List<FlaskBaseData>();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[EquipmentConfigLoader] 解析FlaskBaseConf失败: {e.Message}");
+                return new List<FlaskBaseData>();
+            }
+        }
+
         /// <summary>清除缓存，下次访问时重新加载</summary>
         public static void ClearCache()
         {
@@ -199,6 +242,7 @@ namespace POELike.Game.Equipment
             _modValues     = null;
             _subCategories = null;
             _baseValues    = null;
+            _flaskBases    = null;
         }
     }
 }

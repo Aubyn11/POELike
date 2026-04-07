@@ -27,6 +27,9 @@ namespace POELike.Game.UI
         private readonly List<GeneratedEquipment>[] _tabEquipments =
             new List<GeneratedEquipment>[4];
 
+        /// <summary>药剂页签对应的已生成药剂列表</summary>
+        private readonly List<GeneratedFlask> _flaskTabItems = new List<GeneratedFlask>();
+
         /// <summary>当前选中的页签索引</summary>
         private int _currentTab = 0;
 
@@ -127,6 +130,9 @@ namespace POELike.Game.UI
             for (int i = 0; i < EquipmentGenerator.TabCategories.Length; i++)
                 _tabEquipments[i] = EquipmentGenerator.GenerateForCategories(
                     EquipmentGenerator.TabCategories[i]);
+
+            _flaskTabItems.Clear();
+            _flaskTabItems.AddRange(EquipmentGenerator.GenerateFlasksForShop());
         }
 
         /// <summary>
@@ -222,6 +228,12 @@ namespace POELike.Game.UI
             // 只清空道具占用数据，保留格子
             _bag.ClearItems();
 
+            if (_currentTab == EquipmentGenerator.FlaskTabIndex)
+            {
+                RefreshFlaskBag();
+                return;
+            }
+
             var equipments = _tabEquipments[_currentTab];
             if (equipments == null || equipments.Count == 0) return;
 
@@ -280,6 +292,65 @@ namespace POELike.Game.UI
 
                     var img = go.GetComponent<Image>();
                     if (img != null) img.color = equip.QualityColor;
+                }
+
+                go.transform.SetAsLastSibling();
+            }
+        }
+
+        private void RefreshFlaskBag()
+        {
+            if (_flaskTabItems.Count == 0)
+                return;
+
+            if (_equipmentPrefab == null && _pooledEquipmentViews.Count == 0)
+            {
+                Debug.LogError("[ShopPanel] _equipmentPrefab 未赋值！");
+                return;
+            }
+
+            foreach (var flask in _flaskTabItems)
+            {
+                if (flask == null)
+                    continue;
+
+                var bagData = BagItemData.CreateFromGeneratedFlask(flask);
+                if (bagData == null)
+                    continue;
+
+                if (!_bag.TryAutoPlaceItem(bagData))
+                    continue;
+
+                var go = AcquireEquipmentView();
+                _activeEquipmentViews.Add(go);
+
+                var equipItem = go.GetComponent<EquipmentItem>();
+                if (equipItem != null)
+                {
+                    equipItem.Init(bagData);
+                    equipItem.SetupInBag(_bag.CellSize, _bag.CellSpacing,
+                        bagData.GridCol, bagData.GridRow);
+                }
+                else
+                {
+                    var rt = go.GetComponent<RectTransform>();
+                    if (rt != null)
+                    {
+                        const float pad = 2f;
+                        float pw = bagData.GridWidth * _bag.CellSize + (bagData.GridWidth - 1) * _bag.CellSpacing - pad * 2f;
+                        float ph = bagData.GridHeight * _bag.CellSize + (bagData.GridHeight - 1) * _bag.CellSpacing - pad * 2f;
+                        rt.anchorMin        = new Vector2(0f, 1f);
+                        rt.anchorMax        = new Vector2(0f, 1f);
+                        rt.pivot            = new Vector2(0f, 1f);
+                        rt.sizeDelta        = new Vector2(pw, ph);
+                        rt.anchoredPosition = new Vector2(
+                             bagData.GridCol * (_bag.CellSize + _bag.CellSpacing) + pad,
+                            -bagData.GridRow * (_bag.CellSize + _bag.CellSpacing) - pad
+                        );
+                    }
+
+                    var img = go.GetComponent<Image>();
+                    if (img != null) img.color = bagData.ItemColor;
                 }
 
                 go.transform.SetAsLastSibling();

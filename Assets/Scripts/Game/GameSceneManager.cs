@@ -67,6 +67,12 @@ namespace POELike.Game
         private InputAction _skill5Action;
         private InputAction _skill6Action;
 
+        private InputAction _flask1Action;
+        private InputAction _flask2Action;
+        private InputAction _flask3Action;
+        private InputAction _flask4Action;
+        private InputAction _flask5Action;
+
         // 鼠标左键点击寻路
         private InputAction _mouseClickAction;
 
@@ -111,6 +117,11 @@ namespace POELike.Game
             _skill4Action?.Dispose();
             _skill5Action?.Dispose();
             _skill6Action?.Dispose();
+            _flask1Action?.Dispose();
+            _flask2Action?.Dispose();
+            _flask3Action?.Dispose();
+            _flask4Action?.Dispose();
+            _flask5Action?.Dispose();
 
             if (_playerEntity != null && GameManager.Instance != null)
                 GameManager.Instance.World.DestroyEntity(_playerEntity);
@@ -285,12 +296,22 @@ namespace POELike.Game
             _skill4Action = new InputAction("Skill4", InputActionType.Button, "<Keyboard>/t");
             _skill5Action = new InputAction("Skill5", InputActionType.Button, "<Keyboard>/f");
             _skill6Action = new InputAction("Skill6", InputActionType.Button, "<Keyboard>/g");
+            _flask1Action = new InputAction("Flask1", InputActionType.Button, "<Keyboard>/1");
+            _flask2Action = new InputAction("Flask2", InputActionType.Button, "<Keyboard>/2");
+            _flask3Action = new InputAction("Flask3", InputActionType.Button, "<Keyboard>/3");
+            _flask4Action = new InputAction("Flask4", InputActionType.Button, "<Keyboard>/4");
+            _flask5Action = new InputAction("Flask5", InputActionType.Button, "<Keyboard>/5");
 
             _skill2Action.Enable();
             _skill3Action.Enable();
             _skill4Action.Enable();
             _skill5Action.Enable();
             _skill6Action.Enable();
+            _flask1Action.Enable();
+            _flask2Action.Enable();
+            _flask3Action.Enable();
+            _flask4Action.Enable();
+            _flask5Action.Enable();
         }
 
         private void UpdateInput()
@@ -342,6 +363,11 @@ namespace POELike.Game
             _inputComp.SkillInputs[3] = _skill4Action.WasPressedThisFrame();
             _inputComp.SkillInputs[4] = _skill5Action.WasPressedThisFrame();
             _inputComp.SkillInputs[5] = _skill6Action.WasPressedThisFrame();
+            _inputComp.FlaskInputs[0] = _flask1Action.WasPressedThisFrame();
+            _inputComp.FlaskInputs[1] = _flask2Action.WasPressedThisFrame();
+            _inputComp.FlaskInputs[2] = _flask3Action.WasPressedThisFrame();
+            _inputComp.FlaskInputs[3] = _flask4Action.WasPressedThisFrame();
+            _inputComp.FlaskInputs[4] = _flask5Action.WasPressedThisFrame();
 
             // 处理技能激活
             for (int i = 0; i < _inputComp.SkillInputs.Length; i++)
@@ -358,6 +384,170 @@ namespace POELike.Game
                         });
                     }
                 }
+            }
+
+            HandleFlaskInputs();
+        }
+
+        private void HandleFlaskInputs()
+        {
+            var equipment = _playerEntity?.GetComponent<EquipmentComponent>();
+            var health = _playerEntity?.GetComponent<HealthComponent>();
+            var stats = _playerEntity?.GetComponent<StatsComponent>();
+            var combat = _playerEntity?.GetComponent<CombatComponent>();
+            if (equipment == null || health == null || stats == null || combat == null)
+                return;
+
+            for (int i = 0; i < _inputComp.FlaskInputs.Length; i++)
+            {
+                if (!_inputComp.FlaskInputs[i])
+                    continue;
+
+                UseFlask((EquipmentSlot)((int)EquipmentSlot.Flask1 + i), equipment, health, stats, combat);
+            }
+        }
+
+        private void UseFlask(EquipmentSlot slot, EquipmentComponent equipment, HealthComponent health, StatsComponent stats, CombatComponent combat)
+        {
+            var flask = equipment.GetEquipped(slot);
+            if (flask == null || flask.Type != ItemType.Flask)
+                return;
+
+            int chargeCost = Mathf.Max(1, flask.FlaskChargesPerUse);
+            if (flask.FlaskCurrentCharges < chargeCost)
+            {
+                Debug.Log($"[Flask] {slot} 充能不足：{flask.Name}");
+                return;
+            }
+
+            flask.FlaskCurrentCharges -= chargeCost;
+
+            ApplyRecoveryFlask(flask, health, combat);
+            ApplyUtilityFlask(flask, stats, combat);
+
+            Debug.Log($"[Flask] 使用 {flask.Name}，剩余充能 {flask.FlaskCurrentCharges}/{flask.FlaskMaxCharges}");
+        }
+
+        private void ApplyRecoveryFlask(ItemData flask, HealthComponent health, CombatComponent combat)
+        {
+            if (flask == null || health == null || combat == null)
+                return;
+
+            float durationSeconds = Mathf.Max(0f, flask.FlaskDurationMs / 1000f);
+
+            if (flask.FlaskRecoverLife > 0)
+            {
+                float instantLife = flask.FlaskIsInstant
+                    ? flask.FlaskRecoverLife * Mathf.Clamp01(flask.FlaskInstantPercent / 100f)
+                    : 0f;
+                if (instantLife > 0f)
+                    health.Heal(instantLife);
+
+                float remainingLife = Mathf.Max(0f, flask.FlaskRecoverLife - instantLife);
+                if (remainingLife > 0f)
+                    ApplyRecoveryEffect(combat, $"flask_life_{flask.Id}", flask.Name, StatusEffectType.LifeRecovery, remainingLife, durationSeconds);
+            }
+
+            if (flask.FlaskRecoverMana > 0)
+            {
+                float instantMana = flask.FlaskIsInstant
+                    ? flask.FlaskRecoverMana * Mathf.Clamp01(flask.FlaskInstantPercent / 100f)
+                    : 0f;
+                if (instantMana > 0f)
+                    health.CurrentMana += instantMana;
+
+                float remainingMana = Mathf.Max(0f, flask.FlaskRecoverMana - instantMana);
+                if (remainingMana > 0f)
+                    ApplyRecoveryEffect(combat, $"flask_mana_{flask.Id}", flask.Name, StatusEffectType.ManaRecovery, remainingMana, durationSeconds);
+            }
+        }
+
+        private void ApplyRecoveryEffect(CombatComponent combat, string effectId, string effectName, StatusEffectType effectType, float totalRecovery, float durationSeconds)
+        {
+            combat.ActiveEffects.RemoveAll(e => e != null && e.Id == effectId);
+
+            float safeDuration = Mathf.Max(0.25f, durationSeconds > 0f ? durationSeconds : 0.25f);
+            combat.ActiveEffects.Add(new StatusEffect
+            {
+                Id = effectId,
+                Name = effectName,
+                Type = effectType,
+                Duration = safeDuration,
+                RemainingTime = safeDuration,
+                Value = totalRecovery / safeDuration,
+                TickInterval = 0.1f,
+                TickTimer = 0f,
+                Source = _playerEntity,
+            });
+        }
+
+        private void ApplyUtilityFlask(ItemData flask, StatsComponent stats, CombatComponent combat)
+        {
+            if (flask == null || stats == null || combat == null)
+                return;
+
+            if (flask.FlaskUtilityEffectType == FlaskUtilityEffectKind.None)
+                return;
+
+            string effectId = $"flask_utility_{flask.Id}";
+            stats.RemoveModifiersFromSource(effectId);
+            combat.ActiveEffects.RemoveAll(e => e != null && e.Id == effectId);
+
+            AddUtilityModifier(stats, effectId, flask.FlaskUtilityEffectType, flask.FlaskUtilityEffectValue);
+
+            float durationSeconds = Mathf.Max(0.25f, flask.FlaskDurationMs / 1000f);
+            combat.ActiveEffects.Add(new StatusEffect
+            {
+                Id = effectId,
+                Name = flask.Name,
+                Type = StatusEffectType.UtilityFlask,
+                Duration = durationSeconds,
+                RemainingTime = durationSeconds,
+                Value = flask.FlaskUtilityEffectValue,
+                TickInterval = durationSeconds,
+                TickTimer = durationSeconds,
+                Source = _playerEntity,
+            });
+        }
+
+        private void AddUtilityModifier(StatsComponent stats, string source, FlaskUtilityEffectKind effectType, int value)
+        {
+            switch (effectType)
+            {
+                case FlaskUtilityEffectKind.MoveSpeed:
+                    stats.AddModifier(new StatModifier(StatType.MovementSpeed, ModifierType.PercentAdd, value, source));
+                    break;
+                case FlaskUtilityEffectKind.Armour:
+                    stats.AddModifier(new StatModifier(StatType.Armor, ModifierType.Flat, value, source));
+                    break;
+                case FlaskUtilityEffectKind.Evasion:
+                    stats.AddModifier(new StatModifier(StatType.Evasion, ModifierType.Flat, value, source));
+                    break;
+                case FlaskUtilityEffectKind.FireResistance:
+                    stats.AddModifier(new StatModifier(StatType.FireResistance, ModifierType.Flat, value, source));
+                    break;
+                case FlaskUtilityEffectKind.ColdResistance:
+                    stats.AddModifier(new StatModifier(StatType.ColdResistance, ModifierType.Flat, value, source));
+                    break;
+                case FlaskUtilityEffectKind.LightningResistance:
+                    stats.AddModifier(new StatModifier(StatType.LightningResistance, ModifierType.Flat, value, source));
+                    break;
+                case FlaskUtilityEffectKind.ChaosResistance:
+                    stats.AddModifier(new StatModifier(StatType.ChaosResistance, ModifierType.Flat, value, source));
+                    break;
+                case FlaskUtilityEffectKind.PhysicalDamageReduction:
+                    stats.AddModifier(new StatModifier(StatType.Armor, ModifierType.PercentMore, value, source));
+                    break;
+                case FlaskUtilityEffectKind.Onslaught:
+                    stats.AddModifier(new StatModifier(StatType.MovementSpeed, ModifierType.PercentAdd, 20f, source));
+                    stats.AddModifier(new StatModifier(StatType.AttackSpeed, ModifierType.PercentAdd, 20f, source));
+                    break;
+                case FlaskUtilityEffectKind.ConsecratedGround:
+                    stats.AddModifier(new StatModifier(StatType.HealthRegen, ModifierType.Flat, 6f, source));
+                    break;
+                case FlaskUtilityEffectKind.Phasing:
+                    stats.AddModifier(new StatModifier(StatType.MovementSpeed, ModifierType.PercentAdd, 10f, source));
+                    break;
             }
         }
 

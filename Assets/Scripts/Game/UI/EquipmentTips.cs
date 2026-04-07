@@ -132,13 +132,13 @@ namespace POELike.Game.UI
                 _nameText.text = string.IsNullOrWhiteSpace(item.Name) ? "未知装备" : item.Name;
 
             if (_baseValueText != null)
-                _baseValueText.text = string.Empty;
+                _baseValueText.text = item.IsFlask ? BuildFlaskBaseText(item) : string.Empty;
 
             if (_donationText != null)
-                _donationText.text = string.Empty;
+                _donationText.text = item.IsFlask ? BuildFlaskRequirementText(item) : string.Empty;
 
             if (_valueText != null)
-                _valueText.text = BuildBagItemModText(item);
+                _valueText.text = item.IsFlask ? BuildFlaskEffectText(item) : BuildBagItemModText(item);
 
             RefreshLayout();
         }
@@ -228,6 +228,57 @@ namespace POELike.Game.UI
             return sb.ToString().TrimEnd();
         }
 
+        private static string BuildFlaskBaseText(BagItemData item)
+        {
+            if (item == null || !item.IsFlask)
+                return string.Empty;
+
+            var sb = new StringBuilder();
+            sb.AppendLine($"药剂类型：{GetFlaskKindLabel(item.FlaskType)}");
+            sb.AppendLine($"当前充能：{item.ResolveFlaskCurrentCharges()} / {item.FlaskMaxCharges}");
+            sb.AppendLine($"每次使用消耗：{item.FlaskChargesPerUse}");
+            return sb.ToString().TrimEnd();
+        }
+
+        private static string BuildFlaskRequirementText(BagItemData item)
+        {
+            if (item == null || !item.IsFlask)
+                return string.Empty;
+
+            return item.FlaskRequireLevel > 0
+                ? $"需求等级：{item.FlaskRequireLevel}"
+                : string.Empty;
+        }
+
+        private static string BuildFlaskEffectText(BagItemData item)
+        {
+            if (item == null || !item.IsFlask)
+                return string.Empty;
+
+            var sb = new StringBuilder();
+
+            if (item.FlaskRecoverLife > 0)
+                sb.AppendLine(item.FlaskDurationMs > 0
+                    ? $"恢复生命：{item.FlaskRecoverLife}（{item.FlaskDurationMs / 1000f:F2} 秒）"
+                    : $"恢复生命：{item.FlaskRecoverLife}");
+
+            if (item.FlaskRecoverMana > 0)
+                sb.AppendLine(item.FlaskDurationMs > 0
+                    ? $"恢复魔力：{item.FlaskRecoverMana}（{item.FlaskDurationMs / 1000f:F2} 秒）"
+                    : $"恢复魔力：{item.FlaskRecoverMana}");
+
+            if (item.FlaskIsInstant)
+                sb.AppendLine($"瞬间恢复比例：{item.FlaskInstantPercent}%");
+
+            if (item.FlaskUtilityEffectType != FlaskUtilityEffectKind.None)
+                sb.AppendLine($"功能效果：{GetFlaskUtilityEffectLabel(item.FlaskUtilityEffectType, item.FlaskUtilityEffectValue)}");
+
+            if (!string.IsNullOrWhiteSpace(item.FlaskEffectDescription))
+                sb.AppendLine(item.FlaskEffectDescription);
+
+            return sb.ToString().TrimEnd();
+        }
+
         private static void AppendAffixLines(StringBuilder sb, List<string> descriptions, string tag)
         {
             if (sb == null || descriptions == null)
@@ -291,10 +342,12 @@ namespace POELike.Game.UI
             return item.ItemKind switch
             {
                 BagItemKind.Equipment => "装备",
+                BagItemKind.Flask     => "药剂",
                 BagItemKind.Gem       => "宝石",
                 BagItemKind.Misc      => "杂项",
                 _                     => "未知",
             };
+
         }
 
         private static string GetEquipmentSlotLabel(EquipmentSlot slot)
@@ -329,6 +382,37 @@ namespace POELike.Game.UI
                 SocketColor.Blue  => "蓝孔",
                 SocketColor.White => "白孔",
                 _                 => color.ToString(),
+            };
+        }
+
+        private static string GetFlaskKindLabel(FlaskKind? kind)
+        {
+            return kind switch
+            {
+                FlaskKind.Life    => "生命药剂",
+                FlaskKind.Mana    => "魔力药剂",
+                FlaskKind.Hybrid  => "复合药剂",
+                FlaskKind.Utility => "功能药剂",
+                _                 => "未知药剂",
+            };
+        }
+
+        private static string GetFlaskUtilityEffectLabel(FlaskUtilityEffectKind effectType, int value)
+        {
+            return effectType switch
+            {
+                FlaskUtilityEffectKind.MoveSpeed               => $"移动速度提高 {value}%",
+                FlaskUtilityEffectKind.Armour                  => $"获得 +{value} 护甲",
+                FlaskUtilityEffectKind.Evasion                 => $"获得 +{value} 闪避",
+                FlaskUtilityEffectKind.FireResistance          => $"火焰抗性 +{value}%",
+                FlaskUtilityEffectKind.ColdResistance          => $"冰霜抗性 +{value}%",
+                FlaskUtilityEffectKind.LightningResistance     => $"闪电抗性 +{value}%",
+                FlaskUtilityEffectKind.ChaosResistance         => $"混沌抗性 +{value}%",
+                FlaskUtilityEffectKind.PhysicalDamageReduction => $"承受的物理伤害额外降低 {value}%",
+                FlaskUtilityEffectKind.ConsecratedGround       => "制造奉献地面",
+                FlaskUtilityEffectKind.Phasing                 => "获得穿相",
+                FlaskUtilityEffectKind.Onslaught               => "获得猛攻",
+                _                                              => effectType.ToString(),
             };
         }
 

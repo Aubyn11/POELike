@@ -66,11 +66,10 @@ namespace POELike.Game.UI
         {
             return itemView != null &&
                    itemView.Data != null &&
-                   itemView.Data.CanFitSocket(_socketColor) &&
-                   (PlacedGem == null || PlacedGem == itemView);
+                   itemView.Data.CanFitSocket(_socketColor);
         }
 
-        public bool TryAccept(BagItemView itemView)
+        public bool TryAccept(BagItemView itemView, PointerEventData eventData = null)
         {
             if (!CanAccept(itemView))
                 return false;
@@ -78,6 +77,7 @@ namespace POELike.Game.UI
             var sourceBag    = itemView.CurrentBag;
             var sourceSlot   = itemView.CurrentSlot;
             var sourceSocket = itemView.CurrentSocket;
+            var replacedGem  = PlacedGem != null && PlacedGem != itemView ? PlacedGem : null;
 
             if (sourceSocket == this && PlacedGem == itemView)
             {
@@ -101,6 +101,10 @@ namespace POELike.Game.UI
             itemView.MarkDropHandled();
             itemView.CompleteMove();
             RefreshVisual();
+
+            if (replacedGem != null)
+                replacedGem.TryBeginMove(eventData);
+
             return true;
         }
 
@@ -132,7 +136,7 @@ namespace POELike.Game.UI
             var movingItem = BagItemView.CurrentDraggingItem;
             if (movingItem != null)
             {
-                if (!TryAccept(movingItem))
+                if (!TryAccept(movingItem, eventData))
                     SetHighlight(false);
 
                 eventData?.Use();
@@ -151,7 +155,7 @@ namespace POELike.Game.UI
 
         public void OnDrop(PointerEventData eventData)
         {
-            if (!TryAccept(BagItemView.CurrentDraggingItem))
+            if (!TryAccept(BagItemView.CurrentDraggingItem, eventData))
                 SetHighlight(false);
         }
 
