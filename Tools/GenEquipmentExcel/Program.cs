@@ -469,7 +469,7 @@ SetupSheet("装备插槽", "equipment.txt", "EquipmentSlotConf.pb", "EquipmentSl
     SetupSheet("装备大类别", "equipment.txt", "EquipmentCategoryConf.pb", "EquipmentCategoryConf",
         new[] { "EquipmentCategoryId", "EquipmentCategoryName", "EquipmentPart", "EquipmentMaxSlot" });
     var ws = pkg.Workbook.Worksheets["装备大类别"]!;
-    // EquipmentMaxSlot: 单手武器=3, 双手武器/胸甲=6, 头盔/手套/鞋子/副手=4, 饰品(腰带/戒指/项链)=0
+    // EquipmentMaxSlot: 单手武器=3, 双手武器/胸甲=6, 头盔/手套/鞋子/副手=4, 饰品按小类别控制（腰带=2、戒指=1、项链=0）
     WriteRows(ws, new object[][]
     {
         new object[] { 1, "单手武器", 1, 3 },
@@ -486,33 +486,33 @@ SetupSheet("装备插槽", "equipment.txt", "EquipmentSlotConf.pb", "EquipmentSl
 // ===== Sheet 11: 装备小类别 =====
 {
     SetupSheet("装备小类别", "equipment.txt", "EquipmentSubCategoryConf.pb", "EquipmentSubCategoryConf",
-        new[] { "EquipmentSubCategoryId", "EquipmentSubCategoryName", "EquipmentCategoryId" });
+        new[] { "EquipmentSubCategoryId", "EquipmentSubCategoryName", "EquipmentCategoryId", "EquipmentMaxSlot" });
     var ws = pkg.Workbook.Worksheets["装备小类别"]!;
     WriteRows(ws, new object[][]
     {
-        new object[] {  1, "爪",     1 },
-        new object[] {  2, "匕首",   1 },
-        new object[] {  3, "魔杖",   1 },
-        new object[] {  4, "单手剑", 1 },
-        new object[] {  5, "单手斧", 1 },
-        new object[] {  6, "单手锤", 1 },
-        new object[] {  7, "权杖",   1 },
-        new object[] {  8, "弓",     2 },
-        new object[] {  9, "双手剑", 2 },
-        new object[] { 10, "双手斧", 2 },
-        new object[] { 11, "双手锤", 2 },
-        new object[] { 12, "长矛",   2 },
-        new object[] { 13, "法杖",   2 },
-        new object[] { 14, "头盔",   3 },
-        new object[] { 15, "胸甲",   4 },
-        new object[] { 16, "手套",   5 },
-        new object[] { 17, "鞋子",   6 },
-        new object[] { 18, "腰带",   7 },
-        new object[] { 19, "戒指",   7 },
-        new object[] { 20, "项链",   7 },
-        new object[] { 21, "盾牌",   8 },
-        new object[] { 22, "箭袋",   8 },
-        new object[] { 23, "法器",   8 },
+        new object[] {  1, "爪",     1, 3 },
+        new object[] {  2, "匕首",   1, 3 },
+        new object[] {  3, "魔杖",   1, 3 },
+        new object[] {  4, "单手剑", 1, 3 },
+        new object[] {  5, "单手斧", 1, 3 },
+        new object[] {  6, "单手锤", 1, 3 },
+        new object[] {  7, "权杖",   1, 3 },
+        new object[] {  8, "弓",     2, 6 },
+        new object[] {  9, "双手剑", 2, 6 },
+        new object[] { 10, "双手斧", 2, 6 },
+        new object[] { 11, "双手锤", 2, 6 },
+        new object[] { 12, "长矛",   2, 6 },
+        new object[] { 13, "法杖",   2, 6 },
+        new object[] { 14, "头盔",   3, 4 },
+        new object[] { 15, "胸甲",   4, 6 },
+        new object[] { 16, "手套",   5, 4 },
+        new object[] { 17, "鞋子",   6, 4 },
+        new object[] { 18, "腰带",   7, 2 },
+        new object[] { 19, "戒指",   7, 1 },
+        new object[] { 20, "项链",   7, 0 },
+        new object[] { 21, "盾牌",   8, 4 },
+        new object[] { 22, "箭袋",   8, 4 },
+        new object[] { 23, "法器",   8, 4 },
     });
 }
 

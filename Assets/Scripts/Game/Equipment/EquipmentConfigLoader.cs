@@ -52,6 +52,7 @@ namespace POELike.Game.Equipment
         public string EquipmentSubCategoryId;
         public string EquipmentSubCategoryName;
         public string EquipmentCategoryId;
+        public string EquipmentMaxSlot;
     }
 
     [Serializable]

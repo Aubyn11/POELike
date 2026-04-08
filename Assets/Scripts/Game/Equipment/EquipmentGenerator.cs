@@ -343,8 +343,9 @@ namespace POELike.Game.Equipment
         }
 
         /// <summary>
-        /// 根据装备尺寸和属性需求随机生成插槽列表。
-        /// 最大插槽数 = min(gridW * gridH * 2, 6)，但 1×1 最多 2 个。
+        /// 根据装备尺寸和小类别配置随机生成插槽列表。
+        /// 最终最大插槽数 = min(gridW * gridH * 2, 小类别配置上限)；
+        /// 若小类别未配置，则回退到旧规则（单手武器=3，其它=6）。
         /// 插槽颜色权重：力量需求→红，智慧需求→蓝，其余→绿，无需求→白。
         /// </summary>
         private static List<SocketData> GenerateSockets(EquipmentDetailTypeData detail)
@@ -352,25 +353,7 @@ namespace POELike.Game.Equipment
             int.TryParse(detail.EquipmentWidth,  out int w); w = Mathf.Max(1, w);
             int.TryParse(detail.EquipmentHeight, out int h); h = Mathf.Max(1, h);
 
-            // 判断是否为单手武器（大类别 ID = 1），单手武器最多 3 个插槽
-            bool isSingleHandWeapon = false;
-            if (detail.EquipmentTypes != null)
-            {
-                foreach (var typeId in detail.EquipmentTypes)
-                {
-                    var sub = EquipmentConfigLoader.SubCategories
-                        .FirstOrDefault(s => int.TryParse(s.EquipmentSubCategoryId, out int sid) && sid == typeId);
-                    if (sub != null && int.TryParse(sub.EquipmentCategoryId, out int cid) && cid == 1)
-                    {
-                        isSingleHandWeapon = true;
-                        break;
-                    }
-                }
-            }
-
-            // 最大插槽数：格子面积 * 2，上限 6；单手武器额外限制为 3
-            int maxSockets = Mathf.Min(w * h * 2, isSingleHandWeapon ? 3 : 6);
-            // 随机插槽数（至少 0 个）
+            int maxSockets = GetMaxSocketCount(detail, w, h);
             int socketCount = UnityEngine.Random.Range(0, maxSockets + 1);
 
             // 属性需求权重（决定插槽颜色概率）
@@ -394,13 +377,66 @@ namespace POELike.Game.Equipment
                     // 按属性需求权重随机颜色
                     int total = str + intel + wis;
                     int rand  = UnityEngine.Random.Range(0, total);
-                    if (rand < str)             color = SocketColor.Red;
-                    else if (rand < str + intel) color = SocketColor.Blue;
-                    else                         color = SocketColor.Green;
+                    if (rand < str)               color = SocketColor.Red;
+                    else if (rand < str + intel)  color = SocketColor.Blue;
+                    else                          color = SocketColor.Green;
                 }
                 sockets.Add(new SocketData { Color = color });
             }
             return sockets;
+        }
+
+        private static int GetMaxSocketCount(EquipmentDetailTypeData detail, int width, int height)
+        {
+            int areaCap = Mathf.Min(width * height * 2, 6);
+            int configuredCap = -1;
+
+            if (detail.EquipmentTypes != null)
+            {
+                foreach (var typeId in detail.EquipmentTypes)
+                {
+                    var sub = EquipmentConfigLoader.SubCategories
+                        .FirstOrDefault(s => ParseInt(s.EquipmentSubCategoryId, -1) == typeId);
+                    if (sub == null)
+                        continue;
+
+                    int cap = ParseInt(sub.EquipmentMaxSlot, GetLegacyJewelrySocketCap(typeId));
+                    if (cap >= 0)
+                        configuredCap = Mathf.Max(configuredCap, cap);
+                }
+            }
+
+            if (configuredCap < 0)
+                configuredCap = IsSingleHandWeapon(detail) ? 3 : 6;
+
+            return Mathf.Min(areaCap, configuredCap);
+        }
+
+        private static int GetLegacyJewelrySocketCap(int subCategoryId)
+        {
+            return subCategoryId switch
+            {
+                18 => 2,
+                19 => 1,
+                20 => 0,
+                _  => -1,
+            };
+        }
+
+        private static bool IsSingleHandWeapon(EquipmentDetailTypeData detail)
+        {
+            if (detail.EquipmentTypes == null)
+                return false;
+
+            foreach (var typeId in detail.EquipmentTypes)
+            {
+                var sub = EquipmentConfigLoader.SubCategories
+                    .FirstOrDefault(s => ParseInt(s.EquipmentSubCategoryId, -1) == typeId);
+                if (sub != null && ParseInt(sub.EquipmentCategoryId, -1) == 1)
+                    return true;
+            }
+
+            return false;
         }
 
         /// <summary>

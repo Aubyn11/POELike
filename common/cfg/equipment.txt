@@ -77,7 +77,7 @@ EquipmentCategoryConf{
     int32 EquipmentMaxSlot = 4,
 }
 
-// 装备小类别枚举（对应 POE 词缀分类）
+// 装备小类别枚举（对应 POE 词缀分类与最大插槽数）
 // 单手武器：1=爪 2=匕首 3=魔杖 4=单手剑 5=单手斧 6=单手锤 7=权杖
 // 双手武器：8=弓 9=双手剑 10=双手斧 11=双手锤 12=长矛 13=法杖
 // 头盔：14=头盔
@@ -90,6 +90,7 @@ EquipmentSubCategoryConf{
     int32 EquipmentSubCategoryId = 1,
     string EquipmentSubCategoryName = 2,
     int32 EquipmentCategoryId = 3,
+    int32 EquipmentMaxSlot = 4,
 }
 
 // 词缀类型：1=前缀 2=后缀

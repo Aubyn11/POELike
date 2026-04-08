@@ -2,118 +2,141 @@
   "EquipmentSubCategoryConf": [
     {
       "EquipmentSubCategoryId": "1",
-      "EquipmentSubCategoryName": "\u722A",
-      "EquipmentCategoryId": "1"
+      "EquipmentSubCategoryName": "爪",
+      "EquipmentCategoryId": "1",
+      "EquipmentMaxSlot": "3"
     },
     {
       "EquipmentSubCategoryId": "2",
-      "EquipmentSubCategoryName": "\u5315\u9996",
-      "EquipmentCategoryId": "1"
+      "EquipmentSubCategoryName": "匕首",
+      "EquipmentCategoryId": "1",
+      "EquipmentMaxSlot": "3"
     },
     {
       "EquipmentSubCategoryId": "3",
-      "EquipmentSubCategoryName": "\u9B54\u6756",
-      "EquipmentCategoryId": "1"
+      "EquipmentSubCategoryName": "魔杖",
+      "EquipmentCategoryId": "1",
+      "EquipmentMaxSlot": "3"
     },
     {
       "EquipmentSubCategoryId": "4",
-      "EquipmentSubCategoryName": "\u5355\u624B\u5251",
-      "EquipmentCategoryId": "1"
+      "EquipmentSubCategoryName": "单手剑",
+      "EquipmentCategoryId": "1",
+      "EquipmentMaxSlot": "3"
     },
     {
       "EquipmentSubCategoryId": "5",
-      "EquipmentSubCategoryName": "\u5355\u624B\u65A7",
-      "EquipmentCategoryId": "1"
+      "EquipmentSubCategoryName": "单手斧",
+      "EquipmentCategoryId": "1",
+      "EquipmentMaxSlot": "3"
     },
     {
       "EquipmentSubCategoryId": "6",
-      "EquipmentSubCategoryName": "\u5355\u624B\u9524",
-      "EquipmentCategoryId": "1"
+      "EquipmentSubCategoryName": "单手锤",
+      "EquipmentCategoryId": "1",
+      "EquipmentMaxSlot": "3"
     },
     {
       "EquipmentSubCategoryId": "7",
-      "EquipmentSubCategoryName": "\u6743\u6756",
-      "EquipmentCategoryId": "1"
+      "EquipmentSubCategoryName": "权杖",
+      "EquipmentCategoryId": "1",
+      "EquipmentMaxSlot": "3"
     },
     {
       "EquipmentSubCategoryId": "8",
-      "EquipmentSubCategoryName": "\u5F13",
-      "EquipmentCategoryId": "2"
+      "EquipmentSubCategoryName": "弓",
+      "EquipmentCategoryId": "2",
+      "EquipmentMaxSlot": "6"
     },
     {
       "EquipmentSubCategoryId": "9",
-      "EquipmentSubCategoryName": "\u53CC\u624B\u5251",
-      "EquipmentCategoryId": "2"
+      "EquipmentSubCategoryName": "双手剑",
+      "EquipmentCategoryId": "2",
+      "EquipmentMaxSlot": "6"
     },
     {
       "EquipmentSubCategoryId": "10",
-      "EquipmentSubCategoryName": "\u53CC\u624B\u65A7",
-      "EquipmentCategoryId": "2"
+      "EquipmentSubCategoryName": "双手斧",
+      "EquipmentCategoryId": "2",
+      "EquipmentMaxSlot": "6"
     },
     {
       "EquipmentSubCategoryId": "11",
-      "EquipmentSubCategoryName": "\u53CC\u624B\u9524",
-      "EquipmentCategoryId": "2"
+      "EquipmentSubCategoryName": "双手锤",
+      "EquipmentCategoryId": "2",
+      "EquipmentMaxSlot": "6"
     },
     {
       "EquipmentSubCategoryId": "12",
-      "EquipmentSubCategoryName": "\u957F\u77DB",
-      "EquipmentCategoryId": "2"
+      "EquipmentSubCategoryName": "长矛",
+      "EquipmentCategoryId": "2",
+      "EquipmentMaxSlot": "6"
     },
     {
       "EquipmentSubCategoryId": "13",
-      "EquipmentSubCategoryName": "\u6CD5\u6756",
-      "EquipmentCategoryId": "2"
+      "EquipmentSubCategoryName": "法杖",
+      "EquipmentCategoryId": "2",
+      "EquipmentMaxSlot": "6"
     },
     {
       "EquipmentSubCategoryId": "14",
-      "EquipmentSubCategoryName": "\u5934\u76D4",
-      "EquipmentCategoryId": "3"
+      "EquipmentSubCategoryName": "头盔",
+      "EquipmentCategoryId": "3",
+      "EquipmentMaxSlot": "4"
     },
     {
       "EquipmentSubCategoryId": "15",
-      "EquipmentSubCategoryName": "\u80F8\u7532",
-      "EquipmentCategoryId": "4"
+      "EquipmentSubCategoryName": "胸甲",
+      "EquipmentCategoryId": "4",
+      "EquipmentMaxSlot": "6"
     },
     {
       "EquipmentSubCategoryId": "16",
-      "EquipmentSubCategoryName": "\u624B\u5957",
-      "EquipmentCategoryId": "5"
+      "EquipmentSubCategoryName": "手套",
+      "EquipmentCategoryId": "5",
+      "EquipmentMaxSlot": "4"
     },
     {
       "EquipmentSubCategoryId": "17",
-      "EquipmentSubCategoryName": "\u978B\u5B50",
-      "EquipmentCategoryId": "6"
+      "EquipmentSubCategoryName": "鞋子",
+      "EquipmentCategoryId": "6",
+      "EquipmentMaxSlot": "4"
     },
     {
       "EquipmentSubCategoryId": "18",
-      "EquipmentSubCategoryName": "\u8170\u5E26",
-      "EquipmentCategoryId": "7"
+      "EquipmentSubCategoryName": "腰带",
+      "EquipmentCategoryId": "7",
+      "EquipmentMaxSlot": "2"
     },
     {
       "EquipmentSubCategoryId": "19",
-      "EquipmentSubCategoryName": "\u6212\u6307",
-      "EquipmentCategoryId": "7"
+      "EquipmentSubCategoryName": "戒指",
+      "EquipmentCategoryId": "7",
+      "EquipmentMaxSlot": "1"
     },
     {
       "EquipmentSubCategoryId": "20",
-      "EquipmentSubCategoryName": "\u9879\u94FE",
-      "EquipmentCategoryId": "7"
+      "EquipmentSubCategoryName": "项链",
+      "EquipmentCategoryId": "7",
+      "EquipmentMaxSlot": "0"
     },
     {
       "EquipmentSubCategoryId": "21",
-      "EquipmentSubCategoryName": "\u76FE\u724C",
-      "EquipmentCategoryId": "8"
+      "EquipmentSubCategoryName": "盾牌",
+      "EquipmentCategoryId": "8",
+      "EquipmentMaxSlot": "4"
     },
     {
       "EquipmentSubCategoryId": "22",
-      "EquipmentSubCategoryName": "\u7BAD\u888B",
-      "EquipmentCategoryId": "8"
+      "EquipmentSubCategoryName": "箭袋",
+      "EquipmentCategoryId": "8",
+      "EquipmentMaxSlot": "4"
     },
     {
       "EquipmentSubCategoryId": "23",
-      "EquipmentSubCategoryName": "\u6CD5\u5668",
-      "EquipmentCategoryId": "8"
+      "EquipmentSubCategoryName": "法器",
+      "EquipmentCategoryId": "8",
+      "EquipmentMaxSlot": "4"
     }
   ]
 }
