@@ -135,7 +135,7 @@ namespace POELike.Game.UI
                 _baseValueText.text = item.IsFlask ? BuildFlaskBaseText(item) : string.Empty;
 
             if (_donationText != null)
-                _donationText.text = item.IsFlask ? BuildFlaskRequirementText(item) : string.Empty;
+                _donationText.text = item.IsFlask ? BuildFlaskRequirementText(item) : BuildBagItemRequirementText(item);
 
             if (_valueText != null)
                 _valueText.text = item.IsFlask ? BuildFlaskEffectText(item) : BuildBagItemModText(item);
@@ -307,7 +307,24 @@ namespace POELike.Game.UI
 
         private static string BuildBagItemRequirementText(BagItemData item)
         {
-            if (item == null || !item.AcceptedEquipmentSlot.HasValue)
+            if (item == null)
+                return string.Empty;
+
+            if (item.AcceptedEquipmentSlots != null && item.AcceptedEquipmentSlots.Count > 0)
+            {
+                var labels = new List<string>();
+                for (int i = 0; i < item.AcceptedEquipmentSlots.Count; i++)
+                {
+                    string label = GetEquipmentSlotLabel(item.AcceptedEquipmentSlots[i]);
+                    if (!labels.Contains(label))
+                        labels.Add(label);
+                }
+
+                if (labels.Count > 0)
+                    return $"装备槽位：{string.Join(" / ", labels)}";
+            }
+
+            if (!item.AcceptedEquipmentSlot.HasValue)
                 return string.Empty;
 
             return $"装备槽位：{GetEquipmentSlotLabel(item.AcceptedEquipmentSlot.Value)}";

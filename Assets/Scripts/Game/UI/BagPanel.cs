@@ -203,6 +203,7 @@ namespace POELike.Game.UI
                 prefixes: new[] { "最大魔力 +18" },
                 suffixes: new[] { "火焰抗性 +20%" }
             );
+            ringData.SetAcceptedEquipmentSlots(new[] { EquipmentSlot.RingLeft, EquipmentSlot.RingRight });
             SpawnItemInBag(ringData, 9, 0);
 
             SpawnFlaskDemoItem("life_medium", 0, 3);

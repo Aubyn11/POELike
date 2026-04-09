@@ -220,7 +220,8 @@ namespace POELike.Game.UI
 
             if (IsEquipment)
             {
-                return AcceptedEquipmentSlot switch
+                var primarySlot = ResolvePrimaryEquipmentSlot();
+                return primarySlot switch
                 {
                     EquipmentSlot.MainHand or EquipmentSlot.OffHand => ItemType.Weapon,
                     EquipmentSlot.RingLeft or EquipmentSlot.RingRight or EquipmentSlot.Amulet or EquipmentSlot.Belt => ItemType.Accessory,
@@ -229,6 +230,19 @@ namespace POELike.Game.UI
             }
 
             return ItemType.Misc;
+        }
+
+        private EquipmentSlot? ResolvePrimaryEquipmentSlot()
+        {
+            if (AcceptedEquipmentSlots != null && AcceptedEquipmentSlots.Count > 0)
+                return AcceptedEquipmentSlots[0];
+
+            return AcceptedEquipmentSlot;
+        }
+
+        private static bool IsRingSlot(EquipmentSlot slot)
+        {
+            return slot == EquipmentSlot.RingLeft || slot == EquipmentSlot.RingRight;
         }
 
         /// <summary>
@@ -256,10 +270,19 @@ namespace POELike.Game.UI
                 {
                     if (AcceptedEquipmentSlots[i] == slot)
                         return true;
+
+                    if (IsRingSlot(AcceptedEquipmentSlots[i]) && IsRingSlot(slot))
+                        return true;
                 }
             }
 
-            return AcceptedEquipmentSlot.HasValue && AcceptedEquipmentSlot.Value == slot;
+            if (!AcceptedEquipmentSlot.HasValue)
+                return false;
+
+            if (IsRingSlot(AcceptedEquipmentSlot.Value) && IsRingSlot(slot))
+                return true;
+
+            return AcceptedEquipmentSlot.Value == slot;
         }
 
         /// <summary>
