@@ -17,6 +17,15 @@ namespace POELike.Game.UI
     }
 
     /// <summary>
+    /// 宝石类型
+    /// </summary>
+    public enum BagGemKind
+    {
+        Active,
+        Support,
+    }
+
+    /// <summary>
     /// 背包道具数据
     /// 描述一个道具在背包格子中的占位信息（宽 × 高个格子）
     /// </summary>
@@ -84,6 +93,9 @@ namespace POELike.Game.UI
         /// <summary>宝石颜色（仅宝石道具使用）</summary>
         public SocketColor? GemColor { get; set; }
 
+        /// <summary>宝石类型（仅宝石道具使用）</summary>
+        public BagGemKind GemKind { get; set; } = BagGemKind.Active;
+
         /// <summary>装备自带的插槽列表</summary>
         public List<SocketData> Sockets { get; } = new List<SocketData>();
 
@@ -97,6 +109,8 @@ namespace POELike.Game.UI
         public bool IsGem       => ItemKind == BagItemKind.Gem;
         public bool IsFlask     => ItemKind == BagItemKind.Flask;
         public bool IsEquippable => IsEquipment || IsFlask;
+        public bool IsActiveSkillGem => IsGem && GemKind == BagGemKind.Active;
+        public bool IsSupportSkillGem => IsGem && GemKind == BagGemKind.Support;
 
         // ── 格子占用尺寸 ──────────────────────────────────────────────
 

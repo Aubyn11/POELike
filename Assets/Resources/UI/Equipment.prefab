@@ -146,8 +146,8 @@ MonoBehaviour:
   - {fileID: 4436289428250056852, guid: 08430e56002016c4da57a73650292a6b, type: 3}
   _direction: 2
   _spacingLeft: 0
-  _spacingRight: 3
-  _spacingBottom: 0
+  _spacingRight: 15
+  _spacingBottom: 15
   _spacingTop: 0
   _paddingLeft: 0
   _paddingRight: 0

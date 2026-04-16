@@ -1,4 +1,5 @@
 using POELike.Game.Equipment;
+using POELike.Managers;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -23,6 +24,8 @@ namespace POELike.Game.UI
 
         private SocketColor _socketColor = SocketColor.White;
         private Color       _baseColor   = Color.white;
+        private EquipmentItem _ownerEquipment;
+        private int           _socketIndex = -1;
 
         public RectTransform ContentRoot => transform as RectTransform;
         public float ItemPadding => _itemPadding;
@@ -40,6 +43,8 @@ namespace POELike.Game.UI
         /// </summary>
         public void SetupSocket(EquipmentItem ownerEquipment, int socketIndex, SocketColor socketColor)
         {
+            _ownerEquipment = ownerEquipment;
+            _socketIndex = socketIndex;
             SetSocket(socketColor);
             RefreshVisual();
         }
@@ -85,6 +90,7 @@ namespace POELike.Game.UI
                 itemView.MarkDropHandled();
                 itemView.CompleteMove();
                 RefreshVisual();
+                _ownerEquipment?.SetSocketedGem(_socketIndex, itemView.Data);
                 return true;
             }
 
@@ -101,10 +107,12 @@ namespace POELike.Game.UI
             itemView.MarkDropHandled();
             itemView.CompleteMove();
             RefreshVisual();
+            _ownerEquipment?.SetSocketedGem(_socketIndex, itemView.Data);
 
             if (replacedGem != null)
                 replacedGem.TryBeginMove(eventData);
 
+            UIManager.Instance?.RefreshCharactorMainPanel();
             return true;
         }
 
@@ -113,8 +121,13 @@ namespace POELike.Game.UI
             if (itemView != null && PlacedGem != itemView)
                 return;
 
+            if (PlacedGem == null)
+                return;
+
             PlacedGem = null;
+            _ownerEquipment?.SetSocketedGem(_socketIndex, null);
             RefreshVisual();
+            UIManager.Instance?.RefreshCharactorMainPanel();
         }
 
         public void OnPointerEnter(PointerEventData eventData)

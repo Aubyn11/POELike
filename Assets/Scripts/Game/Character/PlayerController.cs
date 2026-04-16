@@ -91,6 +91,9 @@ namespace POELike.Game.Character
             
             // 属性组件
             var statsComp = PlayerEntity.AddComponent(new StatsComponent());
+            statsComp.SetBaseStat(StatType.Strength, 10f);
+            statsComp.SetBaseStat(StatType.Dexterity, 10f);
+            statsComp.SetBaseStat(StatType.Intelligence, 10f);
             statsComp.SetBaseStat(StatType.MaxHealth, _baseHealth);
             statsComp.SetBaseStat(StatType.MaxMana, _baseMana);
             statsComp.SetBaseStat(StatType.MovementSpeed, _baseMoveSpeed);

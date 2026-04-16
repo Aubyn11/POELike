@@ -16,6 +16,7 @@ namespace POELike.Game.UI
     public class BagItemView : MonoBehaviour, IPointerClickHandler
     {
         private const float BagItemPadding = 2f;
+        private const float DragFollowSmoothTime = 0.02f;
 
         private RectTransform _rt;
         private CanvasGroup   _canvasGroup;
@@ -27,6 +28,7 @@ namespace POELike.Game.UI
         private BagBox        _previewBag;
         private float         _lastKnownBagCellSize = -1f;
         private float         _lastKnownBagCellSpacing;
+        private Vector3       _dragFollowVelocity;
         private readonly Vector3[] _worldCorners = new Vector3[4];
         private static readonly List<RaycastResult> s_raycastResults = new List<RaycastResult>();
         
@@ -267,8 +269,9 @@ namespace POELike.Game.UI
 
             ClearBagPreview();
             CurrentBag?.ClearAllHighlights();
+            ResetDragFollow();
 
-            UpdateMoveVisual(eventData?.position ?? Vector2.zero, ResolveEventCamera(eventData));
+            UpdateMoveVisual(eventData?.position ?? Vector2.zero, ResolveEventCamera(eventData), true);
             transform.SetAsLastSibling();
             eventData?.Use();
         }
@@ -279,6 +282,7 @@ namespace POELike.Game.UI
                 CurrentDraggingItem = null;
 
             ClearBagPreview();
+            ResetDragFollow();
             CleanupDragVisual();
         }
 
@@ -377,12 +381,12 @@ namespace POELike.Game.UI
             UpdateMoveVisual(mouse.position.ReadValue(), GetPointerEventCamera());
         }
 
-        private void UpdateMoveVisual(Vector2 screenPosition, Camera eventCamera)
+        private void UpdateMoveVisual(Vector2 screenPosition, Camera eventCamera, bool immediate = false)
         {
-            if (TrySnapToBagPreview(screenPosition))
+            if (TrySnapToBagPreview(screenPosition, immediate))
                 return;
 
-            UpdateDragPosition(screenPosition, eventCamera);
+            UpdateDragPosition(screenPosition, eventCamera, immediate);
         }
 
         private Camera ResolveEventCamera(PointerEventData eventData)
@@ -403,11 +407,12 @@ namespace POELike.Game.UI
             return rootCanvas.worldCamera != null ? rootCanvas.worldCamera : Camera.main;
         }
 
-        private void UpdateDragPosition(Vector2 screenPosition, Camera eventCamera)
+        private void UpdateDragPosition(Vector2 screenPosition, Camera eventCamera, bool immediate = false)
         {
             if (_dragRoot == null)
             {
                 _rt.position = screenPosition;
+                ResetDragFollow();
                 return;
             }
 
@@ -417,11 +422,11 @@ namespace POELike.Game.UI
                     eventCamera,
                     out var worldPos))
             {
-                _rt.position = worldPos;
+                ApplyDragFollowPosition(worldPos, immediate);
             }
         }
 
-        private bool TrySnapToBagPreview(Vector2 screenPosition)
+        private bool TrySnapToBagPreview(Vector2 screenPosition, bool immediate = false)
         {
             if (Data == null)
             {
@@ -440,7 +445,7 @@ namespace POELike.Game.UI
 
             _previewBag = bag;
             _previewBag.ShowPlacementPreview(Data, col, row);
-            SnapToBagPreview(bag, col, row);
+            SnapToBagPreview(bag, col, row, immediate);
             return true;
         }
 
@@ -483,7 +488,7 @@ namespace POELike.Game.UI
             return false;
         }
 
-        private void SnapToBagPreview(BagBox bag, int col, int row)
+        private void SnapToBagPreview(BagBox bag, int col, int row, bool immediate = false)
         {
             if (_rt == null || bag == null)
                 return;
@@ -494,7 +499,7 @@ namespace POELike.Game.UI
             Vector3 widthVector  = _worldCorners[2] - _worldCorners[1];
             Vector3 heightVector = _worldCorners[0] - _worldCorners[1];
 
-            _rt.position = topLeftWorld + widthVector * 0.5f + heightVector * 0.5f;
+            ApplyDragFollowPosition(topLeftWorld + widthVector * 0.5f + heightVector * 0.5f, immediate);
         }
 
         private Vector3 GetBagVisualTopLeftWorld(BagBox bag, int col, int row)
@@ -524,6 +529,33 @@ namespace POELike.Game.UI
 
             _previewBag.ClearAllHighlights();
             _previewBag = null;
+        }
+
+        private void ResetDragFollow()
+        {
+            _dragFollowVelocity = Vector3.zero;
+        }
+
+        private void ApplyDragFollowPosition(Vector3 targetWorldPos, bool immediate)
+        {
+            if (_rt == null)
+                return;
+
+            if (immediate)
+            {
+                _dragFollowVelocity = Vector3.zero;
+                _rt.position = targetWorldPos;
+                return;
+            }
+
+            float deltaTime = Mathf.Max(Time.unscaledDeltaTime, 0.0001f);
+            _rt.position = Vector3.SmoothDamp(
+                _rt.position,
+                targetWorldPos,
+                ref _dragFollowVelocity,
+                DragFollowSmoothTime,
+                Mathf.Infinity,
+                deltaTime);
         }
 
         private void ResetLocalScale()

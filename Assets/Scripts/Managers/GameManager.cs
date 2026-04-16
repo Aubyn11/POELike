@@ -35,6 +35,8 @@ namespace POELike.Managers
         private string _debugEntityCount = "";
         private string _debugFps         = "";
         private float  _debugTimer       = 0f;
+        private int    _debugFrameCount  = 0;
+        private float  _debugFrameTimeSum = 0f;
         private const float DebugUpdateInterval = 0.2f;
 
 #if UNITY_EDITOR
@@ -175,12 +177,23 @@ namespace POELike.Managers
             // 限频更新调试文本（每0.2秒一次，避免IMGUI每帧重建Mesh）
             if (_showDebugInfo)
             {
-                _debugTimer += Time.deltaTime;
+                float frameDelta = Time.unscaledDeltaTime;
+                _debugTimer += frameDelta;
+                _debugFrameCount++;
+                _debugFrameTimeSum += frameDelta;
+
                 if (_debugTimer >= DebugUpdateInterval)
                 {
+                    float averageDelta = _debugFrameCount > 0
+                        ? _debugFrameTimeSum / _debugFrameCount
+                        : 0f;
+                    float fps = averageDelta > 0.0001f ? 1f / averageDelta : 0f;
+
                     _debugTimer = 0f;
+                    _debugFrameCount = 0;
+                    _debugFrameTimeSum = 0f;
                     _debugEntityCount = $"实体数量: {World?.EntityCount ?? 0}";
-                    _debugFps         = $"FPS: {(1f / Time.deltaTime):F1}";
+                    _debugFps         = $"FPS: {fps:F1} ({averageDelta * 1000f:F2} ms)";
                 }
             }
         }
@@ -207,7 +220,7 @@ namespace POELike.Managers
         {
             if (!_showDebugInfo) return;
             
-            GUILayout.BeginArea(new Rect(10, 10, 200, 100));
+            GUILayout.BeginArea(new Rect(10, 10, 260, 100));
             GUILayout.Label(_debugEntityCount);
             GUILayout.Label(_debugFps);
             GUILayout.EndArea();

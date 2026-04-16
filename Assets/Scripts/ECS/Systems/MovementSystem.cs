@@ -78,7 +78,7 @@ namespace POELike.ECS.Systems
         private bool _readbackPending      = false;  // 是否有回读请求在飞行中
         private bool _hasPendingReadback   = false;  // 是否有待在主更新点落地的回读结果
         private int  _pendingReadbackCount = 0;
-        private const int ReadbackInterval = 1;      // 每次 GPU 步进后都请求一次回读，保证 AI 拿到最新快照
+        private const int ReadbackInterval = 2;      // 每 2 次 GPU 步进请求一次回读，降低读回压力并减少帧时间抖动
         private const float MaxGpuDispatchDelta = 0.10f;
 
         private float _pendingGpuDelta = 0f;
@@ -143,6 +143,7 @@ namespace POELike.ECS.Systems
             _hasPendingReadback = false;
             _pendingReadbackCount = 0;
             _pendingGpuDelta = 0f;
+            _readbackFrame = 0;
             _simulateCS = Resources.Load<ComputeShader>("Shaders/MonsterSimulateCompute");
             if (_simulateCS != null)
             {
@@ -207,13 +208,13 @@ namespace POELike.ECS.Systems
             int monsterCount = _monsterTCs.Count;
             if (monsterCount == 0) return;
 
-            // ── Step3：上传本帧数据到 GPU，Dispatch 计算新位置，同步回读 ──
+            // ── Step3：每帧都推进 GPU 模拟，CPU 镜像通过异步回读按节流频率刷新 ──
             if (_simulateCS != null)
             {
                 _pendingGpuDelta += deltaTime;
                 ApplyPendingGpuReadback();
 
-                if (!_readbackPending && _pendingGpuDelta > 0.0001f)
+                if (_pendingGpuDelta > 0.0001f)
                 {
                     float stepDelta = Mathf.Min(_pendingGpuDelta, MaxGpuDispatchDelta);
                     _pendingGpuDelta -= stepDelta;
@@ -415,13 +416,13 @@ namespace POELike.ECS.Systems
             _simulateCS.SetBuffer(_kernelSeparate, ID_MoveOutputs, _gpuOutputBuffer);
             _simulateCS.Dispatch(_kernelSeparate, (count + 63) / 64, 1, 1);
 
-            // 异步回读：每次 GPU 步进后请求一次，用于把最新快照在下一次主更新点同步回 ECS
-            // MonsterMeshRenderer 直接读取 _gpuOutputBuffer，不需要回读到 CPU 才能渲染
+            // 异步回读：GPU 每帧都可以继续推进，CPU 只按固定频率同步快照回 ECS，
+            // 避免把“等待回读完成”变成 GPU 模拟的主循环节流点。
             _readbackFrame++;
             if (_readbackFrame < ReadbackInterval) return;
             _readbackFrame = 0;
 
-            if (_readbackPending) return;
+            if (_readbackPending || _hasPendingReadback || _disposed) return;
             _readbackPending = true;
             int readbackGeneration = _gpuGeneration;
             int readbackLayoutVersion = _layoutVersion;
@@ -730,6 +731,7 @@ namespace POELike.ECS.Systems
             _gpuPositionsDirty = true;
             _hasPendingReadback = false;
             _pendingReadbackCount = 0;
+            _readbackFrame = 0;
             _gpuGeneration++;
         }
 
@@ -813,6 +815,7 @@ namespace POELike.ECS.Systems
             _readbackPending = false;
             _hasPendingReadback = false;
             _pendingReadbackCount = 0;
+            _readbackFrame = 0;
             World.EventBus.Unsubscribe<EntityCreatedEvent>(OnEntityCreated);
             World.EventBus.Unsubscribe<EntityDestroyedEvent>(OnEntityDestroyed);
 

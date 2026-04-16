@@ -20,17 +20,51 @@ namespace POELike.Managers
         [SerializeField] private string _characterSelectPanelPath = "UI/CharacterSelectPanel";
         [SerializeField] private string _chatPanelPath            = "UI/ChatPanel";
         [SerializeField] private string _bagPanelPath             = "UI/Bag";
+        [SerializeField] private string _charactorMainPanelPath   = "UI/CharactorMainPanel";
+        [SerializeField] private string _charactorMassagePanelPath = "UI/CharactorMassagePanel";
+
+        private const int CharactorMainPanelSortingOrder = 1000;
+        private const int TooltipOverlaySortingOrder = 2000;
 
         // ── 内部引用 ──────────────────────────────────────────────────
         private Canvas               _rootCanvas;
         private UIPool               _uiPool;
+        private RectTransform        _tooltipOverlay;
 
         // 运行时面板引用
         private CharacterSelectPanel _characterSelectPanel;
         private NpcDialogPanel       _chatPanel;
         private GameObject           _bagPanel;
+        private GameObject           _charactorMainPanel;
+        private GameObject           _charactorMassagePanel;
         private InputAction          _bagToggleAction;
+        private InputAction          _charactorMassageToggleAction;
         private int                  _lastBagToggleFrame = -1;
+        private int                  _lastCharactorMassageToggleFrame = -1;
+
+        public BagPanel CurrentBagPanel
+        {
+            get
+            {
+                if (_bagPanel == null)
+                    return null;
+
+                EnsureBagPanelController();
+                return _bagPanel.GetComponent<BagPanel>();
+            }
+        }
+
+        public RectTransform TooltipOverlayRoot
+        {
+            get
+            {
+                if (_rootCanvas == null)
+                    EnsureRootCanvas();
+
+                EnsureTooltipOverlay();
+                return _tooltipOverlay;
+            }
+        }
 
         // ── 生命周期 ──────────────────────────────────────────────────
 
@@ -53,16 +87,27 @@ namespace POELike.Managers
         private void Update()
         {
             HandleBagHotkey();
+            HandleCharactorMassageHotkey();
         }
 
         private void OnGUI()
         {
             var currentEvent = Event.current;
-            if (currentEvent == null || currentEvent.type != EventType.KeyDown || currentEvent.keyCode != KeyCode.I)
+            if (currentEvent == null || currentEvent.type != EventType.KeyDown)
                 return;
 
-            TryToggleBagPanel();
-            currentEvent.Use();
+            if (currentEvent.keyCode == KeyCode.I)
+            {
+                TryToggleBagPanel();
+                currentEvent.Use();
+                return;
+            }
+
+            if (currentEvent.keyCode == KeyCode.C)
+            {
+                TryToggleCharactorMassagePanel();
+                currentEvent.Use();
+            }
         }
 
         private void OnDestroy()
@@ -75,9 +120,16 @@ namespace POELike.Managers
                 _bagToggleAction.Dispose();
             }
 
+            if (_charactorMassageToggleAction != null)
+            {
+                _charactorMassageToggleAction.performed -= OnCharactorMassageTogglePerformed;
+                _charactorMassageToggleAction.Dispose();
+            }
+
             if (Instance == this)
             {
                 HideBagPanel();
+                HideCharactorMainPanel();
                 _uiPool?.Clear();
                 Instance = null;
             }
@@ -88,11 +140,20 @@ namespace POELike.Managers
             _bagToggleAction = new InputAction("BagToggle", InputActionType.Button, "<Keyboard>/i");
             _bagToggleAction.performed += OnBagTogglePerformed;
             _bagToggleAction.Enable();
+
+            _charactorMassageToggleAction = new InputAction("CharactorMassageToggle", InputActionType.Button, "<Keyboard>/c");
+            _charactorMassageToggleAction.performed += OnCharactorMassageTogglePerformed;
+            _charactorMassageToggleAction.Enable();
         }
 
         private void OnBagTogglePerformed(InputAction.CallbackContext context)
         {
             TryToggleBagPanel();
+        }
+
+        private void OnCharactorMassageTogglePerformed(InputAction.CallbackContext context)
+        {
+            TryToggleCharactorMassagePanel();
         }
 
         private void TryToggleBagPanel()
@@ -105,6 +166,18 @@ namespace POELike.Managers
 
             _lastBagToggleFrame = Time.frameCount;
             ToggleBagPanel();
+        }
+
+        private void TryToggleCharactorMassagePanel()
+        {
+            if (!CanUseGameplayPanels())
+                return;
+
+            if (_lastCharactorMassageToggleFrame == Time.frameCount)
+                return;
+
+            _lastCharactorMassageToggleFrame = Time.frameCount;
+            ToggleCharactorMassagePanel();
         }
 
         // ── 通用 UI 加载接口 ──────────────────────────────────────────
@@ -231,6 +304,7 @@ namespace POELike.Managers
                 _bagPanel.SetActive(true);
                 EnsureBagPanelController();
                 RegisterBagOccluder();
+                RefreshCharactorMainPanel();
                 return;
             }
 
@@ -239,7 +313,70 @@ namespace POELike.Managers
 
             EnsureBagPanelController();
             RegisterBagOccluder();
+            RefreshCharactorMainPanel();
             Debug.Log("[UIManager] Bag 已打开");
+        }
+
+        /// <summary>显示角色主界面底栏</summary>
+        public void ShowCharactorMainPanel()
+        {
+            if (SceneManager.GetActiveScene().name != SceneLoader.SceneGame)
+                return;
+
+            if (_charactorMainPanel == null)
+            {
+                _charactorMainPanel = GetUI(_charactorMainPanelPath);
+                if (_charactorMainPanel == null)
+                    return;
+            }
+
+            _charactorMainPanel.SetActive(true);
+            ConfigureCharactorMainPanel(_charactorMainPanel);
+            RegisterCharactorMainPanelOccluder();
+            RefreshCharactorMainPanel();
+            Debug.Log("[UIManager] CharactorMainPanel 已显示并置顶");
+        }
+
+        public void ShowCharactorMassagePanel()
+        {
+            if (SceneManager.GetActiveScene().name != SceneLoader.SceneGame)
+                return;
+
+            if (_charactorMassagePanel == null)
+            {
+                _charactorMassagePanel = GetUI(_charactorMassagePanelPath);
+                if (_charactorMassagePanel == null)
+                    return;
+            }
+
+            _charactorMassagePanel.SetActive(true);
+            ConfigureCharactorMassagePanel(_charactorMassagePanel);
+            RegisterCharactorMassagePanelOccluder();
+            RefreshCharactorMassagePanel();
+            Debug.Log("[UIManager] CharactorMassagePanel 已显示");
+        }
+
+        /// <summary>隐藏角色主界面底栏（归还到池）</summary>
+        public void HideCharactorMainPanel()
+        {
+            if (_charactorMainPanel != null)
+            {
+                UnregisterCharactorMainPanelOccluder();
+                ReturnUI(_charactorMainPanelPath, _charactorMainPanel);
+                _charactorMainPanel = null;
+            }
+
+            HideCharactorMassagePanel();
+        }
+
+        public void HideCharactorMassagePanel()
+        {
+            if (_charactorMassagePanel == null)
+                return;
+
+            UnregisterCharactorMassagePanelOccluder();
+            ReturnUI(_charactorMassagePanelPath, _charactorMassagePanel);
+            _charactorMassagePanel = null;
         }
 
         /// <summary>隐藏背包面板（归还到池）</summary>
@@ -261,6 +398,43 @@ namespace POELike.Managers
             }
 
             ShowBagPanel();
+        }
+
+        public void ToggleCharactorMassagePanel()
+        {
+            if (_charactorMassagePanel != null)
+            {
+                HideCharactorMassagePanel();
+                return;
+            }
+
+            ShowCharactorMassagePanel();
+        }
+
+        public void RefreshCharactorMainPanel()
+        {
+            if (_charactorMainPanel != null)
+            {
+                var controller = _charactorMainPanel.GetComponent<CharactorMainPanelController>();
+                if (controller == null)
+                    controller = _charactorMainPanel.AddComponent<CharactorMainPanelController>();
+
+                controller.RefreshFromCurrentState();
+            }
+
+            RefreshCharactorMassagePanel();
+        }
+
+        private void RefreshCharactorMassagePanel()
+        {
+            if (_charactorMassagePanel == null)
+                return;
+
+            var controller = _charactorMassagePanel.GetComponent<CharactorMassagePanelController>();
+            if (controller == null)
+                controller = _charactorMassagePanel.AddComponent<CharactorMassagePanelController>();
+
+            controller.RefreshFromCurrentState();
         }
 
         /// <summary>隐藏对话框面板（归还到池）</summary>
@@ -297,8 +471,14 @@ namespace POELike.Managers
 
         private void OnActiveSceneChanged(Scene previousScene, Scene newScene)
         {
-            if (newScene.name != SceneLoader.SceneGame)
-                HideBagPanel();
+            if (newScene.name == SceneLoader.SceneGame)
+            {
+                ShowCharactorMainPanel();
+                return;
+            }
+
+            HideBagPanel();
+            HideCharactorMainPanel();
         }
 
         // ── 内部辅助 ──────────────────────────────────────────────────
@@ -310,6 +490,15 @@ namespace POELike.Managers
                 return;
 
             TryToggleBagPanel();
+        }
+
+        private void HandleCharactorMassageHotkey()
+        {
+            var keyboard = Keyboard.current;
+            if (keyboard == null || !keyboard.cKey.wasPressedThisFrame)
+                return;
+
+            TryToggleCharactorMassagePanel();
         }
 
         private bool CanUseGameplayPanels()
@@ -353,6 +542,126 @@ namespace POELike.Managers
                 UIGamePanelManager.UnregisterOccluder(rectTransform);
         }
 
+        private void ConfigureCharactorMainPanel(GameObject panel)
+        {
+            if (panel == null)
+                return;
+
+            if (_rootCanvas == null)
+                EnsureRootCanvas();
+
+            panel.transform.SetParent(_rootCanvas.transform, false);
+
+            var canvas = panel.GetComponent<Canvas>();
+            if (canvas == null)
+                canvas = panel.AddComponent<Canvas>();
+
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = CharactorMainPanelSortingOrder;
+
+            if (panel.GetComponent<UnityEngine.UI.GraphicRaycaster>() == null)
+                panel.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+
+            panel.transform.SetAsLastSibling();
+        }
+
+        private void ConfigureCharactorMassagePanel(GameObject panel)
+        {
+            if (panel == null)
+                return;
+
+            if (_rootCanvas == null)
+                EnsureRootCanvas();
+
+            panel.transform.SetParent(_rootCanvas.transform, false);
+
+            var canvas = panel.GetComponent<Canvas>();
+            if (canvas == null)
+                canvas = panel.AddComponent<Canvas>();
+
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = CharactorMainPanelSortingOrder;
+
+            if (panel.GetComponent<UnityEngine.UI.GraphicRaycaster>() == null)
+                panel.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+
+            panel.transform.SetAsLastSibling();
+        }
+
+        private void EnsureTooltipOverlay()
+        {
+            if (_tooltipOverlay != null)
+            {
+                _tooltipOverlay.transform.SetAsLastSibling();
+                return;
+            }
+
+            if (_rootCanvas == null)
+                return;
+
+            var go = new GameObject("UITooltipOverlay", typeof(RectTransform), typeof(Canvas), typeof(CanvasGroup));
+            go.transform.SetParent(_rootCanvas.transform, false);
+            go.layer = _rootCanvas.gameObject.layer;
+
+            _tooltipOverlay = go.GetComponent<RectTransform>();
+            _tooltipOverlay.anchorMin = Vector2.zero;
+            _tooltipOverlay.anchorMax = Vector2.one;
+            _tooltipOverlay.pivot = new Vector2(0.5f, 0.5f);
+            _tooltipOverlay.offsetMin = Vector2.zero;
+            _tooltipOverlay.offsetMax = Vector2.zero;
+
+            var canvas = go.GetComponent<Canvas>();
+            canvas.overrideSorting = true;
+            canvas.sortingLayerID = _rootCanvas.sortingLayerID;
+            canvas.sortingOrder = TooltipOverlaySortingOrder;
+
+            var canvasGroup = go.GetComponent<CanvasGroup>();
+            canvasGroup.blocksRaycasts = false;
+            canvasGroup.interactable = false;
+            canvasGroup.ignoreParentGroups = true;
+
+            go.transform.SetAsLastSibling();
+            Debug.Log("[UIManager] 已创建 TooltipOverlay 最高层 Canvas");
+        }
+
+        private void RegisterCharactorMainPanelOccluder()
+        {
+            if (_charactorMainPanel == null) return;
+
+            var rectTransform = _charactorMainPanel.GetComponent<RectTransform>();
+            if (rectTransform != null)
+                UIGamePanelManager.RegisterOccluder(rectTransform);
+        }
+
+        private void UnregisterCharactorMainPanelOccluder()
+        {
+            if (_charactorMainPanel == null) return;
+
+            var rectTransform = _charactorMainPanel.GetComponent<RectTransform>();
+            if (rectTransform != null)
+                UIGamePanelManager.UnregisterOccluder(rectTransform);
+        }
+
+        private void RegisterCharactorMassagePanelOccluder()
+        {
+            if (_charactorMassagePanel == null)
+                return;
+
+            var rectTransform = _charactorMassagePanel.GetComponent<RectTransform>();
+            if (rectTransform != null)
+                UIGamePanelManager.RegisterOccluder(rectTransform);
+        }
+
+        private void UnregisterCharactorMassagePanelOccluder()
+        {
+            if (_charactorMassagePanel == null)
+                return;
+
+            var rectTransform = _charactorMassagePanel.GetComponent<RectTransform>();
+            if (rectTransform != null)
+                UIGamePanelManager.UnregisterOccluder(rectTransform);
+        }
+
         /// <summary>确保场景中存在一个持久化的根 Canvas</summary>
 
         private void EnsureRootCanvas()
@@ -376,6 +685,7 @@ namespace POELike.Managers
 
             // 确保场景中存在持久化的 EventSystem，防止场景切换后 UI 无法点击
             EnsureEventSystem();
+            EnsureTooltipOverlay();
         }
 
         /// <summary>确保场景中存在持久化的 EventSystem</summary>

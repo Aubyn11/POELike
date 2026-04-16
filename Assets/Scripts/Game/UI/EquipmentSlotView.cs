@@ -95,6 +95,7 @@ namespace POELike.Game.UI
             if (replacedItem != null)
                 replacedItem.TryBeginMove(eventData);
 
+            UIManager.Instance?.RefreshCharactorMainPanel();
             return true;
         }
 
@@ -103,10 +104,14 @@ namespace POELike.Game.UI
             if (itemView != null && PlacedItem != itemView)
                 return;
 
+            if (PlacedItem == null)
+                return;
+
             var removedItem = PlacedItem;
             PlacedItem = null;
             SyncUnequippedItem(removedItem);
             RefreshVisual();
+            UIManager.Instance?.RefreshCharactorMainPanel();
         }
 
         public void OnPointerEnter(PointerEventData eventData)

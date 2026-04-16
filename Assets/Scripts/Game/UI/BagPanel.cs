@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using POELike.ECS.Components;
 using POELike.Game.Equipment;
@@ -28,16 +29,27 @@ namespace POELike.Game.UI
         private readonly List<GameObject> _runtimeItemViews = new List<GameObject>();
 
         private bool _initialized;
+        private bool _isInitializing;
+
+        public bool IsInitializing => _isInitializing;
 
         public void EnsureInitialized()
         {
-            if (_initialized)
+            if (_initialized || _isInitializing)
                 return;
 
-            CacheReferences();
-            BuildEquipmentSlots();
-            PopulateDemoItems();
-            _initialized = true;
+            _isInitializing = true;
+            try
+            {
+                CacheReferences();
+                BuildEquipmentSlots();
+                PopulateDemoItems();
+                _initialized = true;
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
         }
 
         private void OnEnable()
@@ -116,8 +128,82 @@ namespace POELike.Game.UI
             _slotViews[slot] = slotView;
         }
 
+        public BagItemData GetEquippedItemData(EquipmentSlot slot)
+        {
+            if (!_initialized)
+            {
+                if (_isInitializing)
+                    return null;
+
+                EnsureInitialized();
+            }
+
+            return _slotViews.TryGetValue(slot, out var slotView)
+                ? slotView?.PlacedItem?.Data
+                : null;
+        }
+
+        public void FillEquippedPotions(BagItemData[] results)
+        {
+            if (results == null || results.Length == 0)
+                return;
+
+            Array.Clear(results, 0, results.Length);
+
+            if (results.Length > 0) results[0] = GetEquippedItemData(EquipmentSlot.Flask1);
+            if (results.Length > 1) results[1] = GetEquippedItemData(EquipmentSlot.Flask2);
+            if (results.Length > 2) results[2] = GetEquippedItemData(EquipmentSlot.Flask3);
+            if (results.Length > 3) results[3] = GetEquippedItemData(EquipmentSlot.Flask4);
+            if (results.Length > 4) results[4] = GetEquippedItemData(EquipmentSlot.Flask5);
+        }
+
+        public void GetSocketedActiveGems(List<BagItemData> results)
+        {
+            if (results == null)
+                return;
+
+            results.Clear();
+            if (_isInitializing)
+                return;
+            if (!_initialized)
+                EnsureInitialized();
+            if (_equipmentRoot == null)
+                return;
+
+            var equippedItems = _equipmentRoot.GetComponentsInChildren<EquipmentItem>(true);
+            for (int i = 0; i < equippedItems.Length; i++)
+                equippedItems[i].GetSocketedActiveGems(results);
+        }
+
+        /// <summary>
+        /// 获取指定装备槽位中某个插槽的相邻连结宝石。
+        /// 当前连结规则固定为只返回 `socketIndex - 1` 和 `socketIndex + 1`。
+        /// </summary>
+        public void GetLinkedGems(EquipmentSlot slot, int socketIndex, List<BagItemData> results)
+        {
+            if (results == null)
+                return;
+
+            results.Clear();
+            if (_isInitializing)
+                return;
+            if (!_initialized)
+                EnsureInitialized();
+            if (_equipmentRoot == null)
+                return;
+            if (!_slotViews.TryGetValue(slot, out var slotView) || slotView?.PlacedItem == null)
+                return;
+
+            var equipmentItem = slotView.PlacedItem.GetComponent<EquipmentItem>();
+            if (equipmentItem == null)
+                return;
+
+            equipmentItem.GetLinkedGems(socketIndex, results);
+        }
+
         private static Transform FindChildRecursive(Transform root, string nodeName)
         {
+
             if (root == null || string.IsNullOrWhiteSpace(nodeName))
                 return null;
 
@@ -218,7 +304,7 @@ namespace POELike.Game.UI
             var gem2 = CreateGemData("gem_frost", "冰霜新星", _secondaryGemColor, new Color(0.35f, 0.58f, 1.00f));
             SpawnItemInBag(gem2, 11, 0);
 
-            var gem3 = CreateGemData("gem_support", "多重投射", _supportGemColor, new Color(0.25f, 0.86f, 0.38f));
+            var gem3 = CreateGemData("gem_support", "多重投射", _supportGemColor, new Color(0.25f, 0.86f, 0.38f), BagGemKind.Support);
             SpawnItemInBag(gem3, 12, 0);
         }
 
@@ -267,12 +353,13 @@ namespace POELike.Game.UI
             return data;
         }
 
-        private BagItemData CreateGemData(string itemId, string name, SocketColor gemColor, Color color)
+        private BagItemData CreateGemData(string itemId, string name, SocketColor gemColor, Color color, BagGemKind gemKind = BagGemKind.Active)
         {
             return new BagItemData(itemId, name, 1, 1)
             {
                 ItemKind = BagItemKind.Gem,
                 GemColor = gemColor,
+                GemKind = gemKind,
                 ItemColor = color,
             };
         }
@@ -348,7 +435,10 @@ namespace POELike.Game.UI
             _runtimeItemViews.Clear();
 
             foreach (var slotView in _slotViews.Values)
-                slotView?.ClearPlacedItem();
+            {
+                if (slotView?.PlacedItem != null)
+                    slotView.ClearPlacedItem();
+            }
         }
     }
 }

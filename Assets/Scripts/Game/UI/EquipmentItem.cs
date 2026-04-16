@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using POELike.Game.Equipment;
+using POELike.Managers;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -34,14 +35,35 @@ namespace POELike.Game.UI
         [Header("Tips 字体行高（像素，用于自适应高度）")]
         [SerializeField] private float _tipsLineHeight = 36f;
 
-        /// <summary>每个插槽格子的尺寸（像素）</summary>
-        private const float SocketSize    = 35f;
-        /// <summary>插槽之间的间距（像素）</summary>
-        private const float SocketSpacing = 5f;
+        /// <summary>每个插槽的基础尺寸（像素）</summary>
+        private const float SocketSize = 35f;
+        /// <summary>插槽之间的基础间距（像素）</summary>
+        private const float SocketSpacing = 10f;
+        /// <summary>插槽连接线的基础粗细（像素）</summary>
+        private const float SocketLinkThickness = 6f;
+        /// <summary>插槽布局在装备内部保留的安全边距（像素）</summary>
+        private const float SocketLayoutPadding = 8f;
+        /// <summary>插槽显示的最大放大倍率</summary>
+        private const float MaxSocketDisplayScale = 2.2f;
         /// <summary>装备与 Tips 之间的水平间距（像素）</summary>
         private const float TipsOffset = 8f;
         /// <summary>Tips 距离屏幕边缘的最小留白（像素）</summary>
         private const float TipsScreenPadding = 8f;
+
+        /// <summary>插槽连接线颜色</summary>
+        private static readonly Color SocketLinkColor = new Color(0.82f, 0.72f, 0.42f, 0.95f);
+
+        /// <summary>插槽布局测量结果</summary>
+        private struct SocketLayoutMetrics
+        {
+            public int Cols;
+            public int Rows;
+            public float SocketSize;
+            public float SocketSpacing;
+            public float LineThickness;
+            public float PanelWidth;
+            public float PanelHeight;
+        }
 
         /// <summary>共享的白底纹理，避免每个装备对象各自创建运行时资源。</summary>
         private static Texture2D s_sharedWhiteTexture;
@@ -80,6 +102,18 @@ namespace POELike.Game.UI
 
         /// <summary>复用的插槽视图列表</summary>
         private readonly List<GameObject> _socketViews = new List<GameObject>();
+
+        /// <summary>复用的插槽连接线视图列表</summary>
+        private readonly List<GameObject> _socketLinkViews = new List<GameObject>();
+
+        /// <summary>已镶嵌到各个插槽中的宝石数据。</summary>
+        private readonly List<BagItemData> _socketedGems = new List<BagItemData>();
+
+        /// <summary>最近一次背包显示下的装备宽度，用于推导装备栏中的放大倍率。</summary>
+        private float _lastBagVisualWidth = -1f;
+
+        /// <summary>最近一次背包显示下的装备高度，用于推导装备栏中的放大倍率。</summary>
+        private float _lastBagVisualHeight = -1f;
 
         /// <summary>Tips 定位时复用的世界坐标角点数组</summary>
         private readonly Vector3[] _tipsWorldCorners = new Vector3[4];
@@ -123,6 +157,11 @@ namespace POELike.Game.UI
         {
             _rt      = GetComponent<RectTransform>();
             _bgImage = GetComponent<Image>();
+
+            if (_lastBagVisualWidth <= 0f)
+                _lastBagVisualWidth = Mathf.Max(1f, _rt.rect.width);
+            if (_lastBagVisualHeight <= 0f)
+                _lastBagVisualHeight = Mathf.Max(1f, _rt.rect.height);
 
             // 若根节点 Image 没有 sprite，则复用共享白底 Sprite，避免每个物体单独创建运行时资源
             if (_bgImage != null && _bgImage.sprite == null)
@@ -185,6 +224,8 @@ namespace POELike.Game.UI
             GridHeight   = Mathf.Max(1, itemData.GridHeight);
             _sockets     = itemData.Sockets;
             _generatedEquipment = null;
+            _socketedGems.Clear();
+            EnsureSocketedGemCapacity();
 
             BagData = itemData;
             if (icon != null)
@@ -206,6 +247,8 @@ namespace POELike.Game.UI
             GridHeight   = Mathf.Max(1, gridHeight);
             _sockets     = sockets;
             _generatedEquipment = null;
+            _socketedGems.Clear();
+            EnsureSocketedGemCapacity();
 
             // 构建 BagItemData
             BagData = new BagItemData(
@@ -260,7 +303,10 @@ namespace POELike.Game.UI
                 -row * (cellSize + cellSpacing) - ItemPadding
             );
 
-            // SocketPanel 不跟随装备大小变化，保持自身固定尺寸
+            _lastBagVisualWidth = w;
+            _lastBagVisualHeight = h;
+
+            // SocketPanel 在悬停时按当前显示尺寸动态重算
         }
 
         // ── 鼠标悬停 ──────────────────────────────────────────────────
@@ -325,11 +371,11 @@ namespace POELike.Game.UI
                 return;
             }
 
-            // 排列规则：
-            //   宽度 = 1 → 每列 1 个，从上到下
-            //   宽度 ≥ 2 → 每行最多 2 个，从左到右，超出换行
-            int cols = GridWidth >= 2 ? 2 : 1;
+            var layout = ResolveSocketLayoutMetrics(_sockets.Count);
+            var visibleSocketRects = new RectTransform[_sockets.Count];
+
             EnsureSocketViews(_sockets.Count);
+            EnsureSocketLinkViews(Mathf.Max(0, _sockets.Count - 1));
 
             for (int i = 0; i < _socketViews.Count; i++)
             {
@@ -340,43 +386,261 @@ namespace POELike.Game.UI
                 go.SetActive(active);
                 if (!active) continue;
 
-                int c = i % cols;
-                int r = i / cols;
-
                 var rt = go.GetComponent<RectTransform>();
                 if (rt != null)
                 {
-                    rt.anchorMin        = new Vector2(0f, 1f);
-                    rt.anchorMax        = new Vector2(0f, 1f);
-                    rt.pivot            = new Vector2(0f, 1f);
-                    rt.sizeDelta        = new Vector2(SocketSize, SocketSize);
-                    rt.anchoredPosition = new Vector2(
-                         c * (SocketSize + SocketSpacing),
-                        -r * (SocketSize + SocketSpacing)
-                    );
+                    GetSocketGridPosition(i, layout.Cols, out int c, out int r);
+                    ConfigureSocketRect(rt, layout.SocketSize, layout.SocketSpacing, c, r);
+                    visibleSocketRects[i] = rt;
                 }
 
                 var socketItem = go.GetComponent<SocketItem>();
                 if (socketItem != null)
-                    socketItem.SetSocket(_sockets[i].Color);
+                    socketItem.SetupSocket(this, i, _sockets[i].Color);
             }
 
-            int totalRows = Mathf.CeilToInt((float)_sockets.Count / cols);
-            float panelW  = cols * SocketSize + (cols - 1) * SocketSpacing;
-            float panelH  = totalRows * SocketSize + (totalRows - 1) * SocketSpacing;
+            UpdateSocketLinkViews(visibleSocketRects, layout.LineThickness);
 
             _socketPanel.anchorMin        = new Vector2(0.5f, 0.5f);
             _socketPanel.anchorMax        = new Vector2(0.5f, 0.5f);
             _socketPanel.pivot            = new Vector2(0.5f, 0.5f);
+            _socketPanel.localScale       = Vector3.one;
+            _socketPanel.localRotation    = Quaternion.identity;
             _socketPanel.anchoredPosition = Vector2.zero;
-            _socketPanel.sizeDelta        = new Vector2(panelW, panelH);
+            _socketPanel.sizeDelta        = new Vector2(layout.PanelWidth, layout.PanelHeight);
             _socketPanel.gameObject.SetActive(true);
 
             // 将自身置顶，确保插槽面板不被同级的 ItemView 节点遮挡
             transform.SetAsLastSibling();
         }
 
+        private SocketLayoutMetrics ResolveSocketLayoutMetrics(int socketCount)
+        {
+            var layout = new SocketLayoutMetrics
+            {
+                Cols = GridWidth >= 2 ? 2 : 1,
+            };
+            layout.Rows = Mathf.CeilToInt((float)socketCount / layout.Cols);
+
+            float desiredScale = ResolveSocketDisplayScale();
+            float availableWidth = Mathf.Max(SocketSize, RT.rect.width - SocketLayoutPadding * 2f);
+            float availableHeight = Mathf.Max(SocketSize, RT.rect.height - SocketLayoutPadding * 2f);
+
+            float basePanelWidth = layout.Cols * SocketSize + (layout.Cols - 1) * SocketSpacing;
+            float basePanelHeight = layout.Rows * SocketSize + (layout.Rows - 1) * SocketSpacing;
+
+            float fitScaleX = basePanelWidth > 0f ? availableWidth / basePanelWidth : desiredScale;
+            float fitScaleY = basePanelHeight > 0f ? availableHeight / basePanelHeight : desiredScale;
+            float finalScale = Mathf.Min(desiredScale, fitScaleX, fitScaleY);
+            if (float.IsNaN(finalScale) || float.IsInfinity(finalScale) || finalScale <= 0f)
+                finalScale = 1f;
+
+            finalScale = Mathf.Min(finalScale, MaxSocketDisplayScale);
+
+            layout.SocketSize = SocketSize * finalScale;
+            layout.SocketSpacing = SocketSpacing * finalScale;
+            layout.LineThickness = Mathf.Clamp(SocketLinkThickness * finalScale, 3f, 14f);
+            layout.PanelWidth = layout.Cols * layout.SocketSize + (layout.Cols - 1) * layout.SocketSpacing;
+            layout.PanelHeight = layout.Rows * layout.SocketSize + (layout.Rows - 1) * layout.SocketSpacing;
+            return layout;
+        }
+
+        private float ResolveSocketDisplayScale()
+        {
+            float currentWidth = Mathf.Max(1f, RT.rect.width);
+            float currentHeight = Mathf.Max(1f, RT.rect.height);
+            float baseWidth = _lastBagVisualWidth > 0f ? _lastBagVisualWidth : currentWidth;
+            float baseHeight = _lastBagVisualHeight > 0f ? _lastBagVisualHeight : currentHeight;
+
+            float scaleX = currentWidth / Mathf.Max(1f, baseWidth);
+            float scaleY = currentHeight / Mathf.Max(1f, baseHeight);
+            return Mathf.Clamp(Mathf.Min(scaleX, scaleY), 1f, MaxSocketDisplayScale);
+        }
+
+        private static void GetSocketGridPosition(int socketIndex, int cols, out int col, out int row)
+        {
+            if (cols <= 1)
+            {
+                col = 0;
+                row = socketIndex;
+                return;
+            }
+
+            row = socketIndex / cols;
+            int indexInRow = socketIndex % cols;
+            bool leftToRight = row % 2 == 0;
+            col = leftToRight ? indexInRow : cols - 1 - indexInRow;
+        }
+
+        private static void ConfigureSocketRect(RectTransform rt, float socketSize, float socketSpacing, int col, int row)
+        {
+            if (rt == null)
+                return;
+
+            rt.anchorMin = new Vector2(0f, 1f);
+            rt.anchorMax = new Vector2(0f, 1f);
+            rt.pivot = new Vector2(0f, 1f);
+            rt.localScale = Vector3.one;
+            rt.localRotation = Quaternion.identity;
+            rt.sizeDelta = new Vector2(socketSize, socketSize);
+            rt.anchoredPosition = new Vector2(
+                 col * (socketSize + socketSpacing),
+                -row * (socketSize + socketSpacing)
+            );
+        }
+
+        private void EnsureSocketLinkViews(int count)
+        {
+            while (_socketLinkViews.Count < count)
+            {
+                var go = new GameObject($"SocketLink_{_socketLinkViews.Count}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                go.transform.SetParent(_socketPanel, false);
+
+                var image = go.GetComponent<Image>();
+                image.sprite = SharedWhiteSprite;
+                image.color = SocketLinkColor;
+                image.raycastTarget = false;
+
+                _socketLinkViews.Add(go);
+            }
+        }
+
+        private void UpdateSocketLinkViews(RectTransform[] socketRectsByIndex, float lineThickness)
+        {
+            int requiredLinks = socketRectsByIndex != null && socketRectsByIndex.Length > 1
+                ? socketRectsByIndex.Length - 1
+                : 0;
+
+            for (int i = 0; i < _socketLinkViews.Count; i++)
+            {
+                var go = _socketLinkViews[i];
+                if (go == null)
+                    continue;
+
+                bool active = i < requiredLinks;
+                go.SetActive(active);
+                if (!active)
+                    continue;
+
+                go.transform.SetAsFirstSibling();
+
+                var lineRt = go.transform as RectTransform;
+                if (lineRt == null)
+                    continue;
+
+                if (socketRectsByIndex == null ||
+                    i < 0 ||
+                    i + 1 >= socketRectsByIndex.Length ||
+                    socketRectsByIndex[i] == null ||
+                    socketRectsByIndex[i + 1] == null)
+                {
+                    go.SetActive(false);
+                    continue;
+                }
+
+                ConfigureSocketLinkRect(lineRt, socketRectsByIndex[i], socketRectsByIndex[i + 1], lineThickness);
+            }
+        }
+
+        /// <summary>
+        /// 判断两个插槽是否连结。
+        /// 当前规则固定为：仅当两个索引互为 `index-1` / `index+1` 时才视为连结。
+        /// </summary>
+        public bool AreSocketsLinked(int firstIndex, int secondIndex)
+        {
+            EnsureSocketedGemCapacity();
+            if (_sockets == null)
+                return false;
+            if (firstIndex < 0 || secondIndex < 0)
+                return false;
+            if (firstIndex >= _sockets.Count || secondIndex >= _sockets.Count)
+                return false;
+            if (firstIndex == secondIndex)
+                return false;
+
+            return Mathf.Abs(firstIndex - secondIndex) == 1;
+        }
+
+        /// <summary>
+        /// 获取与指定插槽连结的相邻插槽索引。
+        /// 只返回前一个和后一个索引，不做跨孔位跳跃连结。
+        /// </summary>
+        public bool TryGetLinkedSocketIndices(int socketIndex, out int previousIndex, out int nextIndex)
+        {
+            previousIndex = -1;
+            nextIndex = -1;
+
+            EnsureSocketedGemCapacity();
+            if (_sockets == null || socketIndex < 0 || socketIndex >= _sockets.Count)
+                return false;
+
+            if (socketIndex - 1 >= 0)
+                previousIndex = socketIndex - 1;
+            if (socketIndex + 1 < _sockets.Count)
+                nextIndex = socketIndex + 1;
+
+            return previousIndex >= 0 || nextIndex >= 0;
+        }
+
+        /// <summary>
+        /// 获取与指定插槽相连的宝石数据。
+        /// 当前只会返回 `index-1` / `index+1` 两侧已经镶嵌的宝石。
+        /// </summary>
+        public void GetLinkedGems(int socketIndex, List<BagItemData> results)
+        {
+            if (results == null)
+                return;
+
+            results.Clear();
+            EnsureSocketedGemCapacity();
+
+            if (_socketedGems.Count == 0 || socketIndex < 0 || socketIndex >= _socketedGems.Count)
+                return;
+
+            if (socketIndex - 1 >= 0)
+            {
+                var previousGem = _socketedGems[socketIndex - 1];
+                if (previousGem != null)
+                    results.Add(previousGem);
+            }
+
+            if (socketIndex + 1 < _socketedGems.Count)
+            {
+                var nextGem = _socketedGems[socketIndex + 1];
+                if (nextGem != null)
+                    results.Add(nextGem);
+            }
+        }
+
+        private static void ConfigureSocketLinkRect(RectTransform lineRt, RectTransform from, RectTransform to, float thickness)
+        {
+            if (lineRt == null || from == null || to == null)
+                return;
+
+            Vector2 fromCenter = GetSocketCenter(from);
+            Vector2 toCenter = GetSocketCenter(to);
+            Vector2 delta = toCenter - fromCenter;
+            float length = delta.magnitude;
+
+            lineRt.anchorMin = new Vector2(0f, 1f);
+            lineRt.anchorMax = new Vector2(0f, 1f);
+            lineRt.pivot = new Vector2(0.5f, 0.5f);
+            lineRt.localScale = Vector3.one;
+            lineRt.sizeDelta = new Vector2(length, thickness);
+            lineRt.anchoredPosition = (fromCenter + toCenter) * 0.5f;
+            lineRt.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
+        }
+
+        private static Vector2 GetSocketCenter(RectTransform socketRt)
+        {
+            return new Vector2(
+                socketRt.anchoredPosition.x + socketRt.rect.width * 0.5f,
+                socketRt.anchoredPosition.y - socketRt.rect.height * 0.5f
+            );
+        }
+
         private void EnsureSocketViews(int count)
+
         {
             for (int i = 0; i < _socketViews.Count; i++)
             {
@@ -399,6 +663,42 @@ namespace POELike.Game.UI
         {
             if (_socketPanel == null) return;
             _socketPanel.gameObject.SetActive(false);
+        }
+
+        public void SetSocketedGem(int socketIndex, BagItemData gemData)
+        {
+            EnsureSocketedGemCapacity();
+            if (socketIndex < 0 || socketIndex >= _socketedGems.Count)
+                return;
+
+            _socketedGems[socketIndex] = gemData;
+        }
+
+        public void GetSocketedActiveGems(List<BagItemData> results)
+        {
+            if (results == null)
+                return;
+
+            EnsureSocketedGemCapacity();
+            for (int i = 0; i < _socketedGems.Count; i++)
+            {
+                var gemData = _socketedGems[i];
+                if (gemData == null || !gemData.IsActiveSkillGem)
+                    continue;
+
+                results.Add(gemData);
+            }
+        }
+
+        private void EnsureSocketedGemCapacity()
+        {
+            int socketCount = _sockets != null ? _sockets.Count : 0;
+
+            while (_socketedGems.Count < socketCount)
+                _socketedGems.Add(null);
+
+            while (_socketedGems.Count > socketCount)
+                _socketedGems.RemoveAt(_socketedGems.Count - 1);
         }
 
         private BagItemData ResolveTooltipBagData()
@@ -454,6 +754,13 @@ namespace POELike.Game.UI
 
         private RectTransform ResolveTipsParent()
         {
+            if (UIManager.Instance != null)
+            {
+                var overlay = UIManager.Instance.TooltipOverlayRoot;
+                if (overlay != null)
+                    return overlay;
+            }
+
             var canvas = GetComponentInParent<Canvas>();
             if (canvas != null)
             {
@@ -463,6 +770,12 @@ namespace POELike.Game.UI
             }
 
             return transform.parent as RectTransform ?? RT;
+        }
+
+        private bool ShouldPlaceTipsAtUpperCorner()
+        {
+            var itemView = GetComponent<BagItemView>();
+            return itemView != null && itemView.CurrentSlot != null;
         }
 
         private void UpdateTipsPosition()
@@ -494,7 +807,54 @@ namespace POELike.Game.UI
             float tipsWidth = tipsRt.rect.width;
             float tipsHeight = tipsRt.rect.height;
 
-            float xFromLeft = itemRightXFromLeft + TipsOffset;
+            float xFromLeft;
+            float yFromTop;
+
+            if (ShouldPlaceTipsAtUpperCorner())
+            {
+                ResolveUpperCornerTipsPosition(
+                    itemLeftXFromLeft,
+                    itemRightXFromLeft,
+                    itemTopYFromTop,
+                    tipsWidth,
+                    tipsHeight,
+                    parentWidth,
+                    parentHeight,
+                    out xFromLeft,
+                    out yFromTop);
+            }
+            else
+            {
+                ResolveSideTipsPosition(
+                    itemLeftXFromLeft,
+                    itemRightXFromLeft,
+                    itemTopYFromTop,
+                    tipsWidth,
+                    tipsHeight,
+                    parentWidth,
+                    parentHeight,
+                    out xFromLeft,
+                    out yFromTop);
+            }
+
+            tipsRt.anchorMin = new Vector2(0f, 1f);
+            tipsRt.anchorMax = new Vector2(0f, 1f);
+            tipsRt.pivot     = new Vector2(0f, 1f);
+            tipsRt.anchoredPosition = new Vector2(xFromLeft, -yFromTop);
+        }
+
+        private static void ResolveSideTipsPosition(
+            float itemLeftXFromLeft,
+            float itemRightXFromLeft,
+            float itemTopYFromTop,
+            float tipsWidth,
+            float tipsHeight,
+            float parentWidth,
+            float parentHeight,
+            out float xFromLeft,
+            out float yFromTop)
+        {
+            xFromLeft = itemRightXFromLeft + TipsOffset;
             if (xFromLeft + tipsWidth > parentWidth - TipsScreenPadding)
                 xFromLeft = itemLeftXFromLeft - TipsOffset - tipsWidth;
 
@@ -502,12 +862,43 @@ namespace POELike.Game.UI
             float maxYFromTop = Mathf.Max(TipsScreenPadding, parentHeight - tipsHeight - TipsScreenPadding);
 
             xFromLeft = Mathf.Clamp(xFromLeft, TipsScreenPadding, maxXFromLeft);
-            float yFromTop = Mathf.Clamp(itemTopYFromTop, TipsScreenPadding, maxYFromTop);
+            yFromTop = Mathf.Clamp(itemTopYFromTop, TipsScreenPadding, maxYFromTop);
+        }
 
-            tipsRt.anchorMin = new Vector2(0f, 1f);
-            tipsRt.anchorMax = new Vector2(0f, 1f);
-            tipsRt.pivot     = new Vector2(0f, 1f);
-            tipsRt.anchoredPosition = new Vector2(xFromLeft, -yFromTop);
+        private static void ResolveUpperCornerTipsPosition(
+            float itemLeftXFromLeft,
+            float itemRightXFromLeft,
+            float itemTopYFromTop,
+            float tipsWidth,
+            float tipsHeight,
+            float parentWidth,
+            float parentHeight,
+            out float xFromLeft,
+            out float yFromTop)
+        {
+            float rightCandidateX = itemRightXFromLeft + TipsOffset;
+            float leftCandidateX = itemLeftXFromLeft - TipsOffset - tipsWidth;
+            bool canPlaceRight = rightCandidateX + tipsWidth <= parentWidth - TipsScreenPadding;
+            bool canPlaceLeft = leftCandidateX >= TipsScreenPadding;
+
+            if (canPlaceRight)
+            {
+                xFromLeft = rightCandidateX;
+            }
+            else if (canPlaceLeft)
+            {
+                xFromLeft = leftCandidateX;
+            }
+            else
+            {
+                float maxXFromLeft = Mathf.Max(TipsScreenPadding, parentWidth - tipsWidth - TipsScreenPadding);
+                float preferredX = itemRightXFromLeft <= parentWidth * 0.5f ? rightCandidateX : leftCandidateX;
+                xFromLeft = Mathf.Clamp(preferredX, TipsScreenPadding, maxXFromLeft);
+            }
+
+            float preferredYFromTop = itemTopYFromTop - TipsOffset - tipsHeight;
+            float maxYFromTop = Mathf.Max(TipsScreenPadding, parentHeight - tipsHeight - TipsScreenPadding);
+            yFromTop = Mathf.Clamp(preferredYFromTop, TipsScreenPadding, maxYFromTop);
         }
 
         private void HideTips()

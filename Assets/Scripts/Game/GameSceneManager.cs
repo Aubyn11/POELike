@@ -89,12 +89,15 @@ namespace POELike.Game
                 Debug.LogWarning("[GameSceneManager] 未检测到存档数据，使用默认调试角色");
             }
 
+            SceneLoader.PendingCharacterData = data;
+
             Debug.Log($"[GameSceneManager] 场景初始化，角色：{data.CharacterName}  Lv.{data.Level}");
 
             if (_autoGenerateEnvironment)
                 BuildEnvironment();
 
             SpawnPlayer(data);
+            UIManager.Instance?.RefreshCharactorMainPanel();
             SpawnNPCs();
             SetupInputActions();
             SetupGMPanel();
@@ -230,6 +233,9 @@ namespace POELike.Game
 
             // 属性组件
             var statsComp = _playerEntity.AddComponent(new StatsComponent());
+            statsComp.SetBaseStat(StatType.Strength,            10f);
+            statsComp.SetBaseStat(StatType.Dexterity,           10f);
+            statsComp.SetBaseStat(StatType.Intelligence,        10f);
             statsComp.SetBaseStat(StatType.MaxHealth,           baseHealth);
             statsComp.SetBaseStat(StatType.MaxMana,             baseMana);
             statsComp.SetBaseStat(StatType.MovementSpeed,       baseMoveSpeed);
