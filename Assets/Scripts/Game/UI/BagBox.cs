@@ -365,9 +365,42 @@ namespace POELike.Game.UI
             return false;
         }
 
+        public bool TryGetAutoPlacementPositions(BagItemData item, int requiredPlacementCount, out List<Vector2Int> positions)
+        {
+            positions = new List<Vector2Int>();
+            if (item == null || requiredPlacementCount <= 0)
+                return false;
+
+            EnsureGridBuilt();
+
+            var occupiedSnapshot = new bool[_cols, _rows];
+            for (int row = 0; row < _rows; row++)
+            {
+                for (int col = 0; col < _cols; col++)
+                {
+                    occupiedSnapshot[col, row] = _cells[col, row] != null && !_cells[col, row].IsEmpty;
+                }
+            }
+
+            for (int placementIndex = 0; placementIndex < requiredPlacementCount; placementIndex++)
+            {
+                if (!TryFindPlacementInSnapshot(item, occupiedSnapshot, out int col, out int row))
+                {
+                    positions.Clear();
+                    return false;
+                }
+
+                positions.Add(new Vector2Int(col, row));
+                OccupySnapshot(item, occupiedSnapshot, col, row);
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// 根据屏幕坐标获取背包中的格子坐标。
         /// </summary>
+
         public bool TryGetCellCoordFromScreenPoint(Vector2 screenPoint, Camera eventCamera, out int col, out int row)
         {
             col = -1;
@@ -452,7 +485,65 @@ namespace POELike.Game.UI
                     _cells[c, r]?.SetOccupied(item);
         }
 
+        private bool TryFindPlacementInSnapshot(BagItemData item, bool[,] occupiedSnapshot, out int foundCol, out int foundRow)
+        {
+            foundCol = -1;
+            foundRow = -1;
+
+            if (item == null || occupiedSnapshot == null)
+                return false;
+
+            for (int row = 0; row <= _rows - item.GridHeight; row++)
+            {
+                for (int col = 0; col <= _cols - item.GridWidth; col++)
+                {
+                    if (!CanPlaceInSnapshot(item, occupiedSnapshot, col, row))
+                        continue;
+
+                    foundCol = col;
+                    foundRow = row;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool CanPlaceInSnapshot(BagItemData item, bool[,] occupiedSnapshot, int col, int row)
+        {
+            if (item == null || occupiedSnapshot == null)
+                return false;
+            if (col < 0 || row < 0)
+                return false;
+            if (col + item.GridWidth > _cols || row + item.GridHeight > _rows)
+                return false;
+
+            for (int r = row; r < row + item.GridHeight; r++)
+            {
+                for (int c = col; c < col + item.GridWidth; c++)
+                {
+                    if (occupiedSnapshot[c, r])
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static void OccupySnapshot(BagItemData item, bool[,] occupiedSnapshot, int col, int row)
+        {
+            if (item == null || occupiedSnapshot == null)
+                return;
+
+            for (int r = row; r < row + item.GridHeight; r++)
+            {
+                for (int c = col; c < col + item.GridWidth; c++)
+                    occupiedSnapshot[c, r] = true;
+            }
+        }
+
         private void RemoveItemFromCells(BagItemData item)
+
         {
             if (!item.IsPlaced) return;
             for (int r = item.GridRow; r < item.GridRow + item.GridHeight; r++)

@@ -26,6 +26,11 @@ namespace POELike.ECS.Components
         public string NPCMesh { get; set; } = "";
 
         /// <summary>
+        /// NPC 所属场景名称（来自 NPCDataConf.SceneName）
+        /// </summary>
+        public string SceneName { get; set; } = "";
+
+        /// <summary>
         /// 鼠标是否悬停在NPC上（由NpcMarkerRenderer每帧更新）
         /// </summary>
         public bool IsHovered { get; set; } = false;
@@ -40,6 +45,7 @@ namespace POELike.ECS.Components
             NPCID     = 0;
             NPCName   = "";
             NPCMesh   = "";
+            SceneName = "";
             IsHovered = false;
             FaceYaw   = 0f;
         }

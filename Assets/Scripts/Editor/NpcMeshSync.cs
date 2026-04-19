@@ -323,6 +323,8 @@ namespace POELike.Editor
             public string NPCName;
             public string NPCPosition;
             public string NPCMesh;
+            public string SceneName;
         }
+
     }
 }

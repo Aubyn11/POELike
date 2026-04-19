@@ -74,13 +74,7 @@ namespace POELike.Game.UI
 
             s_itemViewsByData[data] = this;
             gameObject.name = $"BagItem_{data.Name}";
-
-            if (_equipmentItem == null && _image != null)
-            {
-                if (data.Icon != null)
-                    _image.sprite = data.Icon;
-                _image.color = data.ItemColor;
-            }
+            RefreshView();
         }
 
         public static BagItemView FindByData(BagItemData data)
@@ -94,9 +88,29 @@ namespace POELike.Game.UI
             return null;
         }
 
+        public void RefreshView()
+        {
+            EnsureCachedReferences();
+            if (Data == null)
+                return;
+
+            if (_equipmentItem != null)
+            {
+                _equipmentItem.RefreshFromBagData(Data);
+                return;
+            }
+
+            if (_image != null)
+            {
+                _image.sprite = Data.Icon;
+                _image.color = Data.ItemColor;
+            }
+        }
+
         /// <summary>
         /// 标记本次拖拽已经被目标容器成功处理。
         /// </summary>
+
         public void MarkDropHandled()
         {
             _dropHandled = true;

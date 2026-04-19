@@ -1,0 +1,40 @@
+CurrencyCategoryConf{
+    int32 CurrencyCategoryId = 1,
+    string CurrencyCategoryCode = 2,
+    string CurrencyCategoryName = 3,
+    string CurrencyCategoryDesc = 4,
+    int32 CurrencyCategorySortOrder = 5
+}
+
+CurrencyEffectTypeConf{
+    int32 CurrencyEffectTypeId = 1,
+    string CurrencyEffectTypeCode = 2,
+    string CurrencyEffectTypeName = 3,
+    string CurrencyEffectTypeDesc = 4,
+    bool CurrencyConsumesOnUse = 5,
+    bool CurrencyCanApplyNormal = 6,
+    bool CurrencyCanApplyMagic = 7,
+    bool CurrencyCanApplyRare = 8,
+    bool CurrencyCanApplyUnique = 9,
+    bool CurrencyCanApplyCorrupted = 10,
+    repeated string CurrencyAllowedItemTypes = 11
+}
+
+CurrencyBaseConf{
+    int32 CurrencyBaseId = 1,
+    string CurrencyCode = 2,
+    string CurrencyName = 3,
+    int32 CurrencyCategoryId = 4,
+    int32 CurrencyEffectTypeId = 5,
+    int32 CurrencyStackSize = 6,
+    int32 CurrencyDropLevel = 7,
+    int32 CurrencySortOrder = 8,
+    int32 CurrencyGridWidth = 9,
+    int32 CurrencyGridHeight = 10,
+    string CurrencyDescription = 11,
+    string CurrencyTargetDescription = 12,
+    string CurrencyEffectDescription = 13,
+    string CurrencyFlavorText = 14,
+    string CurrencyDisplayColor = 15,
+    string CurrencyIconPath = 16
+}

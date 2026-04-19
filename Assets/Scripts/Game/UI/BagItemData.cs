@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using POELike.ECS.Components;
 using POELike.Game.Equipment;
@@ -13,6 +14,7 @@ namespace POELike.Game.UI
         Equipment,
         Flask,
         Gem,
+        Currency,
         Misc,
     }
 
@@ -41,6 +43,75 @@ namespace POELike.Game.UI
 
         /// <summary>背包道具类型</summary>
         public BagItemKind ItemKind { get; set; } = BagItemKind.Equipment;
+
+        /// <summary>基础描述（通货、杂项等非装备道具使用）</summary>
+        public string Description { get; set; }
+
+        /// <summary>是否可堆叠</summary>
+        public bool IsStackable { get; set; }
+
+        /// <summary>当前堆叠数量</summary>
+        public int StackCount { get; set; } = 1;
+
+        /// <summary>最大堆叠数量</summary>
+        public int MaxStackCount { get; set; } = 1;
+
+        /// <summary>通货配置主键</summary>
+        public string CurrencyBaseId { get; set; }
+
+        /// <summary>通货代码（如 wisdom_scroll / chaos_orb）</summary>
+        public string CurrencyCode { get; set; }
+
+        /// <summary>通货分类 ID</summary>
+        public string CurrencyCategoryId { get; set; }
+
+        /// <summary>通货分类名</summary>
+        public string CurrencyCategoryName { get; set; }
+
+        /// <summary>通货显示色（十六进制）</summary>
+        public string CurrencyDisplayColor { get; set; }
+
+        /// <summary>通货效果类型 ID</summary>
+        public string CurrencyEffectTypeId { get; set; }
+
+        /// <summary>通货效果类型名</summary>
+        public string CurrencyEffectTypeName { get; set; }
+
+        /// <summary>通货目标描述</summary>
+        public string CurrencyTargetDescription { get; set; }
+
+        /// <summary>通货效果描述</summary>
+        public string CurrencyEffectDescription { get; set; }
+
+        /// <summary>通货风味文本</summary>
+        public string CurrencyFlavorText { get; set; }
+
+        /// <summary>掉落等级</summary>
+        public int CurrencyDropLevel { get; set; }
+
+        /// <summary>排序值</summary>
+        public int CurrencySortOrder { get; set; }
+
+        /// <summary>使用时是否消耗</summary>
+        public bool CurrencyConsumesOnUse { get; set; } = true;
+
+        /// <summary>是否可作用于普通物品</summary>
+        public bool CurrencyCanApplyNormal { get; set; }
+
+        /// <summary>是否可作用于魔法物品</summary>
+        public bool CurrencyCanApplyMagic { get; set; }
+
+        /// <summary>是否可作用于稀有物品</summary>
+        public bool CurrencyCanApplyRare { get; set; }
+
+        /// <summary>是否可作用于传奇物品</summary>
+        public bool CurrencyCanApplyUnique { get; set; }
+
+        /// <summary>是否可作用于已腐化物品</summary>
+        public bool CurrencyCanApplyCorrupted { get; set; }
+
+        /// <summary>通货允许作用的物品类型</summary>
+        public List<ItemType> CurrencyAllowedItemTypes { get; } = new List<ItemType>();
 
         /// <summary>装备可放入的目标槽位（仅装备道具使用）</summary>
         public EquipmentSlot? AcceptedEquipmentSlot { get; set; }
@@ -111,9 +182,11 @@ namespace POELike.Game.UI
         public bool IsEquipment => ItemKind == BagItemKind.Equipment;
         public bool IsGem       => ItemKind == BagItemKind.Gem;
         public bool IsFlask     => ItemKind == BagItemKind.Flask;
+        public bool IsCurrency  => ItemKind == BagItemKind.Currency;
         public bool IsEquippable => IsEquipment || IsFlask;
         public bool IsActiveSkillGem => IsGem && GemKind == BagGemKind.Active;
         public bool IsSupportSkillGem => IsGem && GemKind == BagGemKind.Support;
+        public int AvailableStackSpace => !IsStackable ? 0 : Mathf.Max(0, MaxStackCount - Mathf.Max(0, StackCount));
 
         // ── 格子占用尺寸 ──────────────────────────────────────────────
 
@@ -195,17 +268,234 @@ namespace POELike.Game.UI
                 : FlaskCurrentCharges;
         }
 
+        public bool CanStackWith(BagItemData other)
+        {
+            if (other == null || ReferenceEquals(this, other))
+                return false;
+
+            if (!IsStackable || !other.IsStackable)
+                return false;
+
+            return string.Equals(ResolveStackKey(), other.ResolveStackKey(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        public int MergeFrom(BagItemData other)
+        {
+            if (!CanStackWith(other))
+                return 0;
+
+            NormalizeStackState();
+            other.NormalizeStackState();
+
+            int moveAmount = Mathf.Min(AvailableStackSpace, Mathf.Max(0, other.StackCount));
+            if (moveAmount <= 0)
+                return 0;
+
+            StackCount = Mathf.Clamp(StackCount + moveAmount, 1, Mathf.Max(1, MaxStackCount));
+            other.StackCount = Mathf.Max(0, other.StackCount - moveAmount);
+            return moveAmount;
+        }
+
+        public void NormalizeStackState(bool clampToMax = true)
+        {
+            if (!IsStackable)
+            {
+                StackCount = 1;
+                MaxStackCount = 1;
+                return;
+            }
+
+            MaxStackCount = Mathf.Max(1, MaxStackCount);
+            StackCount = clampToMax
+                ? Mathf.Clamp(StackCount, 1, MaxStackCount)
+                : Mathf.Max(1, StackCount);
+        }
+
+        public BagItemData CloneForStack(int stackCount)
+        {
+            var clone = new BagItemData(ItemId, Name, GridWidth, GridHeight)
+            {
+                ItemKind = ItemKind,
+                Description = Description,
+                IsStackable = IsStackable,
+                StackCount = stackCount,
+                MaxStackCount = MaxStackCount,
+                CurrencyBaseId = CurrencyBaseId,
+                CurrencyCode = CurrencyCode,
+                CurrencyCategoryId = CurrencyCategoryId,
+                CurrencyCategoryName = CurrencyCategoryName,
+                CurrencyDisplayColor = CurrencyDisplayColor,
+                CurrencyEffectTypeId = CurrencyEffectTypeId,
+                CurrencyEffectTypeName = CurrencyEffectTypeName,
+                CurrencyTargetDescription = CurrencyTargetDescription,
+                CurrencyEffectDescription = CurrencyEffectDescription,
+                CurrencyFlavorText = CurrencyFlavorText,
+                CurrencyDropLevel = CurrencyDropLevel,
+                CurrencySortOrder = CurrencySortOrder,
+                CurrencyConsumesOnUse = CurrencyConsumesOnUse,
+                CurrencyCanApplyNormal = CurrencyCanApplyNormal,
+                CurrencyCanApplyMagic = CurrencyCanApplyMagic,
+                CurrencyCanApplyRare = CurrencyCanApplyRare,
+                CurrencyCanApplyUnique = CurrencyCanApplyUnique,
+                CurrencyCanApplyCorrupted = CurrencyCanApplyCorrupted,
+                AcceptedEquipmentSlot = AcceptedEquipmentSlot,
+                FlaskType = FlaskType,
+                FlaskRequireLevel = FlaskRequireLevel,
+                FlaskRecoverLife = FlaskRecoverLife,
+                FlaskRecoverMana = FlaskRecoverMana,
+                FlaskDurationMs = FlaskDurationMs,
+                FlaskMaxCharges = FlaskMaxCharges,
+                FlaskCurrentCharges = FlaskCurrentCharges,
+                FlaskChargesPerUse = FlaskChargesPerUse,
+                FlaskIsInstant = FlaskIsInstant,
+                FlaskInstantPercent = FlaskInstantPercent,
+                FlaskUtilityEffectType = FlaskUtilityEffectType,
+                FlaskUtilityEffectValue = FlaskUtilityEffectValue,
+                FlaskEffectDescription = FlaskEffectDescription,
+                GemColor = GemColor,
+                GemKind = GemKind,
+                Icon = Icon,
+                ItemColor = ItemColor,
+            };
+
+            clone.SetAcceptedEquipmentSlots(AcceptedEquipmentSlots);
+
+            for (int i = 0; i < CurrencyAllowedItemTypes.Count; i++)
+                clone.CurrencyAllowedItemTypes.Add(CurrencyAllowedItemTypes[i]);
+
+            for (int i = 0; i < Sockets.Count; i++)
+            {
+                var socket = Sockets[i];
+                if (socket == null)
+                    continue;
+
+                clone.Sockets.Add(new SocketData
+                {
+                    Color = socket.Color,
+                    LinkedToPrevious = socket.LinkedToPrevious,
+                });
+            }
+
+            for (int i = 0; i < PrefixDescriptions.Count; i++)
+                clone.PrefixDescriptions.Add(PrefixDescriptions[i]);
+
+            for (int i = 0; i < SuffixDescriptions.Count; i++)
+                clone.SuffixDescriptions.Add(SuffixDescriptions[i]);
+
+            for (int i = 0; i < EquipmentMods.Count; i++)
+                clone.EquipmentMods.Add(EquipmentMods[i]);
+
+            if (RuntimeItemData != null)
+                clone.RuntimeItemData = CloneRuntimeItemData(stackCount);
+
+            clone.NormalizeStackState();
+            return clone;
+        }
+
+        private ItemData CloneRuntimeItemData(int stackCount)
+        {
+            if (RuntimeItemData == null)
+                return null;
+
+            var item = new ItemData
+            {
+                Id = RuntimeItemData.Id,
+                Name = RuntimeItemData.Name,
+                BaseType = RuntimeItemData.BaseType,
+                Type = RuntimeItemData.Type,
+                Rarity = RuntimeItemData.Rarity,
+                ItemLevel = RuntimeItemData.ItemLevel,
+                RequiredLevel = RuntimeItemData.RequiredLevel,
+                RequiredStrength = RuntimeItemData.RequiredStrength,
+                RequiredDexterity = RuntimeItemData.RequiredDexterity,
+                RequiredIntelligence = RuntimeItemData.RequiredIntelligence,
+                IsStackable = RuntimeItemData.IsStackable,
+                StackCount = RuntimeItemData.IsStackable ? Mathf.Max(1, stackCount) : RuntimeItemData.StackCount,
+                MaxStackCount = RuntimeItemData.MaxStackCount,
+                Description = RuntimeItemData.Description,
+                CurrencyBaseId = RuntimeItemData.CurrencyBaseId,
+                CurrencyCode = RuntimeItemData.CurrencyCode,
+                CurrencyCategoryId = RuntimeItemData.CurrencyCategoryId,
+                CurrencyCategoryName = RuntimeItemData.CurrencyCategoryName,
+                CurrencyDisplayColor = RuntimeItemData.CurrencyDisplayColor,
+                CurrencyEffectTypeId = RuntimeItemData.CurrencyEffectTypeId,
+                CurrencyEffectTypeName = RuntimeItemData.CurrencyEffectTypeName,
+                CurrencyTargetDescription = RuntimeItemData.CurrencyTargetDescription,
+                CurrencyEffectDescription = RuntimeItemData.CurrencyEffectDescription,
+                CurrencyFlavorText = RuntimeItemData.CurrencyFlavorText,
+                CurrencyDropLevel = RuntimeItemData.CurrencyDropLevel,
+                CurrencySortOrder = RuntimeItemData.CurrencySortOrder,
+                CurrencyConsumesOnUse = RuntimeItemData.CurrencyConsumesOnUse,
+                CurrencyCanApplyNormal = RuntimeItemData.CurrencyCanApplyNormal,
+                CurrencyCanApplyMagic = RuntimeItemData.CurrencyCanApplyMagic,
+                CurrencyCanApplyRare = RuntimeItemData.CurrencyCanApplyRare,
+                CurrencyCanApplyUnique = RuntimeItemData.CurrencyCanApplyUnique,
+                CurrencyCanApplyCorrupted = RuntimeItemData.CurrencyCanApplyCorrupted,
+                PrimaryEquipmentSlot = RuntimeItemData.PrimaryEquipmentSlot,
+                FlaskType = RuntimeItemData.FlaskType,
+                FlaskRecoverLife = RuntimeItemData.FlaskRecoverLife,
+                FlaskRecoverMana = RuntimeItemData.FlaskRecoverMana,
+                FlaskDurationMs = RuntimeItemData.FlaskDurationMs,
+                FlaskMaxCharges = RuntimeItemData.FlaskMaxCharges,
+                FlaskCurrentCharges = RuntimeItemData.FlaskCurrentCharges,
+                FlaskChargesPerUse = RuntimeItemData.FlaskChargesPerUse,
+                FlaskIsInstant = RuntimeItemData.FlaskIsInstant,
+                FlaskInstantPercent = RuntimeItemData.FlaskInstantPercent,
+                FlaskUtilityEffectType = RuntimeItemData.FlaskUtilityEffectType,
+                FlaskUtilityEffectValue = RuntimeItemData.FlaskUtilityEffectValue,
+                FlaskEffectDescription = RuntimeItemData.FlaskEffectDescription,
+            };
+
+            for (int i = 0; i < RuntimeItemData.AllowedEquipmentSlots.Count; i++)
+                item.AllowedEquipmentSlots.Add(RuntimeItemData.AllowedEquipmentSlots[i]);
+
+            for (int i = 0; i < RuntimeItemData.CurrencyAllowedItemTypes.Count; i++)
+                item.CurrencyAllowedItemTypes.Add(RuntimeItemData.CurrencyAllowedItemTypes[i]);
+
+            for (int i = 0; i < RuntimeItemData.Prefixes.Count; i++)
+                item.Prefixes.Add(RuntimeItemData.Prefixes[i]);
+
+            for (int i = 0; i < RuntimeItemData.Suffixes.Count; i++)
+                item.Suffixes.Add(RuntimeItemData.Suffixes[i]);
+
+            for (int i = 0; i < RuntimeItemData.ImplicitMods.Count; i++)
+                item.ImplicitMods.Add(RuntimeItemData.ImplicitMods[i]);
+
+            return item;
+        }
+
+        private string ResolveStackKey()
+
+        {
+            if (IsCurrency && !string.IsNullOrWhiteSpace(CurrencyCode))
+                return $"currency:{CurrencyCode.Trim()}";
+
+            if (!string.IsNullOrWhiteSpace(ItemId))
+                return $"{ItemKind}:{ItemId.Trim()}";
+
+            return $"{ItemKind}:{Name?.Trim()}";
+        }
+
         /// <summary>
         /// 将背包道具转换为 ECS 运行时物品数据。
         /// </summary>
+
         public ItemData ToItemData()
         {
+            NormalizeStackState(clampToMax: false);
+
             var item = RuntimeItemData ?? new ItemData();
+
             item.Id = ItemId;
             item.Name = Name;
+            item.Description = Description;
             item.Type = ResolveItemType();
+            item.IsStackable = IsStackable;
+            item.StackCount = StackCount;
+            item.MaxStackCount = MaxStackCount;
             item.PrimaryEquipmentSlot = ResolvePrimaryEquipmentSlot();
             item.AllowedEquipmentSlots.Clear();
+            item.CurrencyAllowedItemTypes.Clear();
 
             if (AcceptedEquipmentSlots != null && AcceptedEquipmentSlots.Count > 0)
             {
@@ -219,6 +509,36 @@ namespace POELike.Game.UI
             else if (AcceptedEquipmentSlot.HasValue)
             {
                 item.AllowedEquipmentSlots.Add(AcceptedEquipmentSlot.Value);
+            }
+
+            if (IsCurrency)
+            {
+                item.CurrencyBaseId = CurrencyBaseId;
+                item.CurrencyCode = CurrencyCode;
+                item.CurrencyCategoryId = CurrencyCategoryId;
+                item.CurrencyCategoryName = CurrencyCategoryName;
+                item.CurrencyDisplayColor = CurrencyDisplayColor;
+                item.CurrencyEffectTypeId = CurrencyEffectTypeId;
+                item.CurrencyEffectTypeName = CurrencyEffectTypeName;
+                item.CurrencyTargetDescription = CurrencyTargetDescription;
+                item.CurrencyEffectDescription = CurrencyEffectDescription;
+                item.CurrencyFlavorText = CurrencyFlavorText;
+                item.CurrencyDropLevel = CurrencyDropLevel;
+
+                item.CurrencySortOrder = CurrencySortOrder;
+                item.CurrencyConsumesOnUse = CurrencyConsumesOnUse;
+                item.CurrencyCanApplyNormal = CurrencyCanApplyNormal;
+                item.CurrencyCanApplyMagic = CurrencyCanApplyMagic;
+                item.CurrencyCanApplyRare = CurrencyCanApplyRare;
+                item.CurrencyCanApplyUnique = CurrencyCanApplyUnique;
+                item.CurrencyCanApplyCorrupted = CurrencyCanApplyCorrupted;
+
+                for (int i = 0; i < CurrencyAllowedItemTypes.Count; i++)
+                {
+                    var allowedType = CurrencyAllowedItemTypes[i];
+                    if (!item.CurrencyAllowedItemTypes.Contains(allowedType))
+                        item.CurrencyAllowedItemTypes.Add(allowedType);
+                }
             }
 
             if (IsFlask)
@@ -240,6 +560,7 @@ namespace POELike.Game.UI
             }
 
             if (IsEquipment)
+
             {
                 RebuildItemModifiersFromEquipmentMods(item);
             }
@@ -337,7 +658,11 @@ namespace POELike.Game.UI
             if (IsGem)
                 return ItemType.Gem;
 
+            if (IsCurrency)
+                return ItemType.Currency;
+
             if (IsEquipment)
+
             {
                 var primarySlot = ResolvePrimaryEquipmentSlot();
                 return primarySlot switch

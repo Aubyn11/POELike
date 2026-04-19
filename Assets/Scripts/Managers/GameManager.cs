@@ -97,7 +97,24 @@ namespace POELike.Managers
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
+            if (SceneLoader.IsLoadingScene(scene.name))
+                EnsureLoadingSceneController(scene);
+
             FocusGameViewInEditor();
+        }
+
+        private static void EnsureLoadingSceneController(Scene scene)
+        {
+            var roots = scene.GetRootGameObjects();
+            for (int i = 0; i < roots.Length; i++)
+            {
+                if (roots[i].GetComponentInChildren<LoadingSceneController>(true) != null)
+                    return;
+            }
+
+            var controllerGo = new GameObject("LoadingSceneController");
+            SceneManager.MoveGameObjectToScene(controllerGo, scene);
+            controllerGo.AddComponent<LoadingSceneController>();
         }
 
 #if UNITY_EDITOR

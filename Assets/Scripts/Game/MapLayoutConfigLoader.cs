@@ -11,14 +11,20 @@ namespace POELike.Game
         public string CfgID;
         public string OffsetX;
         public string OffsetZ;
+        public string GameSceneSpawnX;
+        public string GameSceneSpawnY;
+        public string GameSceneSpawnZ;
 
         public int CfgIDInt => int.TryParse(CfgID, out int id) ? id : 0;
         public float OffsetXFloat => ParseFloat(OffsetX);
         public float OffsetZFloat => ParseFloat(OffsetZ);
+        public float GameSceneSpawnXFloat => ParseFloat(GameSceneSpawnX, 2f);
+        public float GameSceneSpawnYFloat => ParseFloat(GameSceneSpawnY, 0f);
+        public float GameSceneSpawnZFloat => ParseFloat(GameSceneSpawnZ, 0f);
 
-        private static float ParseFloat(string value)
+        private static float ParseFloat(string value, float defaultValue = 0f)
         {
-            return float.TryParse(value, out float parsed) ? parsed : 0f;
+            return float.TryParse(value, out float parsed) ? parsed : defaultValue;
         }
     }
 
@@ -96,7 +102,38 @@ namespace POELike.Game
                 : Vector3.zero;
         }
 
+        public static Vector3 GetGameSceneSpawnPoint(string cfgId, Vector3 defaultSpawnPoint)
+        {
+            if (!int.TryParse(cfgId, out int parsedCfgId))
+                return defaultSpawnPoint;
+
+            EnsureLoaded();
+
+            if (!_playerSpawnByCfgId.TryGetValue(parsedCfgId, out var spawnData))
+            {
+                foreach (var spawn in _playerSpawns)
+                {
+                    if (spawn != null && spawn.CfgIDInt == parsedCfgId)
+                    {
+                        spawnData = spawn;
+                        break;
+                    }
+                }
+
+                _playerSpawnByCfgId[parsedCfgId] = spawnData;
+            }
+
+            if (spawnData == null)
+                return defaultSpawnPoint;
+
+            return new Vector3(
+                spawnData.GameSceneSpawnXFloat,
+                spawnData.GameSceneSpawnYFloat,
+                spawnData.GameSceneSpawnZFloat);
+        }
+
         public static IReadOnlyList<MapNpcLayoutData> GetNpcLayoutsByCfgId(string cfgId)
+
         {
             if (!int.TryParse(cfgId, out int parsedCfgId))
                 return EmptyNpcLayouts;

@@ -364,7 +364,7 @@ namespace POELike.Managers
         /// <summary>显示角色主界面底栏</summary>
         public void ShowCharactorMainPanel()
         {
-            if (SceneManager.GetActiveScene().name != SceneLoader.SceneGame)
+            if (!SceneLoader.IsGameplayScene(SceneManager.GetActiveScene().name))
                 return;
 
             if (_charactorMainPanel == null)
@@ -383,7 +383,7 @@ namespace POELike.Managers
 
         public void ShowCharactorMassagePanel()
         {
-            if (SceneManager.GetActiveScene().name != SceneLoader.SceneGame)
+            if (!SceneLoader.IsGameplayScene(SceneManager.GetActiveScene().name))
                 return;
 
             if (_charactorMassagePanel == null)
@@ -515,7 +515,7 @@ namespace POELike.Managers
 
         private void OnActiveSceneChanged(Scene previousScene, Scene newScene)
         {
-            if (newScene.name == SceneLoader.SceneGame)
+            if (SceneLoader.IsGameplayScene(newScene.name))
             {
                 ShowCharactorMainPanel();
                 return;
@@ -584,7 +584,7 @@ namespace POELike.Managers
 
         private bool CanUseGameplayPanels()
         {
-            if (SceneManager.GetActiveScene().name != SceneLoader.SceneGame)
+            if (!SceneLoader.IsGameplayScene(SceneManager.GetActiveScene().name))
                 return false;
 
             if (_characterSelectPanel != null && _characterSelectPanel.gameObject.activeInHierarchy)

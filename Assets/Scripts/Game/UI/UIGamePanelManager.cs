@@ -102,7 +102,72 @@ namespace POELike.Game.UI
                 guiRect.height);
         }
 
+        /// <summary>
+        /// 收集当前所有会遮挡游戏内绘制与点击的屏幕矩形（左下为原点）。
+        /// </summary>
+        public static void GetScreenOccluderRects(List<Rect> results)
+        {
+            if (results == null)
+                return;
+
+            results.Clear();
+
+            AppendRegisteredPanelRects(results);
+            AppendExtraOccluderRects(results);
+
+            if (GMPanel.TryGetVisibleScreenRect(out var gmPanelRect))
+                results.Add(gmPanelRect);
+
+            if (ClientSkillExtensionPanel.TryGetVisibleScreenRect(out var clientSkillPanelRect))
+                results.Add(clientSkillPanelRect);
+        }
+
+        /// <summary>
+        /// 将屏幕坐标矩形（左下为原点）转换为 IMGUI 的 GUI 坐标矩形（左上为原点）。
+        /// </summary>
+        public static Rect ScreenRectToGuiRect(Rect screenRect)
+        {
+            return new Rect(
+                screenRect.xMin,
+                Screen.height - screenRect.yMax,
+                screenRect.width,
+                screenRect.height);
+        }
+
+        private static void AppendRegisteredPanelRects(List<Rect> results)
+        {
+            for (int i = _openPanels.Count - 1; i >= 0; i--)
+            {
+                var panel = _openPanels[i];
+                if (panel == null)
+                {
+                    _openPanels.RemoveAt(i);
+                    continue;
+                }
+
+                if (TryGetScreenRect(panel.transform as RectTransform, out var panelRect))
+                    results.Add(panelRect);
+            }
+        }
+
+        private static void AppendExtraOccluderRects(List<Rect> results)
+        {
+            for (int i = _extraOccluderRects.Count - 1; i >= 0; i--)
+            {
+                var rectTransform = _extraOccluderRects[i];
+                if (rectTransform == null || !rectTransform.gameObject.activeInHierarchy)
+                {
+                    _extraOccluderRects.RemoveAt(i);
+                    continue;
+                }
+
+                if (TryGetScreenRect(rectTransform, out var occluderRect))
+                    results.Add(occluderRect);
+            }
+        }
+
         private static bool IsPointOverRegisteredPanels(Vector2 screenPoint)
+
         {
             for (int i = _openPanels.Count - 1; i >= 0; i--)
             {

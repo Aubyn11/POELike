@@ -75,7 +75,8 @@
 - 传送门面板入口
 - 打开时按 `MapLevelConf.pb` 条目数量动态创建地图按钮
 - 每个条目的文本当前显示 `MapName`
-- 点击地图按钮后会在当前 `GameScene` 内把玩家真实传送到对应地图出生点，并触发对应 `CfgID` 的玩家出生布局、地图装饰布局、NPC 组合、NPC 布局与地图内容刷新
+- 点击地图按钮后当前会把目标 `MapLevelData` 交给 `SceneLoader`，切入 `MissionScene`；`MissionScene` 启动后由 `GameSceneManager` 按对应 `CfgID` 构建玩家出生布局、地图装饰布局、NPC 组合、NPC 布局与地图内容
+- 当前切图会复用已有玩家 ECS 实体，因此角色状态、装备与技能不会因进入 `MissionScene` 而被重置
 - 如某张地图在 `MapLayoutConf.pb` 中没有保留可打开 `DoorPanel` 的 NPC，`GameSceneManager` 当前会输出明确警告；当前测试数据里的入口 NPC 是 `NPCID=1001`
 
 #### [NpcDialogPanel.cs](../Assets/Scripts/Game/UI/NpcDialogPanel.cs)
@@ -150,6 +151,12 @@ flowchart LR
 3. 对应 `ConfigLoader` 是否读取了新字段
 4. `Generator` / `Factory` 是否消费了该字段
 5. UI 是否展示该字段
+
+#### 怪物配置字段语义要特别注意
+
+- 当前 [MonsterSpawner.cs](../Assets/Scripts/Game/MonsterSpawner.cs) **不能再把 `MonstDataConf.pb` 里的 `MonsterRadius` 直接当成 `AttackRange`**
+- 目前 `MonsterSpawner` 只会读取显式 `MonsterAttackRange`；若配置里没有该字段，则回退默认近战攻击距离 `1.5f`
+- 如果再次把 `MonsterRadius` 误接到 `AttackRange`，怪物会在离玩家过远时就进入围攻停位 / 攻击圈，典型现象就是围在角色上、右、下等固定方位持续抖动
 
 #### 商店数据和背包数据不是一回事
 

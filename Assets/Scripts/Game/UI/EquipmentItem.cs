@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using POELike.Game.Equipment;
 using POELike.Managers;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -118,6 +119,9 @@ namespace POELike.Game.UI
         /// <summary>Tips 定位时复用的世界坐标角点数组</summary>
         private readonly Vector3[] _tipsWorldCorners = new Vector3[4];
 
+        private TextMeshProUGUI _stackCountText;
+        private TMP_FontAsset _stackCountFont;
+
         // ── 属性 ──────────────────────────────────────────────────────
 
         private RectTransform _rt;
@@ -158,7 +162,10 @@ namespace POELike.Game.UI
             EnsureCachedReferences();
 
             if (BagData != null)
+            {
                 ApplyItemVisuals(BagData.Icon, BagData.ItemColor);
+                RefreshStackCountVisual();
+            }
         }
 
         private void EnsureCachedReferences()
@@ -239,6 +246,7 @@ namespace POELike.Game.UI
 
             _tooltipBagData = BagData;
             ApplyItemVisuals(BagData.Icon, BagData.ItemColor);
+            RefreshStackCountVisual();
             HideSockets();
             HideTips();
             _tipsShown = false;
@@ -272,10 +280,28 @@ namespace POELike.Game.UI
             _tooltipBagData = BagData;
 
             ApplyItemVisuals(BagData.Icon, BagData.ItemColor);
+            RefreshStackCountVisual();
 
             HideSockets();
             HideTips();
             _tipsShown = false;
+        }
+
+        public void RefreshFromBagData(BagItemData itemData)
+        {
+            EnsureCachedReferences();
+            if (itemData == null)
+                return;
+
+            BagData = itemData;
+            GridWidth = Mathf.Max(1, itemData.GridWidth);
+            GridHeight = Mathf.Max(1, itemData.GridHeight);
+            _sockets = itemData.Sockets;
+            _tooltipBagData = itemData;
+            EnsureSocketedGemCapacity();
+
+            ApplyItemVisuals(itemData.Icon, itemData.ItemColor);
+            RefreshStackCountVisual();
         }
 
         private void ApplyItemVisuals(Sprite icon, Color col)
@@ -290,6 +316,88 @@ namespace POELike.Game.UI
                 _icon.sprite = icon;
                 _icon.color  = col;
             }
+        }
+
+        private void RefreshStackCountVisual()
+        {
+            if (BagData == null || !BagData.IsStackable || BagData.StackCount <= 1)
+            {
+                if (_stackCountText != null)
+                    _stackCountText.gameObject.SetActive(false);
+                return;
+            }
+
+            var countText = EnsureStackCountText();
+            if (countText == null)
+                return;
+
+            countText.gameObject.SetActive(true);
+            countText.text = BagData.StackCount.ToString();
+            countText.fontSize = Mathf.Clamp(Mathf.Min(RT.rect.width, RT.rect.height) * 0.28f, 14f, 28f);
+        }
+
+        private TextMeshProUGUI EnsureStackCountText()
+        {
+            if (_stackCountText != null)
+                return _stackCountText;
+
+            var font = ResolveStackCountFont();
+            if (font == null)
+                return null;
+
+            var go = new GameObject("StackCountText", typeof(RectTransform));
+            go.transform.SetParent(transform, false);
+
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(1f, 0f);
+            rt.anchorMax = new Vector2(1f, 0f);
+            rt.pivot = new Vector2(1f, 0f);
+            rt.anchoredPosition = new Vector2(-4f, 4f);
+            rt.sizeDelta = new Vector2(44f, 24f);
+
+            _stackCountText = go.AddComponent<TextMeshProUGUI>();
+            _stackCountText.raycastTarget = false;
+            _stackCountText.alignment = TextAlignmentOptions.BottomRight;
+            _stackCountText.enableWordWrapping = false;
+            _stackCountText.overflowMode = TextOverflowModes.Overflow;
+            _stackCountText.font = font;
+            if (font.material != null)
+                _stackCountText.fontSharedMaterial = font.material;
+            _stackCountText.color = Color.white;
+            if (_stackCountText.fontSharedMaterial != null)
+            {
+                _stackCountText.outlineColor = Color.black;
+                _stackCountText.outlineWidth = 0.2f;
+            }
+            _stackCountText.transform.SetAsLastSibling();
+            return _stackCountText;
+        }
+
+        private TMP_FontAsset ResolveStackCountFont()
+        {
+            if (_stackCountFont != null)
+                return _stackCountFont;
+
+            _stackCountFont = TMP_Settings.defaultFontAsset;
+            if (_stackCountFont == null)
+                _stackCountFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+
+            if (_stackCountFont == null)
+            {
+                var loadedFonts = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
+                for (int i = 0; i < loadedFonts.Length; i++)
+                {
+                    var font = loadedFonts[i];
+                    if (font == null)
+                        continue;
+
+                    _stackCountFont = font;
+                    if (font.material != null)
+                        break;
+                }
+            }
+
+            return _stackCountFont;
         }
 
         /// <summary>
@@ -313,6 +421,7 @@ namespace POELike.Game.UI
 
             _lastBagVisualWidth = w;
             _lastBagVisualHeight = h;
+            RefreshStackCountVisual();
 
             // SocketPanel 在悬停时按当前显示尺寸动态重算
         }
@@ -751,10 +860,11 @@ namespace POELike.Game.UI
             else
             {
                 var bagData = ResolveTooltipBagData();
-                if (bagData == null || (!bagData.IsEquipment && !bagData.IsFlask))
+                if (bagData == null || (!bagData.IsEquipment && !bagData.IsFlask && !bagData.IsCurrency))
                     return;
 
                 _tipsInstance.Setup(bagData);
+
             }
 
             UpdateTipsPosition();

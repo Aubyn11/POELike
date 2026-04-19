@@ -10,12 +10,13 @@
 flowchart TD
     A[应用启动] --> B[SceneLoader / 初始场景]
     B --> C[CharacterSelectPanel]
-    C --> D[进入 GameScene]
-    D --> E[GameManager 创建 ECS World]
-    E --> F[注册 Systems]
-    F --> G[GameSceneInitializer 初始化测试内容 / 场景运行时资源]
-    G --> H[GameSceneManager 驱动玩家输入 / NPC / 寻路 / 快捷键 / 技能输入 / 怪物掉落桥接]
-    H --> I[UIManager 管理游戏内 UI]
+    C --> D[进入 LoadingScene]
+    D --> E[异步加载 GameScene / MissionScene]
+    E --> F[GameManager 创建 ECS World]
+    F --> G[注册 Systems]
+    G --> H[GameSceneInitializer 初始化测试内容 / 场景运行时资源]
+    H --> I[GameSceneManager 驱动玩家输入 / NPC / 寻路 / 快捷键 / 技能输入 / 怪物掉落桥接]
+    I --> J[UIManager 管理游戏内 UI]
 ```
 
 ### 核心文件与职责
@@ -26,6 +27,14 @@ flowchart TD
 - 负责创建 `World`
 - 负责注册 / 初始化系统
 - 负责保证关键运行时管理器存在
+
+#### [SceneLoader.cs](../Assets/Scripts/Managers/SceneLoader.cs) / [LoadingSceneController.cs](../Assets/Scripts/Managers/LoadingSceneController.cs)
+
+- **玩法场景切换总入口**
+- 当前从角色选择进入 `GameScene`、以及从 `DoorPanel` 进入 `MissionScene` 都会先进入 `LoadingScene`
+- 真实加载流程当前由持久化 `GameManager` 上启动的 `SceneLoader` 协程全程驱动，`LoadingSceneController` 只负责显示加载 UI
+- 当前进入 `LoadingScene` 时，`GameManager` 会先确保场景内存在 `LoadingSceneController`；控制器会优先接管场景里现有 `LoadingPanel` 下的 `Slider`，若场景 UI 缺失才兜底创建运行时加载 UI
+- `LoadingSceneController` 会驱动 `Slider.value` 跟随 `SceneLoader.CurrentLoadingProgress` 更新，待进度完成后再激活目标场景
 
 #### [World.cs](../Assets/Scripts/ECS/Core/World.cs)
 
@@ -53,9 +62,9 @@ flowchart TD
   - 技能输入采集与写入 `PlayerInputComponent`
   - 药剂快捷键处理
   - 左键 `Skill1 / Move / Blocked` 判定分流
-  - 传送门地图选择后的玩家真实传送、地图装饰刷新、地图布局刷新与地图内容刷新
+  - `DoorPanel` 地图选择后的 `MissionScene` 切换（实际会先经过 `LoadingScene`），以及新场景内的地图出生点 / 地图装饰 / NPC 布局 / 地图内容构建
 
-  - 监听 `EntityDiedEvent` 并桥接怪物地面掉落到 `GroundItemDroppedEvent`
+  - 监听 `EntityDiedEvent` 并桥接怪物地面掉落到 `GroundItemDroppedEvent`（当前会独立尝试掉落装备与可堆叠通货）
 
 - 如果现象与“玩家输入后发生了什么”有关，优先查这里
 
@@ -177,6 +186,19 @@ flowchart TD
 - [MovementComponent.cs](../Assets/Scripts/ECS/Components/MovementComponent.cs)
 - [MovementSystem.cs](../Assets/Scripts/ECS/Systems/MovementSystem.cs)
 - [GameSceneManager.cs](../Assets/Scripts/Game/GameSceneManager.cs)
+
+#### 问题：怪物围在玩家周围固定位置抖动
+
+优先看：
+
+- [MonsterSpawner.cs](../Assets/Scripts/Game/MonsterSpawner.cs)
+- [AISystem.cs](../Assets/Scripts/ECS/Systems/AISystem.cs)
+- [MovementSystem.cs](../Assets/Scripts/ECS/Systems/MovementSystem.cs)
+
+关键事实：
+
+- **`MonsterRadius` 不能再直接映射成怪物 `AttackRange`**
+- 若把配置里的半径字段误当攻击距离，怪物会离玩家过远就进入围攻停位 / 攻击圈，表现为围在角色附近固定站位并持续抖动
 
 ### 从本模块跳到哪里
 

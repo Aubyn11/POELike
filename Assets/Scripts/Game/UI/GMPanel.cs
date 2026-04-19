@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 using POELike.ECS.Core;
 using POELike.ECS.Components;
 using POELike.Game;
+using POELike.Game.Currency;
 using POELike.Game.Equipment;
 using POELike.Game.Items;
 using POELike.Game.Skills;
@@ -30,6 +31,7 @@ namespace POELike.Game.UI
             Prefix,
             Suffix,
             GemContent,
+            Currency,
         }
 
         private static readonly SocketColor[] SocketColorOptions =
@@ -64,6 +66,7 @@ namespace POELike.Game.UI
         private Vector2 _prefixDropdownScroll;
         private Vector2 _suffixDropdownScroll;
         private Vector2 _gemDropdownScroll;
+        private Vector2 _currencyDropdownScroll;
         private GMDropdown _openDropdown = GMDropdown.None;
         private bool _hasInitializedSelections;
         private EquipmentDetailTypeData _selectedEquipmentDetail;
@@ -76,9 +79,11 @@ namespace POELike.Game.UI
         private SupportSkillStoneConfigData _selectedSupportGem;
         private SocketColor _selectedGemColor = SocketColor.Blue;
         private bool _generateSupportGem;
+        private CurrencyBaseData _selectedCurrency;
+        private string _currencyStackInput = "1";
 
         // ── 面板尺寸 ──────────────────────────────────────────────────
-        private Rect _windowRect = new Rect(10f, 10f, 560f, 760f);
+        private Rect _windowRect = new Rect(10f, 10f, 560f, 820f);
 
         // ── 快捷键 ────────────────────────────────────────────────────
         private InputAction _toggleAction;
@@ -231,6 +236,9 @@ namespace POELike.Game.UI
             DrawGemSection();
 
             GUILayout.Space(8f);
+            DrawCurrencySection();
+
+            GUILayout.Space(8f);
             DrawDestroySection();
 
             if (!string.IsNullOrEmpty(_statusMsg))
@@ -353,6 +361,38 @@ namespace POELike.Game.UI
             _statusMsg = $"✅ 已生成宝石：{bagItem.Name}";
         }
 
+        private void OnGenerateCurrencyClicked()
+        {
+            EnsureSelectionStateInitialized();
+
+            string currencyQuery = GetCurrentCurrencyQuery();
+            if (string.IsNullOrWhiteSpace(currencyQuery))
+            {
+                _statusMsg = "❌ 当前没有可选通货";
+                return;
+            }
+
+            if (!int.TryParse(_currencyStackInput.Trim(), out int stackCount) || stackCount <= 0)
+            {
+                _statusMsg = "❌ 通货数量格式错误";
+                return;
+            }
+
+            if (!GMItemFactory.TryCreateCurrency(currencyQuery, stackCount, out var bagItem, out var error))
+            {
+                _statusMsg = $"❌ 生成通货失败：{error}";
+                return;
+            }
+
+            if (!TryAddBagItem(bagItem, out error))
+            {
+                _statusMsg = $"❌ 通货入包失败：{error}";
+                return;
+            }
+
+            _statusMsg = $"✅ 已生成通货：{bagItem.Name} x{bagItem.StackCount}";
+        }
+
         private void OnDestroyEntityClicked()
         {
             if (_world == null)
@@ -389,7 +429,7 @@ namespace POELike.Game.UI
                 return false;
             }
 
-            var bagPanel = uiManager.GetOrCreateBagPanel(true);
+            var bagPanel = uiManager.GetOrCreateBagPanel(false);
             if (bagPanel == null)
             {
                 error = "当前背包面板不可用";
@@ -489,6 +529,22 @@ namespace POELike.Game.UI
 
             if (GUILayout.Button("生成宝石到背包", GUILayout.Height(28f)))
                 OnGenerateGemClicked();
+        }
+
+        private void DrawCurrencySection()
+        {
+            GUILayout.Label("── 生成通货 ──────────────────");
+            DrawDropdownButton("通货内容:", GetCurrencyDisplayName(_selectedCurrency), GMDropdown.Currency);
+            if (_openDropdown == GMDropdown.Currency)
+                DrawCurrencyDropdown();
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("数量:", GUILayout.Width(110f));
+            _currencyStackInput = GUILayout.TextField(_currencyStackInput, GUILayout.Width(120f));
+            GUILayout.EndHorizontal();
+
+            if (GUILayout.Button("生成通货到背包", GUILayout.Height(28f)))
+                OnGenerateCurrencyClicked();
         }
 
         private void DrawDestroySection()
@@ -620,6 +676,34 @@ namespace POELike.Game.UI
             GUILayout.EndVertical();
         }
 
+        private void DrawCurrencyDropdown()
+        {
+            GUILayout.BeginVertical("box");
+            _currencyDropdownScroll = GUILayout.BeginScrollView(_currencyDropdownScroll, GUILayout.Height(180f));
+
+            var currencies = CurrencyConfigLoader.BaseCurrencies;
+            bool hasOption = false;
+            for (int i = 0; i < currencies.Count; i++)
+            {
+                var currency = currencies[i];
+                if (currency == null)
+                    continue;
+
+                hasOption = true;
+                if (GUILayout.Button(GetCurrencyDisplayName(currency), GUILayout.Height(24f)))
+                {
+                    _selectedCurrency = currency;
+                    _openDropdown = GMDropdown.None;
+                }
+            }
+
+            if (!hasOption)
+                GUILayout.Label("当前没有可用的通货配置");
+
+            GUILayout.EndScrollView();
+            GUILayout.EndVertical();
+        }
+
         private void DrawSelectedModList(string label, List<EquipmentModData> selectedMods)
         {
             GUILayout.Label($"{label}（{selectedMods.Count}/3）");
@@ -725,6 +809,9 @@ namespace POELike.Game.UI
             if (_selectedSupportGem == null)
                 SelectSupportGem(FindPreferredSupportGem("多重") ?? FindFirstSupportGem(), false);
 
+            if (_selectedCurrency == null)
+                _selectedCurrency = FindPreferredCurrency("知识") ?? FindFirstCurrency();
+
             if (!_hasInitializedSelections)
             {
                 if (_selectedActiveGem != null)
@@ -738,7 +825,7 @@ namespace POELike.Game.UI
                     _selectedGemColor = SocketColor.Green;
                 }
 
-                _hasInitializedSelections = _selectedEquipmentDetail != null || _selectedActiveGem != null || _selectedSupportGem != null;
+                _hasInitializedSelections = _selectedEquipmentDetail != null || _selectedActiveGem != null || _selectedSupportGem != null || _selectedCurrency != null;
             }
 
             NormalizeSocketSelections();
@@ -891,6 +978,34 @@ namespace POELike.Game.UI
             return null;
         }
 
+        private CurrencyBaseData FindPreferredCurrency(string keyword)
+        {
+            var currencies = CurrencyConfigLoader.BaseCurrencies;
+            for (int i = 0; i < currencies.Count; i++)
+            {
+                var currency = currencies[i];
+                if (currency == null)
+                    continue;
+
+                if (ContainsIgnoreCase(currency.CurrencyName, keyword) || ContainsIgnoreCase(currency.CurrencyCode, keyword))
+                    return currency;
+            }
+
+            return null;
+        }
+
+        private CurrencyBaseData FindFirstCurrency()
+        {
+            var currencies = CurrencyConfigLoader.BaseCurrencies;
+            for (int i = 0; i < currencies.Count; i++)
+            {
+                if (currencies[i] != null)
+                    return currencies[i];
+            }
+
+            return null;
+        }
+
         private string BuildModQuery(List<EquipmentModData> mods)
         {
             if (mods == null || mods.Count == 0)
@@ -969,6 +1084,18 @@ namespace POELike.Game.UI
             return GetActiveGemDisplayName(_selectedActiveGem);
         }
 
+        private string GetCurrentCurrencyQuery()
+        {
+            if (_selectedCurrency == null)
+                return string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(_selectedCurrency.CurrencyCode))
+                return _selectedCurrency.CurrencyCode;
+            if (!string.IsNullOrWhiteSpace(_selectedCurrency.CurrencyBaseId))
+                return _selectedCurrency.CurrencyBaseId;
+            return _selectedCurrency.CurrencyName ?? string.Empty;
+        }
+
         private static string GetEquipmentDetailDisplayName(EquipmentDetailTypeData detail)
         {
             if (detail == null)
@@ -1015,6 +1142,18 @@ namespace POELike.Game.UI
                 return name;
 
             return $"{name} [{supportGem.SupportSkillStoneCode}]";
+        }
+
+        private static string GetCurrencyDisplayName(CurrencyBaseData currency)
+        {
+            if (currency == null)
+                return "请选择通货";
+
+            string name = string.IsNullOrWhiteSpace(currency.CurrencyName) ? currency.CurrencyCode : currency.CurrencyName;
+            if (string.IsNullOrWhiteSpace(currency.CurrencyCode))
+                return name;
+
+            return $"{name} [{currency.CurrencyCode}]";
         }
 
         private static string GetActiveGemQuery(ActiveSkillStoneConfigData activeGem)

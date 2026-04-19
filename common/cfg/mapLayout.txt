@@ -1,7 +1,10 @@
 MapPlayerSpawnConf{
     int32 CfgID = 1,
     float OffsetX = 2,
-    float OffsetZ = 3
+    float OffsetZ = 3,
+    float GameSceneSpawnX = 4,
+    float GameSceneSpawnY = 5,
+    float GameSceneSpawnZ = 6
 }
 MapNpcLayoutConf{
     int32 CfgID = 1,

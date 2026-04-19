@@ -3,15 +3,22 @@
     {
       "CfgID": "1001",
       "OffsetX": "-4",
-      "OffsetZ": "4"
+      "OffsetZ": "4",
+      "GameSceneSpawnX": "2",
+      "GameSceneSpawnY": "0",
+      "GameSceneSpawnZ": "0"
     },
     {
       "CfgID": "1002",
       "OffsetX": "6",
-      "OffsetZ": "-4"
+      "OffsetZ": "-4",
+      "GameSceneSpawnX": "2",
+      "GameSceneSpawnY": "0",
+      "GameSceneSpawnZ": "0"
     }
   ],
   "MapNpcLayoutConf": [
+
     {
       "CfgID": "1001",
       "NPCID": "1001",

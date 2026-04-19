@@ -97,6 +97,34 @@ namespace POELike.ECS.Components
         public int RequiredDexterity { get; set; }
         public int RequiredIntelligence { get; set; }
 
+        // 可堆叠道具字段（当前主要供通货使用）
+        public bool IsStackable { get; set; }
+        public int StackCount { get; set; } = 1;
+        public int MaxStackCount { get; set; } = 1;
+        public string Description { get; set; }
+
+        // 通货字段（为后续通货系统与策划配置预留）
+        public string CurrencyBaseId { get; set; }
+        public string CurrencyCode { get; set; }
+        public string CurrencyCategoryId { get; set; }
+        public string CurrencyCategoryName { get; set; }
+        public string CurrencyDisplayColor { get; set; }
+        public string CurrencyEffectTypeId { get; set; }
+        public string CurrencyEffectTypeName { get; set; }
+        public string CurrencyTargetDescription { get; set; }
+        public string CurrencyEffectDescription { get; set; }
+        public string CurrencyFlavorText { get; set; }
+        public int CurrencyDropLevel { get; set; }
+
+        public int CurrencySortOrder { get; set; }
+        public bool CurrencyConsumesOnUse { get; set; } = true;
+        public bool CurrencyCanApplyNormal { get; set; }
+        public bool CurrencyCanApplyMagic { get; set; }
+        public bool CurrencyCanApplyRare { get; set; }
+        public bool CurrencyCanApplyUnique { get; set; }
+        public bool CurrencyCanApplyCorrupted { get; set; }
+        public List<ItemType> CurrencyAllowedItemTypes { get; } = new List<ItemType>();
+
         // 精确可装备槽位（用于地面掉落转背包、Tips 展示与装备栏校验）
         public EquipmentSlot? PrimaryEquipmentSlot { get; set; }
         public List<EquipmentSlot> AllowedEquipmentSlots { get; } = new List<EquipmentSlot>();

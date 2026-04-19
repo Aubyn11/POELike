@@ -226,6 +226,31 @@ namespace POELike.Game.UI
                 return false;
             }
 
+            data.NormalizeStackState(clampToMax: false);
+
+            if (data.IsStackable)
+            {
+
+                int incomingCount = Mathf.Max(0, data.StackCount);
+                int stackableSpace = GetStackableSpaceFor(data);
+                int remainingCount = Mathf.Max(0, incomingCount - stackableSpace);
+                if (remainingCount <= 0)
+                    return true;
+
+                int maxStackCount = Mathf.Max(1, data.MaxStackCount);
+                int requiredPlacements = Mathf.CeilToInt(remainingCount / (float)maxStackCount);
+                if (requiredPlacements <= 0)
+                    return true;
+
+                if (!_bag.TryGetAutoPlacementPositions(data, requiredPlacements, out _))
+                {
+                    failureReason = $"背包空间不足：{data.Name}";
+                    return false;
+                }
+
+                return true;
+            }
+
             if (!_bag.HasSpaceFor(data))
             {
                 failureReason = $"背包空间不足：{data.Name}";
@@ -239,6 +264,48 @@ namespace POELike.Game.UI
         {
             if (!CanAddItemToBag(data, out failureReason))
                 return false;
+
+            data.NormalizeStackState(clampToMax: false);
+
+            if (data.IsStackable)
+            {
+
+                int remainingCount = Mathf.Max(0, data.StackCount);
+                remainingCount = MergeIntoExistingStacks(data, remainingCount);
+                if (remainingCount <= 0)
+                {
+                    UIManager.Instance?.RefreshCharactorMainPanel();
+                    return true;
+                }
+
+                int maxStackCount = Mathf.Max(1, data.MaxStackCount);
+                while (remainingCount > 0)
+                {
+                    int placementCount = Mathf.Min(maxStackCount, remainingCount);
+                    var stackItem = data.CloneForStack(placementCount);
+                    stackItem.NormalizeStackState();
+
+                    if (!_bag.TryAutoPlaceItem(stackItem))
+                    {
+                        failureReason = $"背包空间不足：{data.Name}";
+                        return false;
+                    }
+
+                    var stackView = CreateRuntimeItemView(stackItem);
+                    if (stackView == null)
+                    {
+                        _bag.RemoveItem(stackItem);
+                        failureReason = $"创建道具视图失败：{data.Name}";
+                        return false;
+                    }
+
+                    stackView.BindToBag(_bag);
+                    remainingCount -= placementCount;
+                }
+
+                UIManager.Instance?.RefreshCharactorMainPanel();
+                return true;
+            }
 
             if (!_bag.TryAutoPlaceItem(data))
             {
@@ -257,6 +324,56 @@ namespace POELike.Game.UI
             view.BindToBag(_bag);
             UIManager.Instance?.RefreshCharactorMainPanel();
             return true;
+        }
+
+        private int GetStackableSpaceFor(BagItemData data)
+        {
+            if (data == null || !data.IsStackable || _bag == null)
+                return 0;
+
+            int totalSpace = 0;
+            var items = _bag.Items;
+            for (int i = 0; i < items.Count; i++)
+            {
+                var existing = items[i];
+                if (existing == null || !existing.CanStackWith(data))
+                    continue;
+
+                totalSpace += existing.AvailableStackSpace;
+            }
+
+            return totalSpace;
+        }
+
+        private int MergeIntoExistingStacks(BagItemData data, int remainingCount)
+        {
+            if (data == null || !data.IsStackable || _bag == null)
+                return remainingCount;
+
+            var items = _bag.Items;
+            for (int i = 0; i < items.Count && remainingCount > 0; i++)
+            {
+                var existing = items[i];
+                if (existing == null || !existing.CanStackWith(data))
+                    continue;
+
+                int moveAmount = Mathf.Min(existing.AvailableStackSpace, remainingCount);
+                if (moveAmount <= 0)
+                    continue;
+
+                existing.StackCount += moveAmount;
+                existing.NormalizeStackState();
+                if (existing.RuntimeItemData != null)
+                    existing.RuntimeItemData.StackCount = existing.StackCount;
+
+                var existingView = BagItemView.FindByData(existing);
+                existingView?.RefreshView();
+
+                remainingCount -= moveAmount;
+
+            }
+
+            return remainingCount;
         }
 
         private static Transform FindChildRecursive(Transform root, string nodeName)
@@ -522,7 +639,7 @@ namespace POELike.Game.UI
         {
             GameObject go;
 
-            if ((data.IsEquipment || data.IsFlask) && _equipmentPrefab != null)
+            if ((data.IsEquipment || data.IsFlask || data.IsCurrency) && _equipmentPrefab != null)
             {
                 go = Instantiate(_equipmentPrefab, _bag.GridRoot, false);
                 var equipmentItem = go.GetComponent<EquipmentItem>();
@@ -531,6 +648,7 @@ namespace POELike.Game.UI
                     equipmentItem.Init(data);
                 }
             }
+
             else
             {
                 go = new GameObject($"Gem_{data.ItemId}", typeof(RectTransform), typeof(CanvasGroup), typeof(Image));

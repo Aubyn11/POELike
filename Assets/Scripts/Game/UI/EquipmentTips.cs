@@ -132,13 +132,13 @@ namespace POELike.Game.UI
                 _nameText.text = string.IsNullOrWhiteSpace(item.Name) ? "未知装备" : item.Name;
 
             if (_baseValueText != null)
-                _baseValueText.text = item.IsFlask ? BuildFlaskBaseText(item) : string.Empty;
+                _baseValueText.text = item.IsCurrency ? BuildCurrencyBaseText(item) : item.IsFlask ? BuildFlaskBaseText(item) : string.Empty;
 
             if (_donationText != null)
-                _donationText.text = item.IsFlask ? BuildFlaskRequirementText(item) : BuildBagItemRequirementText(item);
+                _donationText.text = item.IsCurrency ? BuildCurrencyRequirementText(item) : item.IsFlask ? BuildFlaskRequirementText(item) : BuildBagItemRequirementText(item);
 
             if (_valueText != null)
-                _valueText.text = item.IsFlask ? BuildFlaskEffectText(item) : BuildBagItemModText(item);
+                _valueText.text = item.IsCurrency ? BuildCurrencyEffectText(item) : item.IsFlask ? BuildFlaskEffectText(item) : BuildBagItemModText(item);
 
             RefreshLayout();
         }
@@ -228,6 +228,20 @@ namespace POELike.Game.UI
             return sb.ToString().TrimEnd();
         }
 
+        private static string BuildCurrencyBaseText(BagItemData item)
+        {
+            if (item == null || !item.IsCurrency)
+                return string.Empty;
+
+            var sb = new StringBuilder();
+            sb.AppendLine($"通货分类：{(string.IsNullOrWhiteSpace(item.CurrencyCategoryName) ? "未分类" : item.CurrencyCategoryName)}");
+            sb.AppendLine($"效果类型：{(string.IsNullOrWhiteSpace(item.CurrencyEffectTypeName) ? "未定义" : item.CurrencyEffectTypeName)}");
+            sb.AppendLine($"堆叠数量：{Mathf.Max(1, item.StackCount)} / {Mathf.Max(1, item.MaxStackCount)}");
+            if (item.CurrencyDropLevel > 0)
+                sb.AppendLine($"掉落等级：{item.CurrencyDropLevel}");
+            return sb.ToString().TrimEnd();
+        }
+
         private static string BuildFlaskBaseText(BagItemData item)
         {
             if (item == null || !item.IsFlask)
@@ -240,6 +254,22 @@ namespace POELike.Game.UI
             return sb.ToString().TrimEnd();
         }
 
+        private static string BuildCurrencyRequirementText(BagItemData item)
+        {
+            if (item == null || !item.IsCurrency)
+                return string.Empty;
+
+            var sb = new StringBuilder();
+            if (!string.IsNullOrWhiteSpace(item.CurrencyTargetDescription))
+                sb.AppendLine($"作用目标：{item.CurrencyTargetDescription}");
+
+            if (item.CurrencyAllowedItemTypes != null && item.CurrencyAllowedItemTypes.Count > 0)
+                sb.AppendLine($"允许类型：{string.Join(" / ", item.CurrencyAllowedItemTypes)}");
+
+            sb.AppendLine(item.CurrencyConsumesOnUse ? "使用后消耗：是" : "使用后消耗：否");
+            return sb.ToString().TrimEnd();
+        }
+
         private static string BuildFlaskRequirementText(BagItemData item)
         {
             if (item == null || !item.IsFlask)
@@ -248,6 +278,26 @@ namespace POELike.Game.UI
             return item.FlaskRequireLevel > 0
                 ? $"需求等级：{item.FlaskRequireLevel}"
                 : string.Empty;
+        }
+
+        private static string BuildCurrencyEffectText(BagItemData item)
+        {
+            if (item == null || !item.IsCurrency)
+                return string.Empty;
+
+            var sb = new StringBuilder();
+            if (!string.IsNullOrWhiteSpace(item.Description))
+                sb.AppendLine(item.Description);
+            if (!string.IsNullOrWhiteSpace(item.CurrencyEffectDescription))
+                sb.AppendLine(item.CurrencyEffectDescription);
+            if (!string.IsNullOrWhiteSpace(item.CurrencyFlavorText))
+            {
+                if (sb.Length > 0)
+                    sb.AppendLine();
+                sb.AppendLine(item.CurrencyFlavorText);
+            }
+
+            return sb.ToString().TrimEnd();
         }
 
         private static string BuildFlaskEffectText(BagItemData item)
@@ -361,6 +411,7 @@ namespace POELike.Game.UI
                 BagItemKind.Equipment => "装备",
                 BagItemKind.Flask     => "药剂",
                 BagItemKind.Gem       => "宝石",
+                BagItemKind.Currency  => "通货",
                 BagItemKind.Misc      => "杂项",
                 _                     => "未知",
             };

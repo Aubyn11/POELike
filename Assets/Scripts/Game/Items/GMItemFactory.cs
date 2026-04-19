@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using POELike.ECS.Components;
+using POELike.Game.Currency;
 using POELike.Game.Equipment;
 using POELike.Game.Skills;
 using POELike.Game.UI;
@@ -191,7 +192,50 @@ namespace POELike.Game.Items
             return true;
         }
 
+        public static bool TryCreateCurrency(
+            string currencyQuery,
+            int stackCount,
+            out BagItemData bagItem,
+            out string error)
+        {
+            bagItem = null;
+            error = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(currencyQuery))
+            {
+                error = "通货查询不能为空";
+                return false;
+            }
+
+            if (stackCount <= 0)
+            {
+                error = "通货数量必须大于 0";
+                return false;
+            }
+
+            var currency = ResolveCurrency(currencyQuery);
+            if (currency == null)
+            {
+                error = $"未找到通货：{currencyQuery}";
+                return false;
+            }
+
+            bagItem = CurrencyBagDataFactory.CreateFromConfig(
+                currency,
+                stackCount,
+                GenerateItemId("gm_currency", currency.CurrencyCode ?? currency.CurrencyBaseId));
+
+            if (bagItem == null)
+            {
+                error = "生成通货失败";
+                return false;
+            }
+
+            return true;
+        }
+
         private static EquipmentDetailTypeData ResolveEquipmentDetail(string query)
+
         {
             if (string.IsNullOrWhiteSpace(query))
                 return null;
@@ -565,6 +609,45 @@ namespace POELike.Game.Items
                 <= 2 => EquipmentQuality.Magic,
                 _ => EquipmentQuality.Rare,
             };
+        }
+
+        private static CurrencyBaseData ResolveCurrency(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+                return null;
+
+            string normalized = query.Trim();
+            var currencies = CurrencyConfigLoader.BaseCurrencies;
+
+            for (int i = 0; i < currencies.Count; i++)
+            {
+                var currency = currencies[i];
+                if (currency != null && string.Equals(currency.CurrencyBaseId, normalized, StringComparison.OrdinalIgnoreCase))
+                    return currency;
+            }
+
+            for (int i = 0; i < currencies.Count; i++)
+            {
+                var currency = currencies[i];
+                if (currency != null && string.Equals(currency.CurrencyCode, normalized, StringComparison.OrdinalIgnoreCase))
+                    return currency;
+            }
+
+            for (int i = 0; i < currencies.Count; i++)
+            {
+                var currency = currencies[i];
+                if (currency != null && string.Equals(currency.CurrencyName, normalized, StringComparison.OrdinalIgnoreCase))
+                    return currency;
+            }
+
+            for (int i = 0; i < currencies.Count; i++)
+            {
+                var currency = currencies[i];
+                if (currency != null && (ContainsIgnoreCase(currency.CurrencyCode, normalized) || ContainsIgnoreCase(currency.CurrencyName, normalized)))
+                    return currency;
+            }
+
+            return null;
         }
 
         private static ActiveSkillStoneConfigData ResolveActiveSkill(string query)

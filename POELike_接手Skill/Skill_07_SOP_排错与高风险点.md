@@ -208,12 +208,22 @@
 - `-`
 - `@@`
 
-#### 坑 7：忘记同步两份总文档 / 索引文档
+#### 坑 7：运行时动态创建 `TextMeshProUGUI` 时，先设描边再绑字体
+
+尤其是 [EquipmentItem.cs](../Assets/Scripts/Game/UI/EquipmentItem.cs) 这类会在隐藏背包路径里运行时创建数量角标的地方：
+
+- 要先解析并绑定 `TMP_FontAsset`
+- 若字体材质可用，最好同步写入 `fontSharedMaterial`
+- 最后再设置 `outlineWidth / outlineColor`
+
+否则 TMP 可能在内部 `CreateMaterialInstance(new Material(source))` 时因为 `source` 为空而抛 `ArgumentNullException`
+
+#### 坑 8：忘记同步接手 Skill 索引 / 子模块文档
 
 每次有效开发步骤完成后，要同步更新：
 
 - [POELike_接手Skill.md](../POELike_接手Skill.md)
-- [POELike_项目记忆.md](../POELike_项目记忆.md)
+- 当前实际修改对应的 `skill-01 ~ skill-07` 子模块文档
 
 ### 推荐工作流
 

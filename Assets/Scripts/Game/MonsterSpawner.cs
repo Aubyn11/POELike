@@ -96,7 +96,9 @@ namespace POELike.Game
             float attack      = Mathf.Max(1f, data.MonsterAttackFloat);
             float defense     = Mathf.Max(0f, data.MonsterDefenseFloat);
             float moveSpeed   = Mathf.Max(0.1f, data.MonsterSpeedFloat);
-            float attackRange = Mathf.Max(0.1f, data.MonsterRadiusFloat);
+            // `MonsterRadius` 是配置里的体型/半径字段，不应直接映射为 AI 攻击距离。
+            // 如果没有显式攻击距离配置，当前回退默认近战距离，避免怪物在玩家周围远距离停住并抖动。
+            float attackRange = Mathf.Max(0.1f, data.MonsterAttackRangeFloat);
             float detectionRange = Mathf.Max(0f, data.MonsterDetectionRangeFloat);
 
             var entity = world.CreateEntity("Monster");
@@ -203,6 +205,7 @@ namespace POELike.Game
             public string MonsterDefense;
             public string MonsterSpeed;
             public string MonsterRadius;
+            public string MonsterAttackRange;
             public string MonsterDetectionRange;
 
             public int MonsterIDInt => int.TryParse(MonsterID, out int id) ? id : 0;
@@ -210,7 +213,8 @@ namespace POELike.Game
             public float MonsterAttackFloat => ParseFloat(MonsterAttack, DefaultAttack);
             public float MonsterDefenseFloat => ParseFloat(MonsterDefense, DefaultDefense);
             public float MonsterSpeedFloat => ParseFloat(MonsterSpeed, DefaultMoveSpeed);
-            public float MonsterRadiusFloat => ParseFloat(MonsterRadius, DefaultAttackRange);
+            public float MonsterRadiusFloat => ParseFloat(MonsterRadius, CollisionRadius);
+            public float MonsterAttackRangeFloat => ParseFloat(MonsterAttackRange, DefaultAttackRange);
             public float MonsterDetectionRangeFloat => ParseFloat(MonsterDetectionRange, DefaultDetectionRange);
 
             private static float ParseFloat(string value, float fallback)

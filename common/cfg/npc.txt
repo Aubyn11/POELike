@@ -2,7 +2,8 @@ NPCDataConf{
     int32 NPCID = 1,
     string NPCName = 2,
     string NPCPosition = 3,
-    string NPCMesh = 4
+    string NPCMesh = 4,
+    string SceneName = 5
 }
 NPCButtonConf{
     int32 NPCID = 1,

@@ -7,6 +7,7 @@ using POELike.ECS.Components;
 using POELike.ECS.Core;
 using POELike.ECS.Systems;
 using POELike.Game.Character;
+using POELike.Game.Currency;
 using POELike.Game.Items;
 using POELike.Game.Skills;
 using POELike.Game.UI;
@@ -21,8 +22,10 @@ namespace POELike.Game
     /// </summary>
     public class GameSceneManager : MonoBehaviour
     {
+        private static readonly Vector3 DefaultGameScenePlayerSpawnPoint = new Vector3(2f, 0f, 0f);
+
         [Header("玩家设置")]
-        [SerializeField] private Vector3 _playerSpawnPoint = new Vector3(0f, 0.5f, 0f);
+        [SerializeField] private Vector3 _playerSpawnPoint = new Vector3(2f, 0f, 0f);
 
         [Header("场景环境（运行时自动生成，可留空）")]
         [SerializeField] private bool _autoGenerateEnvironment = true;
@@ -31,6 +34,8 @@ namespace POELike.Game
         [SerializeField] private bool _enableMonsterGroundDrops = true;
         [SerializeField] [Range(0f, 1f)] private float _monsterDropChance = 0.5f;
         [SerializeField] private int _monsterDropItemLevel = 5;
+        [SerializeField] [Range(0f, 1f)] private float _monsterCurrencyDropChance = 0.35f;
+        [SerializeField] private Vector2Int _monsterCurrencyStackRange = new Vector2Int(1, 3);
 
         // 玩家ECS实体
         private Entity _playerEntity;
@@ -43,7 +48,15 @@ namespace POELike.Game
 
         // 当前地图刷出的运行时装饰物
         private readonly List<GameObject> _currentMapDecorationObjects = new List<GameObject>();
+        private readonly List<Collider> _currentMapBlockingColliders = new List<Collider>();
         private Transform _mapDecorationRoot;
+
+        private const float PlayerCollisionRadius = 0.4f;
+        private const float MapDecorationCollisionSkin = 0.02f;
+        private const float MapDecorationResolveEpsilon = 0.01f;
+        private const int MapDecorationMaxResolvePasses = 6;
+        private const float MapDecorationBlockedTargetDotThreshold = -0.05f;
+        private bool _movementCancelledByObstacleThisFrame;
 
         // 玩家输入组件引用（每帧写入）
 
@@ -159,32 +172,42 @@ namespace POELike.Game
             if (world != null)
                 world.EventBus.Subscribe<EntityDiedEvent>(OnEntityDied);
 
+            _currentMapLevel = SceneLoader.ConsumePendingMapLevelData() ?? _currentMapLevel ?? BuildDefaultMapContext();
+
             if (_autoGenerateEnvironment)
                 BuildEnvironment();
 
-            if (_currentMapLevel == null)
-                _currentMapLevel = BuildDefaultMapContext();
-
             _playerSpawnPoint = ResolveMapSpawnPoint(_currentMapLevel);
-            SpawnPlayer(data);
-            AssignDefaultSkills();
-            UIManager.Instance?.RefreshCharactorMainPanel();
-            RefreshCurrentMapDecoration();
-            RefreshCurrentMapLayout();
+
+            bool reusedExistingPlayer = TryReuseExistingPlayer();
+            if (!reusedExistingPlayer)
+            {
+                SpawnPlayer(data);
+                AssignDefaultSkills();
+            }
+            else
+            {
+                MovePlayerToCurrentMapSpawn();
+            }
+
             SetupInputActions();
             SetupGMPanel();
             SetupClientSkillExtensionPanel();
-
+            RefreshCurrentMapDecoration();
+            RefreshCurrentMapLayout();
             RefreshCurrentMapContent();
-
+            UIManager.Instance?.RefreshCharactorMainPanel();
+            SceneLoader.NotifyGameplaySceneActivated();
         }
 
         private void Update()
         {
             if (_playerEntity == null || !_playerEntity.IsAlive) return;
+            _movementCancelledByObstacleThisFrame = false;
             UpdateInput();
             UpdateMovementSpeed();
             ResolveNPCCollisions();
+            ResolveMapDecorationCollisions();
             CheckNpcArrival();
             CheckGroundItemArrival();
         }
@@ -213,7 +236,8 @@ namespace POELike.Game
             if (GameManager.Instance?.World != null)
                 GameManager.Instance.World.EventBus.Unsubscribe<EntityDiedEvent>(OnEntityDied);
 
-            if (_playerEntity != null && GameManager.Instance != null)
+            bool preservePlayer = SceneLoader.PreservePlayerEntityOnNextGameplaySceneLoad;
+            if (!preservePlayer && _playerEntity != null && GameManager.Instance != null)
                 GameManager.Instance.World.DestroyEntity(_playerEntity);
 
             ClearCurrentMapNpcs();
@@ -237,27 +261,70 @@ namespace POELike.Game
         /// </summary>
         private void BuildEnvironment()
         {
-            // ── 地面 ──────────────────────────────────────────────────
-            var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            ground.name = "Ground";
-            ground.transform.localScale = new Vector3(10f, 1f, 10f);
-            ground.transform.position   = Vector3.zero;
-            SetMaterialColor(ground, new Color(0.25f, 0.22f, 0.18f));
-            ground.layer = LayerMask.NameToLayer("Default");
+            var activeScene = SceneManager.GetActiveScene();
+            string sceneName = activeScene.name;
 
-            // ── 方向光 ────────────────────────────────────────────────
-            var sunGo = new GameObject("Sun");
-            var sun   = sunGo.AddComponent<Light>();
-            sun.type      = LightType.Directional;
-            sun.color     = new Color(1f, 0.95f, 0.8f);
+            var existingGround = GameObject.Find("Ground");
+            if (existingGround == null)
+            {
+                existingGround = GameObject.CreatePrimitive(PrimitiveType.Plane);
+                existingGround.name = "Ground";
+            }
+
+            existingGround.transform.localScale = new Vector3(10f, 1f, 10f);
+            existingGround.transform.position = Vector3.zero;
+            existingGround.layer = LayerMask.NameToLayer("Default");
+
+            Color groundColor = new Color(0.25f, 0.22f, 0.18f);
+            Color ambientColor = new Color(0.15f, 0.15f, 0.2f);
+            Color sunColor = new Color(1f, 0.95f, 0.8f);
+
+            string cfgId = _currentMapLevel?.CfgID ?? string.Empty;
+            string sceneId = _currentMapLevel?.SceneID ?? string.Empty;
+            if (sceneName == SceneLoader.SceneMission)
+            {
+                switch (cfgId)
+                {
+                    case "1001":
+                        groundColor = new Color(0.19f, 0.33f, 0.20f);
+                        ambientColor = new Color(0.14f, 0.20f, 0.16f);
+                        sunColor = new Color(0.98f, 0.93f, 0.78f);
+                        break;
+                    case "1002":
+                        groundColor = new Color(0.16f, 0.24f, 0.33f);
+                        ambientColor = new Color(0.09f, 0.13f, 0.18f);
+                        sunColor = new Color(0.72f, 0.86f, 1f);
+                        break;
+                }
+
+                if (sceneId == "2")
+                {
+                    groundColor = new Color(0.30f, 0.25f, 0.18f);
+                    ambientColor = new Color(0.22f, 0.18f, 0.12f);
+                    sunColor = new Color(1.00f, 0.82f, 0.64f);
+                }
+            }
+
+            SetMaterialColor(existingGround, groundColor);
+
+            GameObject sunGo = GameObject.Find("Sun") ?? GameObject.Find("Directional Light");
+            if (sunGo == null)
+                sunGo = new GameObject("Sun");
+            else
+                sunGo.name = "Sun";
+
+            var sun = sunGo.GetComponent<Light>();
+            if (sun == null)
+                sun = sunGo.AddComponent<Light>();
+            sun.type = LightType.Directional;
+            sun.color = sunColor;
             sun.intensity = 1.2f;
             sunGo.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
 
-            // ── 环境光 ────────────────────────────────────────────────
-            RenderSettings.ambientMode  = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.15f, 0.15f, 0.2f);
+            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+            RenderSettings.ambientLight = ambientColor;
 
-            Debug.Log("[GameSceneManager] 场景环境构建完成");
+            Debug.Log($"[GameSceneManager] 场景环境构建完成：{sceneName}，地图={_currentMapLevel?.MapName}，CfgID={cfgId}，SceneID={sceneId}");
         }
 
         private void SetMaterialColor(GameObject go, Color color)
@@ -271,6 +338,73 @@ namespace POELike.Game
         }
 
         // ── 玩家生成（纯ECS，无GameObject）────────────────────────────
+
+        private bool TryReuseExistingPlayer()
+        {
+            var world = GameManager.Instance?.World;
+            if (world == null)
+                return false;
+
+            var existingPlayer = world.FindEntityByTag("Player");
+            if (existingPlayer == null || !existingPlayer.IsAlive)
+                return false;
+
+            _playerEntity = existingPlayer;
+            _movementComp = _playerEntity.GetComponent<MovementComponent>();
+            _transformComp = _playerEntity.GetComponent<TransformComponent>();
+            _skillComp = _playerEntity.GetComponent<SkillComponent>();
+            _inputComp = _playerEntity.GetComponent<PlayerInputComponent>();
+
+            _skillComp?.EnsureSlotCapacity(8);
+
+            if (_movementComp == null || _transformComp == null || _skillComp == null || _inputComp == null)
+            {
+                Debug.LogWarning("[GameSceneManager] 发现已有玩家实体，但组件不完整，改为重新创建玩家。 ");
+                _playerEntity = null;
+                _movementComp = null;
+                _transformComp = null;
+                _skillComp = null;
+                _inputComp = null;
+                return false;
+            }
+
+            SetupCamera();
+            Debug.Log("[GameSceneManager] 复用已有玩家 ECS 实体进入新的玩法场景。");
+            return true;
+        }
+
+        private void MovePlayerToCurrentMapSpawn()
+        {
+            if (_playerEntity == null || !_playerEntity.IsAlive)
+                return;
+
+            if (_transformComp != null)
+            {
+                _transformComp.Position = _playerSpawnPoint;
+                ResolveMapDecorationCollisions(true);
+            }
+
+            if (_movementComp != null)
+            {
+                _movementComp.TargetPosition = _playerSpawnPoint;
+                _movementComp.MoveDirection = Vector3.zero;
+                _movementComp.Velocity = Vector3.zero;
+                _movementComp.HasTarget = false;
+            }
+
+            if (_inputComp != null)
+            {
+                _inputComp.HasClickTarget = false;
+                _inputComp.ClickTargetPosition = _playerSpawnPoint;
+                _inputComp.MouseWorldPosition = _playerSpawnPoint;
+            }
+
+            _walkingToNpc = false;
+            _prevHasTarget = false;
+            _targetNpcEntity = null;
+            _npcMeshRenderer?.SetTalkingNpc(null);
+            ClearPendingGroundItemPickup();
+        }
 
         /// <summary>
         /// 直接创建玩家ECS实体，不生成任何GameObject
@@ -916,7 +1050,7 @@ namespace POELike.Game
             if (_transformComp == null || _movementComp == null) return;
 
             Vector3 playerPos = _transformComp.Position;
-            float   playerR   = 0.4f; // 玩家碰撞半径
+            float   playerR   = PlayerCollisionRadius;
 
             foreach (var npcEntity in _npcEntities)
             {
@@ -957,7 +1091,115 @@ namespace POELike.Game
             }
         }
 
+        private void ResolveMapDecorationCollisions(bool forcePushOut = false)
+        {
+            if (_transformComp == null)
+                return;
+
+            Vector3 playerPos = _transformComp.Position;
+            bool isClickToMove = _movementComp != null && _movementComp.HasTarget;
+
+            for (int i = _currentMapBlockingColliders.Count - 1; i >= 0; i--)
+            {
+                Collider blocker = _currentMapBlockingColliders[i];
+                if (blocker == null)
+                {
+                    _currentMapBlockingColliders.RemoveAt(i);
+                    continue;
+                }
+
+                if (!TryResolveMapDecorationOverlap(blocker, ref playerPos, forcePushOut, out Vector3 pushOutDirection))
+                    continue;
+
+                _transformComp.Position = playerPos;
+
+                if (isClickToMove && _movementComp != null && ShouldCancelMovementIntoBlocker(playerPos, _movementComp.TargetPosition, pushOutDirection))
+                {
+                    _movementComp.HasTarget = false;
+                    _movementComp.MoveDirection = Vector3.zero;
+                    _movementComp.Velocity = Vector3.zero;
+                    _movementCancelledByObstacleThisFrame = true;
+                    isClickToMove = false;
+                }
+            }
+        }
+
+        private bool TryResolveMapDecorationOverlap(Collider blocker, ref Vector3 playerPos, bool forcePushOut, out Vector3 pushOutDirection)
+        {
+            pushOutDirection = Vector3.zero;
+            bool moved = false;
+            float requiredDistance = PlayerCollisionRadius + MapDecorationCollisionSkin;
+
+            for (int pass = 0; pass < MapDecorationMaxResolvePasses; pass++)
+            {
+                Vector3 closest = blocker.ClosestPoint(playerPos);
+                Vector3 planarOffset = new Vector3(playerPos.x - closest.x, 0f, playerPos.z - closest.z);
+                float planarDistance = planarOffset.magnitude;
+                bool overlapping = planarDistance < requiredDistance - MapDecorationResolveEpsilon;
+
+                if (!overlapping)
+                {
+                    if (!forcePushOut || planarDistance > 0.0001f)
+                        break;
+                }
+
+                Vector3 direction;
+                float pushDistance;
+
+                if (planarDistance <= 0.0001f)
+                {
+                    direction = GetMapDecorationPushOutDirection(blocker, playerPos);
+                    pushDistance = requiredDistance;
+                }
+                else
+                {
+                    direction = planarOffset / planarDistance;
+                    pushDistance = requiredDistance - planarDistance;
+                    if (pushDistance <= 0.0001f)
+                        break;
+                }
+
+                playerPos += direction * (pushDistance + MapDecorationResolveEpsilon);
+                playerPos.y = _transformComp.Position.y;
+                pushOutDirection = direction;
+                moved = true;
+                forcePushOut = false;
+            }
+
+            return moved;
+        }
+
+        private static Vector3 GetMapDecorationPushOutDirection(Collider blocker, Vector3 playerPos)
+        {
+            Bounds bounds = blocker.bounds;
+            Vector3 fallback = playerPos - bounds.center;
+            fallback.y = 0f;
+            if (fallback.sqrMagnitude > 0.0001f)
+                return fallback.normalized;
+
+            Vector3 right = blocker.transform.right;
+            right.y = 0f;
+            if (right.sqrMagnitude > 0.0001f)
+                return right.normalized;
+
+            return Vector3.forward;
+        }
+
+        private static bool ShouldCancelMovementIntoBlocker(Vector3 playerPos, Vector3 targetPosition, Vector3 pushOutDirection)
+        {
+            if (pushOutDirection.sqrMagnitude <= 0.0001f)
+                return true;
+
+            Vector3 toTarget = targetPosition - playerPos;
+            toTarget.y = 0f;
+            if (toTarget.sqrMagnitude <= 0.0001f)
+                return true;
+
+            return Vector3.Dot(toTarget.normalized, pushOutDirection) < MapDecorationBlockedTargetDotThreshold;
+        }
+
         private void OnPlayerDeath()
+
         {
             Debug.Log("[GameSceneManager] 玩家死亡！");
             GameManager.Instance.World.EventBus.Publish(new PlayerDiedEvent { Player = _playerEntity });
@@ -968,28 +1210,22 @@ namespace POELike.Game
             if (evt.Entity == null || evt.Entity.Tag != "Monster")
                 return;
 
-            if (!_enableMonsterGroundDrops || Random.value > _monsterDropChance)
+            if (!_enableMonsterGroundDrops)
                 return;
 
             var transform = evt.Entity.GetComponent<TransformComponent>();
             if (transform == null)
                 return;
 
-            var droppedItem = CreateRandomDroppedEquipment();
-            if (droppedItem == null)
-                return;
-
-            GameManager.Instance?.World?.EventBus.Publish(new GroundItemDroppedEvent
-            {
-                Item = droppedItem,
-                Position = transform.Position,
-            });
-
-            Debug.Log($"[GameSceneManager] 怪物掉落装备: [{droppedItem.Rarity}] {droppedItem.Name}");
+            TryPublishGroundDrop(CreateRandomDroppedEquipmentOrNull(), transform.Position, "装备");
+            TryPublishGroundDrop(CreateRandomDroppedCurrencyOrNull(), transform.Position, "通货");
         }
 
-        private ItemData CreateRandomDroppedEquipment()
+        private ItemData CreateRandomDroppedEquipmentOrNull()
         {
+            if (Random.value > _monsterDropChance)
+                return null;
+
             ItemType itemType = Random.Range(0, 3) switch
             {
                 0 => ItemType.Weapon,
@@ -998,6 +1234,60 @@ namespace POELike.Game
             };
 
             return ItemFactory.CreateRandomItem(Mathf.Max(1, _monsterDropItemLevel), itemType);
+        }
+
+        private ItemData CreateRandomDroppedCurrencyOrNull()
+        {
+            if (Random.value > _monsterCurrencyDropChance)
+                return null;
+
+            var currencies = CurrencyConfigLoader.BaseCurrencies;
+            if (currencies == null || currencies.Count == 0)
+                return null;
+
+            int dropLevel = Mathf.Max(1, _monsterDropItemLevel);
+            var candidates = new List<CurrencyBaseData>();
+            for (int i = 0; i < currencies.Count; i++)
+            {
+                var currency = currencies[i];
+                if (currency == null)
+                    continue;
+
+                int currencyDropLevel = ParseCurrencyDropLevel(currency.CurrencyDropLevel);
+                if (currencyDropLevel <= dropLevel)
+                    candidates.Add(currency);
+            }
+
+            if (candidates.Count == 0)
+                return null;
+
+            var selectedCurrency = candidates[Random.Range(0, candidates.Count)];
+            int minStack = Mathf.Max(1, Mathf.Min(_monsterCurrencyStackRange.x, _monsterCurrencyStackRange.y));
+            int maxStack = Mathf.Max(minStack, Mathf.Max(_monsterCurrencyStackRange.x, _monsterCurrencyStackRange.y));
+            int stackCount = Random.Range(minStack, maxStack + 1);
+            var bagItem = CurrencyBagDataFactory.CreateFromConfig(selectedCurrency, stackCount);
+            return bagItem?.ToItemData();
+        }
+
+        private static int ParseCurrencyDropLevel(string value)
+        {
+            return int.TryParse(value, out var parsed) ? Mathf.Max(1, parsed) : 1;
+        }
+
+        private void TryPublishGroundDrop(ItemData droppedItem, Vector3 position, string dropKind)
+        {
+            if (droppedItem == null)
+                return;
+
+            GameManager.Instance?.World?.EventBus.Publish(new GroundItemDroppedEvent
+            {
+                Item = droppedItem,
+                Position = position,
+            });
+
+            string rarityText = droppedItem.Type == ItemType.Currency ? "Currency" : droppedItem.Rarity.ToString();
+            string stackText = droppedItem.IsStackable ? $" x{Mathf.Max(1, droppedItem.StackCount)}" : string.Empty;
+            Debug.Log($"[GameSceneManager] 怪物掉落{dropKind}: [{rarityText}] {droppedItem.Name}{stackText}");
         }
 
         /// <summary>
@@ -1134,6 +1424,12 @@ namespace POELike.Game
 
             if (!_movementComp.HasTarget && _prevHasTarget)
             {
+                if (_movementCancelledByObstacleThisFrame)
+                {
+                    _prevHasTarget = false;
+                    return;
+                }
+
                 _groundItemLabelRenderer.TryPickupItem(_pendingGroundPickupItem);
                 ClearPendingGroundItemPickup();
                 return;
@@ -1182,6 +1478,13 @@ namespace POELike.Game
 
             if (!_movementComp.HasTarget && _prevHasTarget)
             {
+                if (_movementCancelledByObstacleThisFrame)
+                {
+                    _walkingToNpc = false;
+                    _prevHasTarget = false;
+                    return;
+                }
+
                 _walkingToNpc = false;
                 OpenNpcDialog(_targetNpcEntity);
                 return;
@@ -1472,13 +1775,17 @@ namespace POELike.Game
                 return;
 
             _currentMapLevel = mapLevel;
-            TeleportPlayerToCurrentMap();
-            RefreshCurrentMapDecoration();
-            RefreshCurrentMapLayout();
-            RefreshCurrentMapContent();
             _doorPanel?.Close();
+            _npcDialogPanel?.Close();
+            _npcMeshRenderer?.SetTalkingNpc(null);
+            ClearPendingGroundItemPickup();
 
-            UIManager.Instance?.RefreshCharactorMainPanel();
+            var saveData = SceneLoader.PendingCharacterData;
+            if (saveData == null)
+                saveData = new CharacterSaveData("debug", "调试角色", 1, "本地");
+
+            Debug.Log($"[DoorPanel] 即将进入任务场景 {SceneLoader.SceneMission}，地图：{mapLevel.MapName}（MapID={mapLevel.MapID}, SceneID={mapLevel.SceneID}, CfgID={mapLevel.CfgID}）");
+            SceneLoader.LoadMissionScene(saveData, mapLevel);
         }
 
         private void TeleportPlayerToCurrentMap()
@@ -1521,18 +1828,26 @@ namespace POELike.Game
         {
             ClearCurrentMapNpcs();
 
-            if (_currentMapLevel == null)
-                return;
-
             var world = GameManager.Instance?.World;
             if (world == null)
+                return;
+
+            string activeSceneName = SceneManager.GetActiveScene().name;
+            if (activeSceneName == SceneLoader.SceneGame)
+            {
+                _npcEntities = NPCSpawner.SpawnAllNPCs(world, activeSceneName);
+                Debug.Log($"[GameSceneManager] {SceneLoader.SceneGame} 使用 NPCDataConf 场景过滤 + 固定坐标布局，NPC 实体数：{_npcEntities.Count}");
+                return;
+            }
+
+            if (_currentMapLevel == null)
                 return;
 
             MapLayoutConfigLoader.Reload();
             IReadOnlyList<MapNpcLayoutData> npcLayouts = MapLayoutConfigLoader.GetNpcLayoutsByCfgId(_currentMapLevel.CfgID);
             if (npcLayouts == null || npcLayouts.Count == 0)
             {
-                _npcEntities = NPCSpawner.SpawnAllNPCs(world);
+                _npcEntities = NPCSpawner.SpawnAllNPCs(world, activeSceneName);
                 Debug.LogWarning($"[GameSceneManager] 地图 {_currentMapLevel.MapName}（CfgID={_currentMapLevel.CfgID}）未配置 NPC 布局，已回退到 NPCDataConf 默认布局。");
                 return;
             }
@@ -1555,10 +1870,12 @@ namespace POELike.Game
                 {
                     NPCID = layout.NPCIDInt,
                     Position = npcPosition,
+                    UseFixedConfigPosition = false,
                 });
+
             }
 
-            _npcEntities = NPCSpawner.SpawnNPCs(world, requests);
+            _npcEntities = NPCSpawner.SpawnNPCs(world, requests, activeSceneName);
             Debug.Log($"[GameSceneManager] 已按 CfgID={_currentMapLevel.CfgID} 刷新地图布局，当前地图：{_currentMapLevel.MapName}，NPC 实体数：{_npcEntities.Count}，玩家出生点：{_playerSpawnPoint}");
         }
 
@@ -1591,6 +1908,13 @@ namespace POELike.Game
         {
 
             ClearCurrentMapMonsters();
+
+            string activeSceneName = SceneManager.GetActiveScene().name;
+            if (activeSceneName != SceneLoader.SceneMission)
+            {
+                Debug.Log($"[GameSceneManager] {activeSceneName} 不刷地图怪物，已跳过地图内容构建。");
+                return;
+            }
 
             if (_currentMapLevel == null)
                 return;
@@ -1692,6 +2016,7 @@ namespace POELike.Game
             }
 
             _currentMapDecorationObjects.Clear();
+            _currentMapBlockingColliders.Clear();
         }
 
         private Transform EnsureMapDecorationRoot()
@@ -1764,21 +2089,31 @@ namespace POELike.Game
             position.y = baseHeight * scale.y * 0.5f;
             decorationObject.transform.position = position;
 
+            var collider = decorationObject.GetComponent<Collider>();
+            if (collider != null)
+            {
+                collider.isTrigger = false;
+                _currentMapBlockingColliders.Add(collider);
+            }
+
             SetMaterialColor(decorationObject, color);
             return decorationObject;
         }
 
         private static Vector3 ResolveMapSpawnPoint(MapLevelData mapLevel)
         {
+            if (mapLevel == null)
+                return DefaultGameScenePlayerSpawnPoint;
+
+            string activeSceneName = SceneManager.GetActiveScene().name;
+            if (activeSceneName == SceneLoader.SceneGame)
+                return MapLayoutConfigLoader.GetGameSceneSpawnPoint(mapLevel.CfgID, DefaultGameScenePlayerSpawnPoint);
 
             int anchorIndex = 0;
             if (!string.IsNullOrWhiteSpace(mapLevel.MapID) && int.TryParse(mapLevel.MapID, out int parsedMapId))
                 anchorIndex = Mathf.Abs(parsedMapId - 1) % MapTeleportAnchors.Length;
 
             Vector3 anchor = MapTeleportAnchors[anchorIndex];
-            if (mapLevel == null)
-                return anchor;
-
             Vector3 layoutOffset = MapLayoutConfigLoader.GetPlayerSpawnOffset(mapLevel.CfgID);
             return anchor + layoutOffset;
         }
