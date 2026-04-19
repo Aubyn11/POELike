@@ -1,0 +1,29 @@
+#pragma kernel CSRangeHit
+
+struct MonsterPosition
+{
+    float3 position;
+    float  pad;
+};
+
+StructuredBuffer<MonsterPosition> _MonsterPositions;
+RWStructuredBuffer<uint> _HitResults;
+
+int _MonsterCount;
+float3 _SkillCenter;
+float _SkillRadius;
+
+[numthreads(64, 1, 1)]
+void CSRangeHit(uint3 id : SV_DispatchThreadID)
+{
+    uint idx = id.x;
+    if ((int)idx >= _MonsterCount)
+        return;
+
+    float3 monsterPos = _MonsterPositions[idx].position;
+    float2 delta = float2(monsterPos.x - _SkillCenter.x, monsterPos.z - _SkillCenter.z);
+    float radiusSq = _SkillRadius * _SkillRadius;
+    float distSq = dot(delta, delta);
+
+    _HitResults[idx] = distSq <= radiusSq ? 1u : 0u;
+}

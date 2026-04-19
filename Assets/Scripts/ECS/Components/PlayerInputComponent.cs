@@ -36,14 +36,25 @@ namespace POELike.ECS.Components
         public UnityEngine.Vector2 MouseScreenPosition { get; set; }
         
         /// <summary>
-        /// 技能槽位输入（0-5对应技能1-6）
+        /// 技能槽位按下输入（0-7 对应技能 1-8）
         /// </summary>
-        public bool[] SkillInputs { get; } = new bool[6];
+        public bool[] SkillInputs { get; } = new bool[8];
+
+        /// <summary>
+        /// 技能槽位按住状态（0-7 对应技能 1-8）
+        /// </summary>
+        public bool[] SkillHeldInputs { get; } = new bool[8];
+
+        /// <summary>
+        /// 技能槽位松开输入（0-7 对应技能 1-8）
+        /// </summary>
+        public bool[] SkillReleasedInputs { get; } = new bool[8];
         
         /// <summary>
         /// 药剂输入（0-4对应药剂1-5）
         /// </summary>
         public bool[] FlaskInputs { get; } = new bool[5];
+
         
         /// <summary>
         /// 交互键
@@ -73,8 +84,14 @@ namespace POELike.ECS.Components
             MouseLeftHeld = false;
             MouseRightHeld = false;
             HasClickTarget = false;
-            for (int i = 0; i < SkillInputs.Length; i++) SkillInputs[i] = false;
+            for (int i = 0; i < SkillInputs.Length; i++)
+            {
+                SkillInputs[i] = false;
+                SkillHeldInputs[i] = false;
+                SkillReleasedInputs[i] = false;
+            }
             for (int i = 0; i < FlaskInputs.Length; i++) FlaskInputs[i] = false;
         }
+
     }
 }

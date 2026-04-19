@@ -53,8 +53,15 @@ namespace POELike.Game.UI
             if (IsPointOverExtraOccluders(screenPoint))
                 return true;
 
-            return GMPanel.TryGetVisibleScreenRect(out var gmPanelRect)
-                && gmPanelRect.Contains(screenPoint);
+            if (GMPanel.TryGetVisibleScreenRect(out var gmPanelRect)
+                && gmPanelRect.Contains(screenPoint))
+            {
+                return true;
+            }
+
+            return ClientSkillExtensionPanel.TryGetVisibleScreenRect(out var clientSkillPanelRect)
+                && clientSkillPanelRect.Contains(screenPoint);
+
         }
 
         /// <summary>
@@ -72,8 +79,15 @@ namespace POELike.Game.UI
             if (IsScreenRectOverExtraOccluders(screenRect))
                 return true;
 
-            return GMPanel.TryGetVisibleScreenRect(out var gmPanelRect)
-                && gmPanelRect.Overlaps(screenRect, true);
+            if (GMPanel.TryGetVisibleScreenRect(out var gmPanelRect)
+                && gmPanelRect.Overlaps(screenRect, true))
+            {
+                return true;
+            }
+
+            return ClientSkillExtensionPanel.TryGetVisibleScreenRect(out var clientSkillPanelRect)
+                && clientSkillPanelRect.Overlaps(screenRect, true);
+
         }
 
         /// <summary>
@@ -198,6 +212,46 @@ namespace POELike.Game.UI
 
         /// <summary>是否有任意面板处于打开状态</summary>
         public static bool AnyOpen => _openPanels.Count > 0;
+
+        /// <summary>
+        /// 获取当前最上层的已打开面板。
+        /// 默认按打开顺序处理：最后注册的面板视为最上层面板。
+        /// </summary>
+        public static UIGamePanel GetTopmostOpenPanel()
+        {
+            for (int i = _openPanels.Count - 1; i >= 0; i--)
+            {
+                var panel = _openPanels[i];
+                if (panel == null)
+                {
+                    _openPanels.RemoveAt(i);
+                    continue;
+                }
+
+                if (!panel.IsOpen || !panel.gameObject.activeInHierarchy)
+                {
+                    _openPanels.RemoveAt(i);
+                    continue;
+                }
+
+                return panel;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// 关闭当前最上层的已打开面板。
+        /// </summary>
+        public static bool CloseTopmost()
+        {
+            var panel = GetTopmostOpenPanel();
+            if (panel == null)
+                return false;
+
+            panel.Close();
+            return true;
+        }
 
         /// <summary>关闭所有已打开的面板</summary>
         public static void CloseAll()

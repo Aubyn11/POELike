@@ -1,13 +1,87 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!43 &-6861181712120753601
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e93ced6356345994198bfc21bf5c6592, type: 3}
+  m_Name: TT_Halberdier_Bundle
+  m_EditorClassIdentifier: 
+  PrefabName: TT_Halberdier
+  Parts:
+  - PartName: Head_08b
+    Mesh: {fileID: 4300946, guid: 02ded044b8e0963439276550f50be6f9, type: 3}
+    Material: {fileID: 2100000, guid: dccf8e44ede71db42b49378af93c5fb7, type: 2}
+    LocalMatrix:
+      e00: 0.8299997
+      e01: -0.00000088337424
+      e02: -0.000000085483315
+      e03: -0.0000011001088
+      e10: 0.00000018442758
+      e11: -0.0000007855569
+      e12: 0.83
+      e13: 1.2199998
+      e20: -0.00000083390216
+      e21: -0.8299997
+      e22: -0.0000007854984
+      e23: 0.028108284
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1
+  - PartName: w_halberd
+    Mesh: {fileID: 4300464, guid: 02ded044b8e0963439276550f50be6f9, type: 3}
+    Material: {fileID: 2100000, guid: dccf8e44ede71db42b49378af93c5fb7, type: 2}
+    LocalMatrix:
+      e00: 0.07967308
+      e01: 0.7059357
+      e02: 0.7037804
+      e03: 0.59085375
+      e10: -0.056095127
+      e11: 0.70808095
+      e12: -0.7038994
+      e13: 0.5720172
+      e20: -0.995241
+      e21: 0.016603237
+      e22: 0.09601451
+      e23: 0.09348266
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1
+  - PartName: Body_07b
+    Mesh: {fileID: 8282015015004760813}
+    Material: {fileID: 2100000, guid: dccf8e44ede71db42b49378af93c5fb7, type: 2}
+    LocalMatrix:
+      e00: 1
+      e01: 0
+      e02: 0
+      e03: 0
+      e10: 0
+      e11: -0.00000011920929
+      e12: 1.0000001
+      e13: 0
+      e20: 0
+      e21: -1.0000001
+      e22: -0.00000011920929
+      e23: 0
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1
+--- !u!43 &8282015015004760813
 Mesh:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Body_07b_Baked
-  serializedVersion: 11
+  serializedVersion: 12
   m_SubMeshes:
   - serializedVersion: 2
     firstByte: 0
@@ -165,77 +239,16 @@ Mesh:
     offset: 0
     size: 0
     path: 
---- !u!114 &11400000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e93ced6356345994198bfc21bf5c6592, type: 3}
-  m_Name: TT_Halberdier_Bundle
-  m_EditorClassIdentifier: 
-  PrefabName: TT_Halberdier
-  Parts:
-  - PartName: Head_08b
-    Mesh: {fileID: 4300946, guid: 02ded044b8e0963439276550f50be6f9, type: 3}
-    Material: {fileID: 2100000, guid: dccf8e44ede71db42b49378af93c5fb7, type: 2}
-    LocalMatrix:
-      e00: 0.8299997
-      e01: -0.00000088337424
-      e02: -0.000000085483315
-      e03: -0.0000011001088
-      e10: 0.00000018442758
-      e11: -0.0000007855569
-      e12: 0.83
-      e13: 1.2199998
-      e20: -0.00000083390216
-      e21: -0.8299997
-      e22: -0.0000007854984
-      e23: 0.028108284
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-  - PartName: w_halberd
-    Mesh: {fileID: 4300464, guid: 02ded044b8e0963439276550f50be6f9, type: 3}
-    Material: {fileID: 2100000, guid: dccf8e44ede71db42b49378af93c5fb7, type: 2}
-    LocalMatrix:
-      e00: 0.07967308
-      e01: 0.7059357
-      e02: 0.7037804
-      e03: 0.59085375
-      e10: -0.056095127
-      e11: 0.70808095
-      e12: -0.7038994
-      e13: 0.5720172
-      e20: -0.995241
-      e21: 0.016603237
-      e22: 0.09601451
-      e23: 0.09348266
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-  - PartName: Body_07b
-    Mesh: {fileID: -6861181712120753601}
-    Material: {fileID: 2100000, guid: dccf8e44ede71db42b49378af93c5fb7, type: 2}
-    LocalMatrix:
-      e00: 1
-      e01: 0
-      e02: 0
-      e03: 0
-      e10: 0
-      e11: -0.00000011920929
-      e12: 1.0000001
-      e13: 0
-      e20: 0
-      e21: -1.0000001
-      e22: -0.00000011920929
-      e23: 0
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
+  m_MeshLodInfo:
+    serializedVersion: 2
+    m_LodSelectionCurve:
+      serializedVersion: 1
+      m_LodSlope: 0
+      m_LodBias: 0
+    m_NumLevels: 1
+    m_SubMeshes:
+    - serializedVersion: 2
+      m_Levels:
+      - serializedVersion: 1
+        m_IndexStart: 0
+        m_IndexCount: 0

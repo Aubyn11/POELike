@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using POELike.ECS.Components;
 using POELike.Game.Equipment;
 using UnityEngine;
 using UnityEngine.UI;
@@ -252,13 +253,11 @@ namespace POELike.Game.UI
                 w = Mathf.Max(1, w);
                 h = Mathf.Max(1, h);
 
-                var bagData = new BagItemData(
-                    itemId:     equip.DetailType.EquipmentDetailTypeId,
-                    name:       equip.DisplayName,
-                    gridWidth:  w,
-                    gridHeight: h
-                );
-                bagData.ItemColor = equip.QualityColor;
+                var bagData = EquipmentBagDataFactory.CreateFromGeneratedEquipment(
+                    equip,
+                    equip.DetailType.EquipmentDetailTypeId);
+                if (bagData == null)
+                    continue;
 
                 if (!_bag.TryAutoPlaceItem(bagData)) continue;
 
@@ -296,6 +295,117 @@ namespace POELike.Game.UI
 
                 go.transform.SetAsLastSibling();
             }
+        }
+
+        /// <summary>
+        /// 将 <see cref="GeneratedEquipment"/> 的运行时数据填充进 <see cref="BagItemData"/>，
+        /// 让装备被放入背包 / 装备栏后仍保留词条、插槽与可装备槽位信息。
+        /// </summary>
+        private static void PopulateEquipmentBagData(BagItemData bagData, GeneratedEquipment equip)
+        {
+            if (bagData == null || equip == null)
+                return;
+
+            bagData.ItemKind = BagItemKind.Equipment;
+
+            // 插槽
+            if (equip.Sockets != null)
+            {
+                bagData.Sockets.Clear();
+                foreach (var socket in equip.Sockets)
+                {
+                    if (socket == null) continue;
+                    bagData.Sockets.Add(new SocketData { Color = socket.Color });
+                }
+            }
+
+            // 词条（同时构建 Tips 显示文本与运行时 RolledMod）
+            bagData.EquipmentMods.Clear();
+            bagData.PrefixDescriptions.Clear();
+            bagData.SuffixDescriptions.Clear();
+
+            if (equip.Mods != null)
+            {
+                foreach (var mod in equip.Mods)
+                {
+                    if (mod?.Mod == null) continue;
+
+                    bagData.EquipmentMods.Add(mod);
+
+                    bool isPrefix = mod.Mod.EquipmentModType == "1";
+                    if (mod.Values != null)
+                    {
+                        foreach (var value in mod.Values)
+                        {
+                            if (value?.Config == null) continue;
+                            string desc = string.IsNullOrEmpty(value.Config.EquipmentModValueDesc)
+                                ? mod.Mod.EquipmentModName
+                                : $"{value.Config.EquipmentModValueDesc} {value.RolledValue}";
+
+                            if (isPrefix)
+                                bagData.PrefixDescriptions.Add(desc);
+                            else
+                                bagData.SuffixDescriptions.Add(desc);
+                        }
+                    }
+                }
+            }
+
+            // 可装备槽位（从 DetailType 的 EquipmentPart 推导）
+            var slots = ResolveEquipmentSlotsFromPart(equip.DetailType?.EquipmentPart);
+            if (slots.Count > 0)
+            {
+                bagData.SetAcceptedEquipmentSlots(slots);
+                bagData.AcceptedEquipmentSlot = slots[0];
+            }
+        }
+
+        /// <summary>
+        /// 根据装备配置的部位字段推导出它可装备到的 <see cref="EquipmentSlot"/> 列表。
+        /// 若该装备的 EquipmentPart 字段与 <see cref="EquipmentSlot"/> 枚举名一致（大小写不敏感）则直接映射；
+        /// 对于戒指等可进入多个槽位的部位，这里做一次特殊展开。
+        /// </summary>
+        private static List<EquipmentSlot> ResolveEquipmentSlotsFromPart(string equipmentPart)
+        {
+            var result = new List<EquipmentSlot>();
+            if (string.IsNullOrWhiteSpace(equipmentPart))
+                return result;
+
+            string normalized = equipmentPart.Trim();
+
+            // 戒指可装备到左手 / 右手两个槽位
+            if (string.Equals(normalized, "Ring", System.StringComparison.OrdinalIgnoreCase))
+            {
+                result.Add(EquipmentSlot.RingLeft);
+                result.Add(EquipmentSlot.RingRight);
+                return result;
+            }
+
+            if (System.Enum.TryParse(normalized, true, out EquipmentSlot slot))
+            {
+                result.Add(slot);
+                return result;
+            }
+
+            // 兼容常见中文 / 别名
+            switch (normalized)
+            {
+                case "MainHand":
+                case "Weapon":
+                    result.Add(EquipmentSlot.MainHand);
+                    break;
+                case "OffHand":
+                case "Shield":
+                    result.Add(EquipmentSlot.OffHand);
+                    break;
+                case "Chest":
+                case "Armor":
+                case "Armour":
+                    result.Add(EquipmentSlot.BodyArmour);
+                    break;
+            }
+
+            return result;
         }
 
         private void RefreshFlaskBag()

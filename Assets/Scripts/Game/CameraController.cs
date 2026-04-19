@@ -34,6 +34,12 @@ namespace POELike.Game
         // 怪物 Mesh 渲染器（Graphics.DrawMesh，无额外GameObject）
         private MonsterMeshRenderer _monsterMeshRenderer;
 
+        // 地面掉落名称渲染器
+        private GroundItemLabelRenderer _groundItemLabelRenderer;
+
+        // 技能运行时范围渲染器
+        private SkillRuntimeRenderer _skillRuntimeRenderer;
+
         [Header("摄像机参数")]
         [SerializeField] private float  _distance    = 25f;   // 摄像机到角色的距离
         [SerializeField] private float  _angle       = 55f;   // 俯视角度（X轴旋转）
@@ -89,7 +95,19 @@ namespace POELike.Game
             if (_monsterMeshRenderer == null)
                 _monsterMeshRenderer = gameObject.AddComponent<MonsterMeshRenderer>();
 
+            // 在同一 GameObject 上挂载地面掉落名称渲染器
+            _groundItemLabelRenderer = gameObject.GetComponent<GroundItemLabelRenderer>();
+            if (_groundItemLabelRenderer == null)
+                _groundItemLabelRenderer = gameObject.AddComponent<GroundItemLabelRenderer>();
+
+            // 在同一 GameObject 上挂载技能运行时范围渲染器
+            _skillRuntimeRenderer = gameObject.GetComponent<SkillRuntimeRenderer>();
+
+            if (_skillRuntimeRenderer == null)
+                _skillRuntimeRenderer = gameObject.AddComponent<SkillRuntimeRenderer>();
+
             RecalculateOffset();
+
         }
 
         /// <summary>
@@ -138,6 +156,10 @@ namespace POELike.Game
                 // 注入 MovementSystem，启用 GPU 位置直读（零 CPU 中转，消除每帧10000次随机堆访问）
                 _monsterMeshRenderer.SetMovementSystem(Managers.GameManager.Instance.MovementSystem);
             }
+
+            // 同步 ECS 世界给地面掉落名称渲染器
+            if (_groundItemLabelRenderer != null && Managers.GameManager.Instance != null)
+                _groundItemLabelRenderer.SetWorld(Managers.GameManager.Instance.World);
         }
 
         // ── 每帧更新 ──────────────────────────────────────────────────

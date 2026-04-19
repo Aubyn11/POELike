@@ -7,6 +7,8 @@ using POELike.ECS.Components;
 using POELike.ECS.Core;
 using POELike.ECS.Systems;
 using POELike.Game.Character;
+using POELike.Game.Items;
+using POELike.Game.Skills;
 using POELike.Game.UI;
 using POELike.Managers;
 
@@ -24,6 +26,11 @@ namespace POELike.Game
 
         [Header("场景环境（运行时自动生成，可留空）")]
         [SerializeField] private bool _autoGenerateEnvironment = true;
+
+        [Header("怪物掉落")]
+        [SerializeField] private bool _enableMonsterGroundDrops = true;
+        [SerializeField] [Range(0f, 1f)] private float _monsterDropChance = 0.5f;
+        [SerializeField] private int _monsterDropItemLevel = 5;
 
         // 玩家ECS实体
         private Entity _playerEntity;
@@ -43,8 +50,14 @@ namespace POELike.Game
         // NPC名称点击寻路：缓存NpcMeshRenderer引用（同时负责头顶名称标签）
         private NpcMeshRenderer _npcMeshRenderer;
 
+        // 地面掉落名称点击拾取
+        private GroundItemLabelRenderer _groundItemLabelRenderer;
+
         // GM 面板
         private GMPanel _gmPanel;
+
+        // 客户端技能拓展面板
+        private ClientSkillExtensionPanel _clientSkillExtensionPanel;
 
         // NPC对话框
         private NpcDialogPanel _npcDialogPanel;
@@ -59,13 +72,29 @@ namespace POELike.Game
         // 上一帧 HasTarget 状态（用于检测到达时机）
         private bool _prevHasTarget;
 
+        // 左键交互意图：一次按下只在“技能 / 移动 / 阻断”里走一条路径
+        private enum LeftMouseIntent
+        {
+            None,
+            Blocked,
+            Move,
+            Skill1,
+        }
+
+        private const float LeftClickMonsterSnapPadding = 0.35f;
+        private readonly List<Entity> _leftClickMonsterBuffer = new List<Entity>(256);
+        private LeftMouseIntent _leftMouseIntent = LeftMouseIntent.None;
+
         // Input Actions
+
         private InputAction _skill1Action;
         private InputAction _skill2Action;
         private InputAction _skill3Action;
         private InputAction _skill4Action;
         private InputAction _skill5Action;
         private InputAction _skill6Action;
+        private InputAction _skill7Action;
+        private InputAction _skill8Action;
 
         private InputAction _flask1Action;
         private InputAction _flask2Action;
@@ -93,14 +122,21 @@ namespace POELike.Game
 
             Debug.Log($"[GameSceneManager] 场景初始化，角色：{data.CharacterName}  Lv.{data.Level}");
 
+            var world = GameManager.Instance?.World;
+            if (world != null)
+                world.EventBus.Subscribe<EntityDiedEvent>(OnEntityDied);
+
             if (_autoGenerateEnvironment)
                 BuildEnvironment();
 
             SpawnPlayer(data);
+            AssignDefaultSkills();
             UIManager.Instance?.RefreshCharactorMainPanel();
             SpawnNPCs();
             SetupInputActions();
             SetupGMPanel();
+            SetupClientSkillExtensionPanel();
+
         }
 
         private void Update()
@@ -115,16 +151,23 @@ namespace POELike.Game
         private void OnDestroy()
         {
             _mouseClickAction?.Dispose();
+            _skill1Action?.Dispose();
             _skill2Action?.Dispose();
             _skill3Action?.Dispose();
             _skill4Action?.Dispose();
             _skill5Action?.Dispose();
             _skill6Action?.Dispose();
+            _skill7Action?.Dispose();
+            _skill8Action?.Dispose();
             _flask1Action?.Dispose();
+
             _flask2Action?.Dispose();
             _flask3Action?.Dispose();
             _flask4Action?.Dispose();
             _flask5Action?.Dispose();
+
+            if (GameManager.Instance?.World != null)
+                GameManager.Instance.World.EventBus.Unsubscribe<EntityDiedEvent>(OnEntityDied);
 
             if (_playerEntity != null && GameManager.Instance != null)
                 GameManager.Instance.World.DestroyEntity(_playerEntity);
@@ -272,7 +315,7 @@ namespace POELike.Game
 
             // 技能组件
             _skillComp = _playerEntity.AddComponent(new SkillComponent());
-            _skillComp.InitializeSlots(6);
+            _skillComp.InitializeSlots(8);
 
             // 装备 & 背包组件
             _playerEntity.AddComponent(new EquipmentComponent());
@@ -287,33 +330,71 @@ namespace POELike.Game
             Debug.Log($"[GameSceneManager] 玩家ECS实体创建完成: {_playerEntity}  角色：{data.CharacterName}  Lv.{lv}");
         }
 
+        private void AssignDefaultSkills()
+        {
+            if (_skillComp == null)
+                return;
+
+            var slot0 = _skillComp.GetSlot(0);
+            if (slot0 != null)
+                slot0.SkillData = SkillFactory.CreateHeavyStrike();
+
+            var slot1 = _skillComp.GetSlot(1);
+            if (slot1 != null)
+            {
+                slot1.SkillData = SkillFactory.CreateFireball()
+                    .WithSupportGem(SkillFactory.CreateMultiProjectileGem(2))
+                    .WithSupportGem(SkillFactory.CreateAddedFireDamageGem(15f));
+            }
+
+            var slot2 = _skillComp.GetSlot(2);
+            if (slot2 != null)
+                slot2.SkillData = SkillFactory.CreateFrostNova();
+
+            var slot3 = _skillComp.GetSlot(3);
+            if (slot3 != null)
+                slot3.SkillData = SkillFactory.CreateBlink();
+
+            var slot4 = _skillComp.GetSlot(4);
+            if (slot4 != null)
+                slot4.SkillData = SkillFactory.CreateCyclone();
+        }
+
         // ── 输入驱动 ──────────────────────────────────────────────────
 
         private void SetupInputActions()
+
         {
             // 鼠标左键点击寻路
             _mouseClickAction = new InputAction("MouseClick", InputActionType.Button, "<Mouse>/leftButton");
             _mouseClickAction.Enable();
 
-            _skill1Action = InputSystem.actions.FindAction("Attack");
+            _skill1Action = new InputAction("Skill1", InputActionType.Button, "<Mouse>/leftButton");
 
-            _skill2Action = new InputAction("Skill2", InputActionType.Button, "<Keyboard>/e");
-            _skill3Action = new InputAction("Skill3", InputActionType.Button, "<Keyboard>/r");
-            _skill4Action = new InputAction("Skill4", InputActionType.Button, "<Keyboard>/t");
-            _skill5Action = new InputAction("Skill5", InputActionType.Button, "<Keyboard>/f");
-            _skill6Action = new InputAction("Skill6", InputActionType.Button, "<Keyboard>/g");
+            _skill2Action = new InputAction("Skill2", InputActionType.Button, "<Mouse>/middleButton");
+            _skill3Action = new InputAction("Skill3", InputActionType.Button, "<Mouse>/rightButton");
+            _skill4Action = new InputAction("Skill4", InputActionType.Button, "<Keyboard>/q");
+            _skill5Action = new InputAction("Skill5", InputActionType.Button, "<Keyboard>/w");
+            _skill6Action = new InputAction("Skill6", InputActionType.Button, "<Keyboard>/e");
+            _skill7Action = new InputAction("Skill7", InputActionType.Button, "<Keyboard>/r");
+            _skill8Action = new InputAction("Skill8", InputActionType.Button, "<Keyboard>/t");
             _flask1Action = new InputAction("Flask1", InputActionType.Button, "<Keyboard>/1");
+
             _flask2Action = new InputAction("Flask2", InputActionType.Button, "<Keyboard>/2");
             _flask3Action = new InputAction("Flask3", InputActionType.Button, "<Keyboard>/3");
             _flask4Action = new InputAction("Flask4", InputActionType.Button, "<Keyboard>/4");
             _flask5Action = new InputAction("Flask5", InputActionType.Button, "<Keyboard>/5");
 
+            _skill1Action.Enable();
             _skill2Action.Enable();
             _skill3Action.Enable();
             _skill4Action.Enable();
             _skill5Action.Enable();
             _skill6Action.Enable();
+            _skill7Action.Enable();
+            _skill8Action.Enable();
             _flask1Action.Enable();
+
             _flask2Action.Enable();
             _flask3Action.Enable();
             _flask4Action.Enable();
@@ -322,40 +403,32 @@ namespace POELike.Game
 
         private void UpdateInput()
         {
-            // ── 鼠标左键点击寻路 ──────────────────────────────────────
-            _inputComp.MouseScreenPosition = Mouse.current?.position.ReadValue() ?? Vector2.zero;
-            _inputComp.MouseWorldPosition  = GetMouseWorldPosition();
-            _inputComp.MouseLeftHeld       = Mouse.current?.leftButton.isPressed ?? false;
+            var mouseScreenPos = Mouse.current?.position.ReadValue() ?? Vector2.zero;
+            bool pointerOverUI = UIGamePanelManager.IsPointerOverAnyPanel(mouseScreenPos);
+            var mouseWorldPos = GetMouseWorldPosition();
+
+            _inputComp.MouseScreenPosition = mouseScreenPos;
+            if (!pointerOverUI && mouseWorldPos != Vector3.zero)
+                _inputComp.MouseWorldPosition = mouseWorldPos;
 
             bool leftHeld = Mouse.current?.leftButton.isPressed ?? false;
             bool leftDown = Mouse.current?.leftButton.wasPressedThisFrame ?? false;
-            // 精确判断鼠标是否在任意已打开的 UI 面板范围内，避免全屏 Canvas 误拦截
-            var  mouseScreenPos = Mouse.current?.position.ReadValue() ?? Vector2.zero;
-            bool pointerOverUI  = UIGamePanelManager.IsPointerOverAnyPanel(mouseScreenPos);
-            // 点击面板外时：先关闭对话框（本帧不寻路，下一帧再寻路，避免误触）
-            if (leftDown && !pointerOverUI && UIGamePanelManager.AnyOpen)
-            {
-                UIGamePanelManager.CloseAll();
-            }
-            // 如果本帧点击了NPC名称标签，跳过普通地面寻路
-            if (leftHeld && !pointerOverUI && !UIGamePanelManager.AnyOpen && (_npcMeshRenderer == null || !_npcMeshRenderer.ClickConsumedThisFrame))
-            {
-                var clickPos = GetMouseWorldPosition();
-                // 只有射线命中有效位置时才更新目标（避免未命中时把目标设为世界原点导致突变）
-                if (clickPos != Vector3.zero)
-                {
-                    // 点击或拖动时持续更新寻路目标点，角色跟随鼠标方向移动
-                    _movementComp.TargetPosition = clickPos;
-                    _movementComp.HasTarget      = true;
+            bool leftUp = Mouse.current?.leftButton.wasReleasedThisFrame ?? false;
+            bool npcClickConsumed = _npcMeshRenderer != null && _npcMeshRenderer.ClickConsumedThisFrame;
+            bool groundItemClickConsumed = _groundItemLabelRenderer != null && _groundItemLabelRenderer.ClickConsumedThisFrame;
 
-                    // 普通地面寻路，清除NPC目标（避免到达后误触发对话框）
-                    _targetNpcEntity = null;
-                    _walkingToNpc    = false;
+            _inputComp.MouseLeftHeld = leftHeld;
 
-                    // 同步到输入组件
-                    _inputComp.ClickTargetPosition = clickPos;
-                    _inputComp.HasClickTarget      = true;
-                }
+            if (leftDown)
+                ResolveLeftMouseIntent(pointerOverUI, npcClickConsumed || groundItemClickConsumed, mouseWorldPos);
+
+            if (_leftMouseIntent == LeftMouseIntent.Move
+                && !_movementComp.IsMovementLockedByCasting
+                && leftHeld
+                && !pointerOverUI
+                && !UIGamePanelManager.AnyOpen)
+            {
+                UpdateClickToMove(mouseWorldPos);
             }
             else
             {
@@ -363,13 +436,16 @@ namespace POELike.Game
             }
 
             // ── 技能输入 ──────────────────────────────────────────────
-            _inputComp.SkillInputs[0] = _skill1Action?.WasPressedThisFrame() ?? false;
-            _inputComp.SkillInputs[1] = _skill2Action.WasPressedThisFrame();
-            _inputComp.SkillInputs[2] = _skill3Action.WasPressedThisFrame();
-            _inputComp.SkillInputs[3] = _skill4Action.WasPressedThisFrame();
-            _inputComp.SkillInputs[4] = _skill5Action.WasPressedThisFrame();
-            _inputComp.SkillInputs[5] = _skill6Action.WasPressedThisFrame();
+            UpdateLeftClickSkillInputState();
+            UpdateSkillInputState(1, _skill2Action);
+            UpdateSkillInputState(2, _skill3Action);
+            UpdateSkillInputState(3, _skill4Action);
+            UpdateSkillInputState(4, _skill5Action);
+            UpdateSkillInputState(5, _skill6Action);
+            UpdateSkillInputState(6, _skill7Action);
+            UpdateSkillInputState(7, _skill8Action);
             _inputComp.FlaskInputs[0] = _flask1Action.WasPressedThisFrame();
+
             _inputComp.FlaskInputs[1] = _flask2Action.WasPressedThisFrame();
             _inputComp.FlaskInputs[2] = _flask3Action.WasPressedThisFrame();
             _inputComp.FlaskInputs[3] = _flask4Action.WasPressedThisFrame();
@@ -393,11 +469,213 @@ namespace POELike.Game
             }
 
             HandleFlaskInputs();
+
+            if (leftUp)
+                _leftMouseIntent = LeftMouseIntent.None;
+        }
+
+        private void ResolveLeftMouseIntent(bool pointerOverUI, bool npcClickConsumed, Vector3 mouseWorldPos)
+        {
+            if (pointerOverUI)
+            {
+                _leftMouseIntent = LeftMouseIntent.Blocked;
+                return;
+            }
+
+            if (UIGamePanelManager.AnyOpen)
+            {
+                UIGamePanelManager.CloseAll();
+                _leftMouseIntent = LeftMouseIntent.Blocked;
+                return;
+            }
+
+            if (npcClickConsumed)
+            {
+                _leftMouseIntent = LeftMouseIntent.Blocked;
+                return;
+            }
+
+            if (TryBeginLeftClickSkill(mouseWorldPos))
+            {
+                _leftMouseIntent = LeftMouseIntent.Skill1;
+                return;
+            }
+
+            if (_movementComp != null && !_movementComp.IsMovementLockedByCasting)
+            {
+                _leftMouseIntent = LeftMouseIntent.Move;
+                UpdateClickToMove(mouseWorldPos);
+                return;
+            }
+
+            _leftMouseIntent = LeftMouseIntent.Blocked;
+        }
+
+        private void UpdateClickToMove(Vector3 clickPos)
+        {
+            if (clickPos == Vector3.zero)
+                return;
+
+            _movementComp.TargetPosition = clickPos;
+            _movementComp.HasTarget = true;
+
+            _targetNpcEntity = null;
+            _walkingToNpc = false;
+
+            var combat = _playerEntity?.GetComponent<CombatComponent>();
+            if (combat != null)
+                combat.CurrentTarget = null;
+
+            _inputComp.ClickTargetPosition = clickPos;
+            _inputComp.HasClickTarget = true;
+        }
+
+        private bool TryBeginLeftClickSkill(Vector3 mouseWorldPos)
+        {
+            var slot = _skillComp?.GetSlot(0);
+            if (!CanTriggerLeftClickSkill(slot, mouseWorldPos, out var targetMonster))
+                return false;
+
+            var combat = _playerEntity?.GetComponent<CombatComponent>();
+            if (combat != null)
+                combat.CurrentTarget = targetMonster;
+
+            var targetTransform = targetMonster?.GetComponent<TransformComponent>();
+            if (targetTransform != null)
+                _inputComp.MouseWorldPosition = targetTransform.Position;
+
+            _movementComp.HasTarget = false;
+            _movementComp.MoveDirection = Vector3.zero;
+            _targetNpcEntity = null;
+            _walkingToNpc = false;
+            _inputComp.HasClickTarget = false;
+            return true;
+        }
+
+        private bool CanTriggerLeftClickSkill(SkillSlot slot, Vector3 mouseWorldPos, out Entity targetMonster)
+        {
+            targetMonster = null;
+            if (slot == null || !slot.HasSkill || slot.IsOnCooldown)
+                return false;
+
+            var skill = slot.SkillData;
+            if (skill == null || skill.Type == SkillType.Movement)
+                return false;
+
+            if (_skillComp != null)
+            {
+                if (_skillComp.IsCasting)
+                    return false;
+                if (_skillComp.IsChanneling && _skillComp.ActiveSkill != slot)
+                    return false;
+            }
+
+            var health = _playerEntity?.GetComponent<HealthComponent>();
+            if (health != null && health.CurrentMana < skill.ManaCost)
+                return false;
+
+            if (mouseWorldPos == Vector3.zero)
+                return false;
+
+            targetMonster = FindMonsterUnderCursor(mouseWorldPos);
+            return targetMonster != null && IsTargetWithinLeftClickSkillRange(targetMonster, skill);
+        }
+
+        private Entity FindMonsterUnderCursor(Vector3 mouseWorldPos)
+        {
+            var world = GameManager.Instance?.World;
+            if (world == null || mouseWorldPos == Vector3.zero)
+                return null;
+
+            world.Query<MonsterComponent>(_leftClickMonsterBuffer);
+
+            Entity closest = null;
+            float bestDistSq = float.MaxValue;
+            float snapRadius = MonsterSpawner.CollisionRadius + LeftClickMonsterSnapPadding;
+            float snapRadiusSq = snapRadius * snapRadius;
+            var cursorPos = new Vector2(mouseWorldPos.x, mouseWorldPos.z);
+
+            foreach (var monster in _leftClickMonsterBuffer)
+            {
+                if (monster == null || !monster.IsAlive)
+                    continue;
+
+                var health = monster.GetComponent<HealthComponent>();
+                if (health != null && !health.IsAlive)
+                    continue;
+
+                var transform = monster.GetComponent<TransformComponent>();
+                if (transform == null)
+                    continue;
+
+                var delta = new Vector2(transform.Position.x - cursorPos.x, transform.Position.z - cursorPos.y);
+                float distSq = delta.sqrMagnitude;
+                if (distSq > snapRadiusSq || distSq >= bestDistSq)
+                    continue;
+
+                closest = monster;
+                bestDistSq = distSq;
+            }
+
+            return closest;
+        }
+
+        private bool IsTargetWithinLeftClickSkillRange(Entity targetMonster, SkillData skill)
+        {
+            if (_transformComp == null || targetMonster == null || skill == null)
+                return false;
+
+            var targetTransform = targetMonster.GetComponent<TransformComponent>();
+            if (targetTransform == null)
+                return false;
+
+            float effectiveRange = ResolveLeftClickSkillRange(skill);
+            if (effectiveRange <= 0f)
+                return false;
+
+            var playerPos = new Vector2(_transformComp.Position.x, _transformComp.Position.z);
+            var targetPos = new Vector2(targetTransform.Position.x, targetTransform.Position.z);
+            return Vector2.Distance(playerPos, targetPos) <= effectiveRange;
+        }
+
+        private static float ResolveLeftClickSkillRange(SkillData skill)
+        {
+            if (skill == null)
+                return 0f;
+
+            float baseRange = skill.Type switch
+            {
+                SkillType.Attack => skill.Range,
+                SkillType.AoE => skill.Range > 0.01f ? skill.Range : skill.AreaRadius,
+                SkillType.Channeling => skill.Range > 0.01f ? skill.Range : skill.AreaRadius,
+                _ => skill.Range > 0.01f ? skill.Range : skill.AreaRadius,
+            };
+
+            return Mathf.Max(0f, baseRange) + MonsterSpawner.CollisionRadius + 0.25f;
+        }
+
+        private void UpdateLeftClickSkillInputState()
+        {
+            bool allowSkillInput = _leftMouseIntent == LeftMouseIntent.Skill1;
+            _inputComp.SkillInputs[0] = allowSkillInput && (_skill1Action?.WasPressedThisFrame() ?? false);
+            _inputComp.SkillHeldInputs[0] = allowSkillInput && (_skill1Action?.IsPressed() ?? false);
+            _inputComp.SkillReleasedInputs[0] = allowSkillInput && (_skill1Action?.WasReleasedThisFrame() ?? false);
+        }
+
+        private void UpdateSkillInputState(int index, InputAction action)
+        {
+            if (_inputComp == null || index < 0 || index >= _inputComp.SkillInputs.Length)
+                return;
+
+            _inputComp.SkillInputs[index] = action?.WasPressedThisFrame() ?? false;
+            _inputComp.SkillHeldInputs[index] = action?.IsPressed() ?? false;
+            _inputComp.SkillReleasedInputs[index] = action?.WasReleasedThisFrame() ?? false;
         }
 
         private void HandleFlaskInputs()
         {
             var equipment = _playerEntity?.GetComponent<EquipmentComponent>();
+
             var health = _playerEntity?.GetComponent<HealthComponent>();
             var stats = _playerEntity?.GetComponent<StatsComponent>();
             var combat = _playerEntity?.GetComponent<CombatComponent>();
@@ -653,10 +931,48 @@ namespace POELike.Game
             GameManager.Instance.World.EventBus.Publish(new PlayerDiedEvent { Player = _playerEntity });
         }
 
+        private void OnEntityDied(EntityDiedEvent evt)
+        {
+            if (evt.Entity == null || evt.Entity.Tag != "Monster")
+                return;
+
+            if (!_enableMonsterGroundDrops || Random.value > _monsterDropChance)
+                return;
+
+            var transform = evt.Entity.GetComponent<TransformComponent>();
+            if (transform == null)
+                return;
+
+            var droppedItem = CreateRandomDroppedEquipment();
+            if (droppedItem == null)
+                return;
+
+            GameManager.Instance?.World?.EventBus.Publish(new GroundItemDroppedEvent
+            {
+                Item = droppedItem,
+                Position = transform.Position,
+            });
+
+            Debug.Log($"[GameSceneManager] 怪物掉落装备: [{droppedItem.Rarity}] {droppedItem.Name}");
+        }
+
+        private ItemData CreateRandomDroppedEquipment()
+        {
+            ItemType itemType = Random.Range(0, 3) switch
+            {
+                0 => ItemType.Weapon,
+                1 => ItemType.Armour,
+                _ => ItemType.Accessory,
+            };
+
+            return ItemFactory.CreateRandomItem(Mathf.Max(1, _monsterDropItemLevel), itemType);
+        }
+
         /// <summary>
         /// 点击NPC名称标签时，寻路到该NPC附近
         /// </summary>
         private void OnNpcLabelClicked(Vector3 npcWorldPos)
+
         {
             if (_movementComp == null) return;
 
@@ -884,7 +1200,10 @@ namespace POELike.Game
                 _npcMeshRenderer.SetPlayerTransform(_transformComp);
             }
 
+            _groundItemLabelRenderer = camGo.GetComponent<GroundItemLabelRenderer>();
+
             // 从 Resources 加载 ChatPanel 预制体，确保 Inspector 绑定的引用有效
+
             var chatPanelGo = UIManager.Instance.GetUI("UI/ChatPanel");
             if (chatPanelGo != null)
             {
@@ -938,10 +1257,20 @@ namespace POELike.Game
             _gmPanel.Init(GameManager.Instance.World, _playerEntity);
         }
 
+        private void SetupClientSkillExtensionPanel()
+        {
+            _clientSkillExtensionPanel = gameObject.GetComponent<ClientSkillExtensionPanel>();
+            if (_clientSkillExtensionPanel == null)
+                _clientSkillExtensionPanel = gameObject.AddComponent<ClientSkillExtensionPanel>();
+
+            _clientSkillExtensionPanel.Init(GameManager.Instance.World, _playerEntity);
+        }
+
         /// <summary>
         /// 打开商店面板
         /// </summary>
         private void OpenShop()
+
         {
             if (_shopPanel == null) return;
             // 先关闭对话框，再打开商店，避免两个面板同时打开时 CloseAll 误关商店

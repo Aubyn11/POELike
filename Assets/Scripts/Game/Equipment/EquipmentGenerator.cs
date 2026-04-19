@@ -40,6 +40,7 @@ namespace POELike.Game.Equipment
     public class SocketData
     {
         public SocketColor Color;
+        public bool LinkedToPrevious = true;
     }
 
     /// <summary>

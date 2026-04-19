@@ -162,7 +162,9 @@ namespace POELike.Managers
             MovementSystem = new MovementSystem();
             World.RegisterSystem(MovementSystem);           // 优先级 100
             World.RegisterSystem(new SkillSystem());        // 优先级 150
+            World.RegisterSystem(new SkillGpuSystem());     // 优先级 170
             World.RegisterSystem(new CombatSystem());       // 优先级 200
+
             
             // 初始化世界
             World.Initialize();

@@ -544,7 +544,7 @@ namespace POELike.Game.UI
 
         /// <summary>
         /// 判断两个插槽是否连结。
-        /// 当前规则固定为：仅当两个索引互为 `index-1` / `index+1` 时才视为连结。
+        /// 当前只支持相邻插槽连结；是否真正连结由 `SocketData.LinkedToPrevious` 控制。
         /// </summary>
         public bool AreSocketsLinked(int firstIndex, int secondIndex)
         {
@@ -558,12 +558,16 @@ namespace POELike.Game.UI
             if (firstIndex == secondIndex)
                 return false;
 
-            return Mathf.Abs(firstIndex - secondIndex) == 1;
+            if (Mathf.Abs(firstIndex - secondIndex) != 1)
+                return false;
+
+            int higherIndex = Mathf.Max(firstIndex, secondIndex);
+            return _sockets[higherIndex]?.LinkedToPrevious ?? false;
         }
 
         /// <summary>
         /// 获取与指定插槽连结的相邻插槽索引。
-        /// 只返回前一个和后一个索引，不做跨孔位跳跃连结。
+        /// 只返回当前明确处于连结状态的前一个和后一个索引。
         /// </summary>
         public bool TryGetLinkedSocketIndices(int socketIndex, out int previousIndex, out int nextIndex)
         {
@@ -574,9 +578,9 @@ namespace POELike.Game.UI
             if (_sockets == null || socketIndex < 0 || socketIndex >= _sockets.Count)
                 return false;
 
-            if (socketIndex - 1 >= 0)
+            if (socketIndex - 1 >= 0 && AreSocketsLinked(socketIndex, socketIndex - 1))
                 previousIndex = socketIndex - 1;
-            if (socketIndex + 1 < _sockets.Count)
+            if (socketIndex + 1 < _sockets.Count && AreSocketsLinked(socketIndex, socketIndex + 1))
                 nextIndex = socketIndex + 1;
 
             return previousIndex >= 0 || nextIndex >= 0;
@@ -584,7 +588,7 @@ namespace POELike.Game.UI
 
         /// <summary>
         /// 获取与指定插槽相连的宝石数据。
-        /// 当前只会返回 `index-1` / `index+1` 两侧已经镶嵌的宝石。
+        /// 当前只会返回左右两侧明确连结且已经镶嵌的宝石。
         /// </summary>
         public void GetLinkedGems(int socketIndex, List<BagItemData> results)
         {
@@ -597,14 +601,14 @@ namespace POELike.Game.UI
             if (_socketedGems.Count == 0 || socketIndex < 0 || socketIndex >= _socketedGems.Count)
                 return;
 
-            if (socketIndex - 1 >= 0)
+            if (socketIndex - 1 >= 0 && AreSocketsLinked(socketIndex, socketIndex - 1))
             {
                 var previousGem = _socketedGems[socketIndex - 1];
                 if (previousGem != null)
                     results.Add(previousGem);
             }
 
-            if (socketIndex + 1 < _socketedGems.Count)
+            if (socketIndex + 1 < _socketedGems.Count && AreSocketsLinked(socketIndex, socketIndex + 1))
             {
                 var nextGem = _socketedGems[socketIndex + 1];
                 if (nextGem != null)

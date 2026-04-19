@@ -2,753 +2,963 @@
   "EquipmentModConf": [
     {
       "EquipmentModId": "1",
-      "EquipmentModName": "\u6B8B\u5FCD",
+      "EquipmentModName": "残忍",
       "EquipmentModType": "1",
       "EquipmentModTier": "1",
       "EquipmentModRequireLevel": "60",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "100"
+      "EquipmentModWeight": "100",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "PhysicalDamage",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "2",
-      "EquipmentModName": "\u51F6\u731B",
+      "EquipmentModName": "凶猛",
       "EquipmentModType": "1",
       "EquipmentModTier": "2",
       "EquipmentModRequireLevel": "46",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "200"
+      "EquipmentModWeight": "200",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "PhysicalDamage",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "3",
-      "EquipmentModName": "\u950B\u5229",
+      "EquipmentModName": "锋利",
       "EquipmentModType": "1",
       "EquipmentModTier": "3",
       "EquipmentModRequireLevel": "35",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "400"
+      "EquipmentModWeight": "400",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "PhysicalDamage",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "4",
-      "EquipmentModName": "\u5C16\u9510",
+      "EquipmentModName": "尖锐",
       "EquipmentModType": "1",
       "EquipmentModTier": "4",
       "EquipmentModRequireLevel": "23",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "700"
+      "EquipmentModWeight": "700",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "PhysicalDamage",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "5",
-      "EquipmentModName": "\u9510\u5229",
+      "EquipmentModName": "锐利",
       "EquipmentModType": "1",
       "EquipmentModTier": "5",
       "EquipmentModRequireLevel": "11",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "1000"
+      "EquipmentModWeight": "1000",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "PhysicalDamage",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "6",
-      "EquipmentModName": "\u78E8\u783A",
+      "EquipmentModName": "磨砺",
       "EquipmentModType": "1",
       "EquipmentModTier": "6",
       "EquipmentModRequireLevel": "1",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "1500"
+      "EquipmentModWeight": "1500",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "PhysicalDamage",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "7",
-      "EquipmentModName": "\u8FC5\u6377",
+      "EquipmentModName": "迅捷",
       "EquipmentModType": "1",
       "EquipmentModTier": "1",
       "EquipmentModRequireLevel": "60",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "100"
+      "EquipmentModWeight": "100",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "AttackSpeed",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "8",
-      "EquipmentModName": "\u5FEB\u901F",
+      "EquipmentModName": "快速",
       "EquipmentModType": "1",
       "EquipmentModTier": "2",
       "EquipmentModRequireLevel": "46",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "200"
+      "EquipmentModWeight": "200",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "AttackSpeed",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "9",
-      "EquipmentModName": "\u654F\u6377",
+      "EquipmentModName": "敏捷",
       "EquipmentModType": "1",
       "EquipmentModTier": "3",
       "EquipmentModRequireLevel": "30",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "400"
+      "EquipmentModWeight": "400",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "AttackSpeed",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "10",
-      "EquipmentModName": "\u7075\u6D3B",
+      "EquipmentModName": "灵活",
       "EquipmentModType": "1",
       "EquipmentModTier": "4",
       "EquipmentModRequireLevel": "15",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "700"
+      "EquipmentModWeight": "700",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "AttackSpeed",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "11",
-      "EquipmentModName": "\u8F7B\u76C8",
+      "EquipmentModName": "轻盈",
       "EquipmentModType": "1",
       "EquipmentModTier": "5",
       "EquipmentModRequireLevel": "1",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "1000"
+      "EquipmentModWeight": "1000",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "AttackSpeed",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "12",
-      "EquipmentModName": "\u7CBE\u51C6",
+      "EquipmentModName": "精准",
       "EquipmentModType": "1",
       "EquipmentModTier": "1",
       "EquipmentModRequireLevel": "60",
       "EquipmentModSubCategories": [],
-      "EquipmentModWeight": "100"
+      "EquipmentModWeight": "100",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "CriticalChance",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "13",
-      "EquipmentModName": "\u7280\u5229",
+      "EquipmentModName": "犀利",
       "EquipmentModType": "1",
       "EquipmentModTier": "2",
       "EquipmentModRequireLevel": "44",
       "EquipmentModSubCategories": [],
-      "EquipmentModWeight": "200"
+      "EquipmentModWeight": "200",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "CriticalChance",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "14",
-      "EquipmentModName": "\u81F4\u547D",
+      "EquipmentModName": "致命",
       "EquipmentModType": "1",
       "EquipmentModTier": "3",
       "EquipmentModRequireLevel": "30",
       "EquipmentModSubCategories": [],
-      "EquipmentModWeight": "400"
+      "EquipmentModWeight": "400",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "CriticalChance",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "15",
-      "EquipmentModName": "\u9510\u5229",
+      "EquipmentModName": "锐利",
       "EquipmentModType": "1",
       "EquipmentModTier": "4",
       "EquipmentModRequireLevel": "15",
       "EquipmentModSubCategories": [],
-      "EquipmentModWeight": "700"
+      "EquipmentModWeight": "700",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "CriticalChance",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "16",
-      "EquipmentModName": "\u5C16\u523A",
+      "EquipmentModName": "尖刺",
       "EquipmentModType": "1",
       "EquipmentModTier": "5",
       "EquipmentModRequireLevel": "1",
       "EquipmentModSubCategories": [],
-      "EquipmentModWeight": "1000"
+      "EquipmentModWeight": "1000",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "CriticalChance",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "17",
-      "EquipmentModName": "\u5438\u8840",
+      "EquipmentModName": "吸血",
       "EquipmentModType": "1",
       "EquipmentModTier": "1",
       "EquipmentModRequireLevel": "50",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "100"
+      "EquipmentModWeight": "100",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "LifeLeech",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "18",
-      "EquipmentModName": "\u6C72\u53D6",
+      "EquipmentModName": "汲取",
       "EquipmentModType": "1",
       "EquipmentModTier": "2",
       "EquipmentModRequireLevel": "35",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "250"
+      "EquipmentModWeight": "250",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "LifeLeech",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "19",
-      "EquipmentModName": "\u6C72\u8840",
+      "EquipmentModName": "汲血",
       "EquipmentModType": "1",
       "EquipmentModTier": "3",
       "EquipmentModRequireLevel": "20",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "500"
+      "EquipmentModWeight": "500",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "LifeLeech",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "20",
-      "EquipmentModName": "\u6E17\u8840",
+      "EquipmentModName": "渗血",
       "EquipmentModType": "1",
       "EquipmentModTier": "4",
       "EquipmentModRequireLevel": "1",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "1000"
+      "EquipmentModWeight": "1000",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "LifeLeech",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "21",
-      "EquipmentModName": "\u6C72\u9B54",
+      "EquipmentModName": "汲魔",
       "EquipmentModType": "1",
       "EquipmentModTier": "1",
       "EquipmentModRequireLevel": "50",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "100"
+      "EquipmentModWeight": "100",
+      "EquipmentModDisplayTab": "3",
+      "EquipmentModStatType": "ManaLeech",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "22",
-      "EquipmentModName": "\u6C72\u53D6\u9B54\u529B",
+      "EquipmentModName": "汲取魔力",
       "EquipmentModType": "1",
       "EquipmentModTier": "2",
       "EquipmentModRequireLevel": "35",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "250"
+      "EquipmentModWeight": "250",
+      "EquipmentModDisplayTab": "3",
+      "EquipmentModStatType": "ManaLeech",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "23",
-      "EquipmentModName": "\u9B54\u529B\u6C72\u53D6",
+      "EquipmentModName": "魔力汲取",
       "EquipmentModType": "1",
       "EquipmentModTier": "3",
       "EquipmentModRequireLevel": "20",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "500"
+      "EquipmentModWeight": "500",
+      "EquipmentModDisplayTab": "3",
+      "EquipmentModStatType": "ManaLeech",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "24",
-      "EquipmentModName": "\u9B54\u529B\u6E17\u53D6",
+      "EquipmentModName": "魔力渗取",
       "EquipmentModType": "1",
       "EquipmentModTier": "4",
       "EquipmentModRequireLevel": "1",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "1000"
+      "EquipmentModWeight": "1000",
+      "EquipmentModDisplayTab": "3",
+      "EquipmentModStatType": "ManaLeech",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "25",
-      "EquipmentModName": "\u6BC1\u706D",
+      "EquipmentModName": "毁灭",
       "EquipmentModType": "1",
       "EquipmentModTier": "1",
       "EquipmentModRequireLevel": "60",
       "EquipmentModSubCategories": [],
-      "EquipmentModWeight": "100"
+      "EquipmentModWeight": "100",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "CriticalMultiplier",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "26",
-      "EquipmentModName": "\u7834\u574F",
+      "EquipmentModName": "破坏",
       "EquipmentModType": "1",
       "EquipmentModTier": "2",
       "EquipmentModRequireLevel": "44",
       "EquipmentModSubCategories": [],
-      "EquipmentModWeight": "200"
+      "EquipmentModWeight": "200",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "CriticalMultiplier",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "27",
-      "EquipmentModName": "\u91CD\u51FB",
+      "EquipmentModName": "重击",
       "EquipmentModType": "1",
       "EquipmentModTier": "3",
       "EquipmentModRequireLevel": "30",
       "EquipmentModSubCategories": [],
-      "EquipmentModWeight": "400"
+      "EquipmentModWeight": "400",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "CriticalMultiplier",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "28",
-      "EquipmentModName": "\u5F3A\u529B",
+      "EquipmentModName": "强力",
       "EquipmentModType": "1",
       "EquipmentModTier": "4",
       "EquipmentModRequireLevel": "15",
       "EquipmentModSubCategories": [],
-      "EquipmentModWeight": "700"
+      "EquipmentModWeight": "700",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "CriticalMultiplier",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "29",
-      "EquipmentModName": "\u6709\u529B",
+      "EquipmentModName": "有力",
       "EquipmentModType": "1",
       "EquipmentModTier": "5",
       "EquipmentModRequireLevel": "1",
       "EquipmentModSubCategories": [],
-      "EquipmentModWeight": "1000"
+      "EquipmentModWeight": "1000",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "CriticalMultiplier",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "30",
-      "EquipmentModName": "\u7684\u8FC5\u901F",
+      "EquipmentModName": "的迅速",
       "EquipmentModType": "2",
       "EquipmentModTier": "1",
       "EquipmentModRequireLevel": "55",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "100"
+      "EquipmentModWeight": "100",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "AttackSpeed",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "31",
-      "EquipmentModName": "\u7684\u901F\u5EA6",
+      "EquipmentModName": "的速度",
       "EquipmentModType": "2",
       "EquipmentModTier": "2",
       "EquipmentModRequireLevel": "38",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "250"
+      "EquipmentModWeight": "250",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "AttackSpeed",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "32",
-      "EquipmentModName": "\u7684\u654F\u6377",
+      "EquipmentModName": "的敏捷",
       "EquipmentModType": "2",
       "EquipmentModTier": "3",
       "EquipmentModRequireLevel": "20",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "500"
+      "EquipmentModWeight": "500",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "AttackSpeed",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "33",
-      "EquipmentModName": "\u7684\u8F7B\u76C8",
+      "EquipmentModName": "的轻盈",
       "EquipmentModType": "2",
       "EquipmentModTier": "4",
       "EquipmentModRequireLevel": "1",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "1000"
+      "EquipmentModWeight": "1000",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "AttackSpeed",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "34",
-      "EquipmentModName": "\u7684\u7CBE\u51C6",
+      "EquipmentModName": "的精准",
       "EquipmentModType": "2",
       "EquipmentModTier": "1",
       "EquipmentModRequireLevel": "55",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "100"
+      "EquipmentModWeight": "100",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "CriticalChance",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "35",
-      "EquipmentModName": "\u7684\u7280\u5229",
+      "EquipmentModName": "的犀利",
       "EquipmentModType": "2",
       "EquipmentModTier": "2",
       "EquipmentModRequireLevel": "38",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "250"
+      "EquipmentModWeight": "250",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "CriticalChance",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "36",
-      "EquipmentModName": "\u7684\u81F4\u547D",
+      "EquipmentModName": "的致命",
       "EquipmentModType": "2",
       "EquipmentModTier": "3",
       "EquipmentModRequireLevel": "20",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "500"
+      "EquipmentModWeight": "500",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "CriticalChance",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "37",
-      "EquipmentModName": "\u7684\u9510\u5229",
+      "EquipmentModName": "的锐利",
       "EquipmentModType": "2",
       "EquipmentModTier": "4",
       "EquipmentModRequireLevel": "1",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "1000"
+      "EquipmentModWeight": "1000",
+      "EquipmentModDisplayTab": "1",
+      "EquipmentModStatType": "CriticalChance",
+      "EquipmentModModifierType": "PercentAdd"
     },
     {
       "EquipmentModId": "38",
-      "EquipmentModName": "\u7684\u547D\u4E2D",
+      "EquipmentModName": "的命中",
       "EquipmentModType": "2",
       "EquipmentModTier": "1",
       "EquipmentModRequireLevel": "55",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "100"
+      "EquipmentModWeight": "100",
+      "EquipmentModDisplayTab": "3",
+      "EquipmentModStatType": "",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "39",
-      "EquipmentModName": "\u7684\u51C6\u786E",
+      "EquipmentModName": "的准确",
       "EquipmentModType": "2",
       "EquipmentModTier": "2",
       "EquipmentModRequireLevel": "38",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "250"
+      "EquipmentModWeight": "250",
+      "EquipmentModDisplayTab": "3",
+      "EquipmentModStatType": "",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "40",
-      "EquipmentModName": "\u7684\u7784\u51C6",
+      "EquipmentModName": "的瞄准",
       "EquipmentModType": "2",
       "EquipmentModTier": "3",
       "EquipmentModRequireLevel": "20",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "500"
+      "EquipmentModWeight": "500",
+      "EquipmentModDisplayTab": "3",
+      "EquipmentModStatType": "",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "41",
-      "EquipmentModName": "\u7684\u7CBE\u786E",
+      "EquipmentModName": "的精确",
       "EquipmentModType": "2",
       "EquipmentModTier": "4",
       "EquipmentModRequireLevel": "1",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "1000"
+      "EquipmentModWeight": "1000",
+      "EquipmentModDisplayTab": "3",
+      "EquipmentModStatType": "",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "42",
-      "EquipmentModName": "\u7684\u529B\u91CF",
+      "EquipmentModName": "的力量",
       "EquipmentModType": "2",
       "EquipmentModTier": "1",
       "EquipmentModRequireLevel": "55",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "100"
+      "EquipmentModWeight": "100",
+      "EquipmentModDisplayTab": "3",
+      "EquipmentModStatType": "Strength",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "43",
-      "EquipmentModName": "\u7684\u5F3A\u58EE",
+      "EquipmentModName": "的强壮",
       "EquipmentModType": "2",
       "EquipmentModTier": "2",
       "EquipmentModRequireLevel": "38",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "250"
+      "EquipmentModWeight": "250",
+      "EquipmentModDisplayTab": "3",
+      "EquipmentModStatType": "Strength",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "44",
-      "EquipmentModName": "\u7684\u4F53\u9B44",
+      "EquipmentModName": "的体魄",
       "EquipmentModType": "2",
       "EquipmentModTier": "3",
       "EquipmentModRequireLevel": "20",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "500"
+      "EquipmentModWeight": "500",
+      "EquipmentModDisplayTab": "3",
+      "EquipmentModStatType": "Strength",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "45",
-      "EquipmentModName": "\u7684\u808C\u8089",
+      "EquipmentModName": "的肌肉",
       "EquipmentModType": "2",
       "EquipmentModTier": "4",
       "EquipmentModRequireLevel": "1",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "1000"
+      "EquipmentModWeight": "1000",
+      "EquipmentModDisplayTab": "3",
+      "EquipmentModStatType": "Strength",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "46",
-      "EquipmentModName": "\u7684\u654F\u6377\u5EA6",
+      "EquipmentModName": "的敏捷度",
       "EquipmentModType": "2",
       "EquipmentModTier": "1",
       "EquipmentModRequireLevel": "55",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "100"
+      "EquipmentModWeight": "100",
+      "EquipmentModDisplayTab": "3",
+      "EquipmentModStatType": "Dexterity",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "47",
-      "EquipmentModName": "\u7684\u7075\u5DE7",
+      "EquipmentModName": "的灵巧",
       "EquipmentModType": "2",
       "EquipmentModTier": "2",
       "EquipmentModRequireLevel": "38",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "250"
+      "EquipmentModWeight": "250",
+      "EquipmentModDisplayTab": "3",
+      "EquipmentModStatType": "Dexterity",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "48",
-      "EquipmentModName": "\u7684\u8EAB\u6CD5",
+      "EquipmentModName": "的身法",
       "EquipmentModType": "2",
       "EquipmentModTier": "3",
       "EquipmentModRequireLevel": "20",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "500"
+      "EquipmentModWeight": "500",
+      "EquipmentModDisplayTab": "3",
+      "EquipmentModStatType": "Dexterity",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "49",
-      "EquipmentModName": "\u7684\u8F7B\u529F",
+      "EquipmentModName": "的轻功",
       "EquipmentModType": "2",
       "EquipmentModTier": "4",
       "EquipmentModRequireLevel": "1",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "1000"
+      "EquipmentModWeight": "1000",
+      "EquipmentModDisplayTab": "3",
+      "EquipmentModStatType": "Dexterity",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "50",
-      "EquipmentModName": "\u7684\u667A\u6167",
+      "EquipmentModName": "的智慧",
       "EquipmentModType": "2",
       "EquipmentModTier": "1",
       "EquipmentModRequireLevel": "55",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "100"
+      "EquipmentModWeight": "100",
+      "EquipmentModDisplayTab": "3",
+      "EquipmentModStatType": "Intelligence",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "51",
-      "EquipmentModName": "\u7684\u777F\u667A",
+      "EquipmentModName": "的睿智",
       "EquipmentModType": "2",
       "EquipmentModTier": "2",
       "EquipmentModRequireLevel": "38",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "250"
+      "EquipmentModWeight": "250",
+      "EquipmentModDisplayTab": "3",
+      "EquipmentModStatType": "Intelligence",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "52",
-      "EquipmentModName": "\u7684\u5B66\u8BC6",
+      "EquipmentModName": "的学识",
       "EquipmentModType": "2",
       "EquipmentModTier": "3",
       "EquipmentModRequireLevel": "20",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "500"
+      "EquipmentModWeight": "500",
+      "EquipmentModDisplayTab": "3",
+      "EquipmentModStatType": "Intelligence",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "53",
-      "EquipmentModName": "\u7684\u806A\u6167",
+      "EquipmentModName": "的聪慧",
       "EquipmentModType": "2",
       "EquipmentModTier": "4",
       "EquipmentModRequireLevel": "1",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "1000"
+      "EquipmentModWeight": "1000",
+      "EquipmentModDisplayTab": "3",
+      "EquipmentModStatType": "Intelligence",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "54",
-      "EquipmentModName": "\u7684\u706B\u7130",
+      "EquipmentModName": "的火焰",
       "EquipmentModType": "2",
       "EquipmentModTier": "1",
       "EquipmentModRequireLevel": "55",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "100"
+      "EquipmentModWeight": "100",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "FireResistance",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "55",
-      "EquipmentModName": "\u7684\u708E\u70ED",
+      "EquipmentModName": "的炎热",
       "EquipmentModType": "2",
       "EquipmentModTier": "2",
       "EquipmentModRequireLevel": "38",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "250"
+      "EquipmentModWeight": "250",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "FireResistance",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "56",
-      "EquipmentModName": "\u7684\u6E29\u6696",
+      "EquipmentModName": "的温暖",
       "EquipmentModType": "2",
       "EquipmentModTier": "3",
       "EquipmentModRequireLevel": "20",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "500"
+      "EquipmentModWeight": "500",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "FireResistance",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "57",
-      "EquipmentModName": "\u7684\u707C\u70ED",
+      "EquipmentModName": "的灼热",
       "EquipmentModType": "2",
       "EquipmentModTier": "4",
       "EquipmentModRequireLevel": "1",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "1000"
+      "EquipmentModWeight": "1000",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "FireResistance",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "58",
-      "EquipmentModName": "\u7684\u51B0\u971C",
+      "EquipmentModName": "的冰霜",
       "EquipmentModType": "2",
       "EquipmentModTier": "1",
       "EquipmentModRequireLevel": "55",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "100"
+      "EquipmentModWeight": "100",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "ColdResistance",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "59",
-      "EquipmentModName": "\u7684\u5BD2\u51B7",
+      "EquipmentModName": "的寒冷",
       "EquipmentModType": "2",
       "EquipmentModTier": "2",
       "EquipmentModRequireLevel": "38",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "250"
+      "EquipmentModWeight": "250",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "ColdResistance",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "60",
-      "EquipmentModName": "\u7684\u51B0\u51BB",
+      "EquipmentModName": "的冰冻",
       "EquipmentModType": "2",
       "EquipmentModTier": "3",
       "EquipmentModRequireLevel": "20",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "500"
+      "EquipmentModWeight": "500",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "ColdResistance",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "61",
-      "EquipmentModName": "\u7684\u5BD2\u610F",
+      "EquipmentModName": "的寒意",
       "EquipmentModType": "2",
       "EquipmentModTier": "4",
       "EquipmentModRequireLevel": "1",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "1000"
+      "EquipmentModWeight": "1000",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "ColdResistance",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "62",
-      "EquipmentModName": "\u7684\u95EA\u7535",
+      "EquipmentModName": "的闪电",
       "EquipmentModType": "2",
       "EquipmentModTier": "1",
       "EquipmentModRequireLevel": "55",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "100"
+      "EquipmentModWeight": "100",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "LightningResistance",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "63",
-      "EquipmentModName": "\u7684\u96F7\u9706",
+      "EquipmentModName": "的雷霆",
       "EquipmentModType": "2",
       "EquipmentModTier": "2",
       "EquipmentModRequireLevel": "38",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "250"
+      "EquipmentModWeight": "250",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "LightningResistance",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "64",
-      "EquipmentModName": "\u7684\u7535\u6D41",
+      "EquipmentModName": "的电流",
       "EquipmentModType": "2",
       "EquipmentModTier": "3",
       "EquipmentModRequireLevel": "20",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "500"
+      "EquipmentModWeight": "500",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "LightningResistance",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "65",
-      "EquipmentModName": "\u7684\u9759\u7535",
+      "EquipmentModName": "的静电",
       "EquipmentModType": "2",
       "EquipmentModTier": "4",
       "EquipmentModRequireLevel": "1",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "1000"
+      "EquipmentModWeight": "1000",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "LightningResistance",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "66",
-      "EquipmentModName": "\u7684\u6D3B\u529B",
+      "EquipmentModName": "的活力",
       "EquipmentModType": "2",
       "EquipmentModTier": "1",
       "EquipmentModRequireLevel": "60",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "100"
+      "EquipmentModWeight": "100",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "MaxHealth",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "67",
-      "EquipmentModName": "\u7684\u751F\u547D",
+      "EquipmentModName": "的生命",
       "EquipmentModType": "2",
       "EquipmentModTier": "2",
       "EquipmentModRequireLevel": "46",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "200"
+      "EquipmentModWeight": "200",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "MaxHealth",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "68",
-      "EquipmentModName": "\u7684\u5065\u5EB7",
+      "EquipmentModName": "的健康",
       "EquipmentModType": "2",
       "EquipmentModTier": "3",
       "EquipmentModRequireLevel": "30",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "400"
+      "EquipmentModWeight": "400",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "MaxHealth",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "69",
-      "EquipmentModName": "\u7684\u4F53\u529B",
+      "EquipmentModName": "的体力",
       "EquipmentModType": "2",
       "EquipmentModTier": "4",
       "EquipmentModRequireLevel": "15",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "700"
+      "EquipmentModWeight": "700",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "MaxHealth",
+      "EquipmentModModifierType": "Flat"
     },
     {
       "EquipmentModId": "70",
-      "EquipmentModName": "\u7684\u8010\u529B",
+      "EquipmentModName": "的耐力",
       "EquipmentModType": "2",
       "EquipmentModTier": "5",
       "EquipmentModRequireLevel": "1",
       "EquipmentModSubCategories": [
         1
       ],
-      "EquipmentModWeight": "1000"
+      "EquipmentModWeight": "1000",
+      "EquipmentModDisplayTab": "2",
+      "EquipmentModStatType": "MaxHealth",
+      "EquipmentModModifierType": "Flat"
     }
   ]
 }

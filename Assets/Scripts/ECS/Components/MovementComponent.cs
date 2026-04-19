@@ -55,6 +55,12 @@ namespace POELike.ECS.Components
         /// 是否被禁止移动（眩晕、冰冻等）
         /// </summary>
         public bool IsImmobilized { get; set; } = false;
+
+        /// <summary>
+        /// 是否因施法而暂时禁止移动
+        /// </summary>
+        public bool IsMovementLockedByCasting { get; set; } = false;
+
         
         /// <summary>
         /// 关联的CharacterController（可选）
@@ -82,8 +88,10 @@ namespace POELike.ECS.Components
             MoveDirection = Vector3.zero;
             CurrentSpeed = BaseSpeed;
             IsImmobilized = false;
+            IsMovementLockedByCasting = false;
             VerticalVelocity = 0f;
             HasTarget = false;
         }
+
     }
 }

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace POELike.Game.UI
 {
-    /// <summary>条目排列方向</summary>
+    /// <summary>兼容旧版的单轴排列方向</summary>
     public enum ArrangeDirection
     {
         /// <summary>从上到下（垂直列表）</summary>
@@ -16,6 +16,35 @@ namespace POELike.Game.UI
         RightToLeft,
     }
 
+    /// <summary>主轴方向</summary>
+    public enum ArrangeAxis
+    {
+        Vertical,
+        Horizontal,
+    }
+
+    /// <summary>横向排列方向</summary>
+    public enum HorizontalArrangeDirection
+    {
+        LeftToRight,
+        RightToLeft,
+    }
+
+    /// <summary>纵向排列方向</summary>
+    public enum VerticalArrangeDirection
+    {
+        TopToBottom,
+        BottomToTop,
+    }
+
+    /// <summary>交叉轴对齐方式</summary>
+    public enum CrossAxisAlignment
+    {
+        Start,
+        Center,
+        End,
+    }
+
     /// <summary>
     /// ListBox —— 动态列表容器，挂载在父物体上。
     /// 通过 <see cref="AddItem"/> 按类型批量创建子条目，
@@ -26,8 +55,20 @@ namespace POELike.Game.UI
         [Header("子条目预制体数组（下标即类型 type）")]
         [SerializeField] private GameObject[] _itemPrefabs;
 
-        [Header("排列方向")]
-        [SerializeField] private ArrangeDirection _direction = ArrangeDirection.TopToBottom;
+        [Header("主轴方向")]
+        [SerializeField] private ArrangeAxis _primaryAxis = ArrangeAxis.Vertical;
+
+        [Header("横向排列方向")]
+        [SerializeField] private HorizontalArrangeDirection _horizontalDirection = HorizontalArrangeDirection.LeftToRight;
+
+        [Header("纵向排列方向")]
+        [SerializeField] private VerticalArrangeDirection _verticalDirection = VerticalArrangeDirection.TopToBottom;
+
+        [Header("是否启用自动换行 / 换列")]
+        [SerializeField] private bool _wrapItems = false;
+
+        [Header("交叉轴对齐方式")]
+        [SerializeField] private CrossAxisAlignment _crossAxisAlignment = CrossAxisAlignment.Center;
 
         [Header("条目间隔 (Left / Right / Bottom / Top)")]
         [SerializeField] private float _spacingLeft   = 0f;
@@ -41,16 +82,138 @@ namespace POELike.Game.UI
         [SerializeField] private float _paddingBottom = 0f;
         [SerializeField] private float _paddingTop    = 0f;
 
+        [Header("是否在交叉轴拉伸条目")]
+        [SerializeField] private bool _stretchItemsOnCrossAxis = true;
+
+        [SerializeField, HideInInspector] private ArrangeDirection _direction = ArrangeDirection.TopToBottom;
+        [SerializeField, HideInInspector] private bool _layoutSettingsInitialized;
+
         // ── 内部状态 ──────────────────────────────────────────────────
         private readonly List<ListBoxItem> _items = new List<ListBoxItem>();
         private int _nextIndex = 0;
 
+        private sealed class LayoutEntry
+        {
+            public RectTransform RectTransform;
+            public float Width;
+            public float Height;
+            public float PrimarySize;
+            public float CrossSize;
+        }
+
+        private sealed class LayoutLine
+        {
+            public readonly List<LayoutEntry> Entries = new List<LayoutEntry>();
+            public float PrimarySpan;
+            public float CrossSpan;
+        }
+
         // ── 公开属性（运行时动态修改后调用 RefreshLayout）────────────
+
+        public ArrangeAxis PrimaryAxis
+        {
+            get => _primaryAxis;
+            set
+            {
+                if (_primaryAxis == value)
+                    return;
+
+                _primaryAxis = value;
+                _layoutSettingsInitialized = true;
+                SyncLegacyDirection();
+                RefreshLayout();
+            }
+        }
+
+        public HorizontalArrangeDirection HorizontalDirection
+        {
+            get => _horizontalDirection;
+            set
+            {
+                if (_horizontalDirection == value)
+                    return;
+
+                _horizontalDirection = value;
+                _layoutSettingsInitialized = true;
+                SyncLegacyDirection();
+                RefreshLayout();
+            }
+        }
+
+        public VerticalArrangeDirection VerticalDirection
+        {
+            get => _verticalDirection;
+            set
+            {
+                if (_verticalDirection == value)
+                    return;
+
+                _verticalDirection = value;
+                _layoutSettingsInitialized = true;
+                SyncLegacyDirection();
+                RefreshLayout();
+            }
+        }
+
+        public bool WrapItems
+        {
+            get => _wrapItems;
+            set
+            {
+                if (_wrapItems == value)
+                    return;
+
+                _wrapItems = value;
+                _layoutSettingsInitialized = true;
+                SyncLegacyDirection();
+                RefreshLayout();
+            }
+        }
+
+        public CrossAxisAlignment ItemCrossAxisAlignment
+        {
+            get => _crossAxisAlignment;
+            set
+            {
+                if (_crossAxisAlignment == value)
+                    return;
+
+                _crossAxisAlignment = value;
+                _layoutSettingsInitialized = true;
+                SyncLegacyDirection();
+                RefreshLayout();
+            }
+        }
 
         public ArrangeDirection Direction
         {
-            get => _direction;
-            set { _direction = value; RefreshLayout(); }
+            get
+            {
+                EnsureLayoutSettingsInitialized();
+                return BuildLegacyDirection();
+            }
+            set
+            {
+                _layoutSettingsInitialized = true;
+                ApplyLegacyDirection(value);
+                SyncLegacyDirection();
+                RefreshLayout();
+            }
+        }
+
+        public bool StretchItemsOnCrossAxis
+        {
+            get => _stretchItemsOnCrossAxis;
+            set
+            {
+                if (_stretchItemsOnCrossAxis == value)
+                    return;
+
+                _stretchItemsOnCrossAxis = value;
+                _layoutSettingsInitialized = true;
+                SyncLegacyDirection();
+                RefreshLayout();
+            }
         }
 
         /// <summary>条目间隔（Left/Right/Bottom/Top）</summary>
@@ -60,6 +223,8 @@ namespace POELike.Game.UI
             _spacingRight  = right;
             _spacingBottom = bottom;
             _spacingTop    = top;
+            _layoutSettingsInitialized = true;
+            SyncLegacyDirection();
             RefreshLayout();
         }
 
@@ -70,6 +235,8 @@ namespace POELike.Game.UI
             _paddingRight  = right;
             _paddingBottom = bottom;
             _paddingTop    = top;
+            _layoutSettingsInitialized = true;
+            SyncLegacyDirection();
             RefreshLayout();
         }
 
@@ -172,66 +339,314 @@ namespace POELike.Game.UI
         // ── 布局 ──────────────────────────────────────────────────────
 
         /// <summary>
-        /// 根据排列方向、Spacing 和 Padding 重新计算所有可见条目的位置。
+        /// 根据主轴、横纵方向、Spacing 和 Padding 重新计算所有可见条目的位置。
         /// 仅处理激活状态的条目，隐藏条目不参与布局计算。
         /// </summary>
         public void RefreshLayout()
         {
-            bool isVertical   = _direction == ArrangeDirection.TopToBottom
-                             || _direction == ArrangeDirection.BottomToTop;
-            bool isReverse    = _direction == ArrangeDirection.BottomToTop
-                             || _direction == ArrangeDirection.RightToLeft;
+            EnsureLayoutSettingsInitialized();
 
-            // 起始偏移（Padding 起始边）
-            float cursor = isVertical
-                ? (isReverse ? _paddingBottom : _paddingTop)
-                : (isReverse ? _paddingRight  : _paddingLeft);
+            bool primaryIsVertical = _primaryAxis == ArrangeAxis.Vertical;
+            bool leftToRight       = _horizontalDirection == HorizontalArrangeDirection.LeftToRight;
+            bool topToBottom       = _verticalDirection == VerticalArrangeDirection.TopToBottom;
 
-            // 收集激活的条目（按 _items 顺序）
-            var visibleItems = new List<ListBoxItem>();
+            var entries = CollectVisibleEntries(primaryIsVertical);
+            if (entries.Count == 0)
+                return;
+
+            var rectTransform = GetComponent<RectTransform>();
+            float availablePrimary = primaryIsVertical
+                ? GetAvailableHeight(rectTransform)
+                : GetAvailableWidth(rectTransform);
+            float availableCross = primaryIsVertical
+                ? GetAvailableWidth(rectTransform)
+                : GetAvailableHeight(rectTransform);
+
+            bool wrapItems = _wrapItems && rectTransform != null && availablePrimary > 0f;
+            bool stretchOnCrossAxis = _stretchItemsOnCrossAxis && !wrapItems;
+
+            var lines = BuildLayoutLines(entries, primaryIsVertical, wrapItems, availablePrimary);
+            PrepareLineCrossSpan(lines, wrapItems, stretchOnCrossAxis, availableCross);
+
+            float secondaryCursor = primaryIsVertical
+                ? (leftToRight ? _paddingLeft : _paddingRight)
+                : (topToBottom ? _paddingTop : _paddingBottom);
+
+            for (int i = 0; i < lines.Count; i++)
+            {
+                var line = lines[i];
+
+                if (i > 0)
+                    secondaryCursor += primaryIsVertical ? _spacingLeft : _spacingTop;
+
+                LayoutEntriesInLine(line, primaryIsVertical, stretchOnCrossAxis, secondaryCursor, leftToRight, topToBottom);
+
+                secondaryCursor += line.CrossSpan + (primaryIsVertical ? _spacingRight : _spacingBottom);
+            }
+        }
+
+        private List<LayoutEntry> CollectVisibleEntries(bool primaryIsVertical)
+        {
+            var entries = new List<LayoutEntry>(_items.Count);
             foreach (var item in _items)
             {
-                if (item != null && item.gameObject.activeSelf)
-                    visibleItems.Add(item);
+                if (item == null || !item.gameObject.activeSelf)
+                    continue;
+
+                var rt = item.GetCtrl().GetComponent<RectTransform>();
+                if (rt == null)
+                    continue;
+
+                float width = rt.rect.width;
+                float height = rt.rect.height;
+                entries.Add(new LayoutEntry
+                {
+                    RectTransform = rt,
+                    Width = width,
+                    Height = height,
+                    PrimarySize = primaryIsVertical ? height : width,
+                    CrossSize = primaryIsVertical ? width : height,
+                });
             }
 
-            if (isReverse)
-                visibleItems.Reverse();
+            return entries;
+        }
 
-            for (int i = 0; i < visibleItems.Count; i++)
+        private List<LayoutLine> BuildLayoutLines(List<LayoutEntry> entries, bool primaryIsVertical, bool wrapItems, float availablePrimary)
+        {
+            var lines = new List<LayoutLine>();
+            var currentLine = new LayoutLine();
+
+            float primaryPrefix = primaryIsVertical ? _spacingTop : _spacingLeft;
+            float primarySuffix = primaryIsVertical ? _spacingBottom : _spacingRight;
+
+            for (int i = 0; i < entries.Count; i++)
             {
-                var rt   = visibleItems[i].GetCtrl().GetComponent<RectTransform>();
-                if (rt == null) continue;
+                var entry = entries[i];
 
-                // 间隔前缀（非首个条目）
-                if (i > 0)
-                    cursor += isVertical ? _spacingTop : _spacingLeft;
+                float requiredSpan = (currentLine.Entries.Count > 0 ? primaryPrefix : 0f)
+                    + entry.PrimarySize
+                    + primarySuffix;
 
-                // 设置锚点为左上角（垂直）或左上角（水平），便于绝对定位
-                if (isVertical)
+                if (wrapItems
+                    && currentLine.Entries.Count > 0
+                    && currentLine.PrimarySpan + requiredSpan > availablePrimary)
                 {
-                    rt.anchorMin = new Vector2(0f, 1f);
-                    rt.anchorMax = new Vector2(1f, 1f);
-                    rt.pivot     = new Vector2(0.5f, 1f);
-                    rt.anchoredPosition = new Vector2(0f, -cursor);
+                    lines.Add(currentLine);
+                    currentLine = new LayoutLine();
+                    requiredSpan = entry.PrimarySize + primarySuffix;
+                }
+
+                currentLine.Entries.Add(entry);
+                currentLine.PrimarySpan += requiredSpan;
+                currentLine.CrossSpan = Mathf.Max(currentLine.CrossSpan, entry.CrossSize);
+            }
+
+            if (currentLine.Entries.Count > 0)
+                lines.Add(currentLine);
+
+            return lines;
+        }
+
+        private void PrepareLineCrossSpan(List<LayoutLine> lines, bool wrapItems, bool stretchOnCrossAxis, float availableCross)
+        {
+            if (lines.Count == 0 || availableCross <= 0f)
+                return;
+
+            if (stretchOnCrossAxis || !wrapItems)
+            {
+                for (int i = 0; i < lines.Count; i++)
+                    lines[i].CrossSpan = availableCross;
+            }
+        }
+
+        private void LayoutEntriesInLine(LayoutLine line, bool primaryIsVertical, bool stretchOnCrossAxis, float secondaryCursor, bool leftToRight, bool topToBottom)
+        {
+            if (primaryIsVertical)
+                LayoutColumn(line, stretchOnCrossAxis, secondaryCursor, leftToRight, topToBottom);
+            else
+                LayoutRow(line, stretchOnCrossAxis, secondaryCursor, leftToRight, topToBottom);
+        }
+
+        private void LayoutColumn(LayoutLine line, bool stretchOnCrossAxis, float columnCursor, bool leftToRight, bool topToBottom)
+        {
+            float primaryCursor = topToBottom ? _paddingTop : _paddingBottom;
+
+            for (int i = 0; i < line.Entries.Count; i++)
+            {
+                var entry = line.Entries[i];
+
+                if (i > 0)
+                    primaryCursor += _spacingTop;
+
+                float y = topToBottom ? -primaryCursor : primaryCursor;
+                if (stretchOnCrossAxis)
+                {
+                    ApplyVerticalStretchLayout(entry.RectTransform, y, topToBottom);
                 }
                 else
                 {
-                    rt.anchorMin = new Vector2(0f, 0f);
-                    rt.anchorMax = new Vector2(0f, 1f);
-                    rt.pivot     = new Vector2(0f, 0.5f);
-                    rt.anchoredPosition = new Vector2(cursor, 0f);
+                    float xOffset = ResolveAlignmentOffset(line.CrossSpan, entry.Width);
+                    float x = leftToRight
+                        ? columnCursor + xOffset
+                        : -(columnCursor + xOffset);
+
+                    ApplyFixedLayout(entry.RectTransform, x, y, leftToRight, topToBottom);
                 }
 
-                // 推进 cursor：条目尺寸 + 间隔后缀
-                float itemSize = isVertical ? rt.rect.height : rt.rect.width;
-                cursor += itemSize + (isVertical ? _spacingBottom : _spacingRight);
+                primaryCursor += entry.Height + _spacingBottom;
             }
+        }
+
+        private void LayoutRow(LayoutLine line, bool stretchOnCrossAxis, float rowCursor, bool leftToRight, bool topToBottom)
+        {
+            float primaryCursor = leftToRight ? _paddingLeft : _paddingRight;
+
+            for (int i = 0; i < line.Entries.Count; i++)
+            {
+                var entry = line.Entries[i];
+
+                if (i > 0)
+                    primaryCursor += _spacingLeft;
+
+                float x = leftToRight ? primaryCursor : -primaryCursor;
+                if (stretchOnCrossAxis)
+                {
+                    ApplyHorizontalStretchLayout(entry.RectTransform, x, leftToRight);
+                }
+                else
+                {
+                    float yOffset = ResolveAlignmentOffset(line.CrossSpan, entry.Height);
+                    float y = topToBottom
+                        ? -(rowCursor + yOffset)
+                        : (rowCursor + yOffset);
+
+                    ApplyFixedLayout(entry.RectTransform, x, y, leftToRight, topToBottom);
+                }
+
+                primaryCursor += entry.Width + _spacingRight;
+            }
+        }
+
+        private float ResolveAlignmentOffset(float availableSpan, float itemSpan)
+        {
+            float remaining = Mathf.Max(0f, availableSpan - itemSpan);
+            return _crossAxisAlignment switch
+            {
+                CrossAxisAlignment.End => remaining,
+                CrossAxisAlignment.Center => remaining * 0.5f,
+                _ => 0f,
+            };
+        }
+
+        private void EnsureLayoutSettingsInitialized()
+        {
+            if (!_layoutSettingsInitialized)
+            {
+                ApplyLegacyDirection(_direction);
+                _layoutSettingsInitialized = true;
+            }
+
+            SyncLegacyDirection();
+        }
+
+        private void ApplyLegacyDirection(ArrangeDirection direction)
+        {
+            switch (direction)
+            {
+                case ArrangeDirection.BottomToTop:
+                    _primaryAxis = ArrangeAxis.Vertical;
+                    _verticalDirection = VerticalArrangeDirection.BottomToTop;
+                    break;
+                case ArrangeDirection.LeftToRight:
+                    _primaryAxis = ArrangeAxis.Horizontal;
+                    _horizontalDirection = HorizontalArrangeDirection.LeftToRight;
+                    break;
+                case ArrangeDirection.RightToLeft:
+                    _primaryAxis = ArrangeAxis.Horizontal;
+                    _horizontalDirection = HorizontalArrangeDirection.RightToLeft;
+                    break;
+                default:
+                    _primaryAxis = ArrangeAxis.Vertical;
+                    _verticalDirection = VerticalArrangeDirection.TopToBottom;
+                    break;
+            }
+        }
+
+        private ArrangeDirection BuildLegacyDirection()
+        {
+            return _primaryAxis == ArrangeAxis.Vertical
+                ? (_verticalDirection == VerticalArrangeDirection.TopToBottom
+                    ? ArrangeDirection.TopToBottom
+                    : ArrangeDirection.BottomToTop)
+                : (_horizontalDirection == HorizontalArrangeDirection.LeftToRight
+                    ? ArrangeDirection.LeftToRight
+                    : ArrangeDirection.RightToLeft);
+        }
+
+        private void SyncLegacyDirection()
+        {
+            _direction = BuildLegacyDirection();
+        }
+
+        private float GetAvailableWidth(RectTransform rectTransform)
+        {
+            if (rectTransform == null)
+                return 0f;
+
+            return Mathf.Max(0f, rectTransform.rect.width - _paddingLeft - _paddingRight);
+        }
+
+        private float GetAvailableHeight(RectTransform rectTransform)
+        {
+            if (rectTransform == null)
+                return 0f;
+
+            return Mathf.Max(0f, rectTransform.rect.height - _paddingTop - _paddingBottom);
+        }
+
+        private static void ApplyFixedLayout(RectTransform rt, float x, float y, bool leftToRight, bool topToBottom)
+        {
+            float anchorX = leftToRight ? 0f : 1f;
+            float anchorY = topToBottom ? 1f : 0f;
+
+            rt.anchorMin = new Vector2(anchorX, anchorY);
+            rt.anchorMax = new Vector2(anchorX, anchorY);
+            rt.pivot = new Vector2(anchorX, anchorY);
+            rt.anchoredPosition = new Vector2(x, y);
+        }
+
+        private static void ApplyVerticalStretchLayout(RectTransform rt, float y, bool topToBottom)
+        {
+            float anchorY = topToBottom ? 1f : 0f;
+
+            rt.anchorMin = new Vector2(0f, anchorY);
+            rt.anchorMax = new Vector2(1f, anchorY);
+            rt.pivot = new Vector2(0.5f, anchorY);
+            rt.anchoredPosition = new Vector2(0f, y);
+        }
+
+        private static void ApplyHorizontalStretchLayout(RectTransform rt, float x, bool leftToRight)
+        {
+            float anchorX = leftToRight ? 0f : 1f;
+
+            rt.anchorMin = new Vector2(anchorX, 0f);
+            rt.anchorMax = new Vector2(anchorX, 1f);
+            rt.pivot = new Vector2(anchorX, 0.5f);
+            rt.anchoredPosition = new Vector2(x, 0f);
+        }
+
+        private void Reset()
+        {
+            _layoutSettingsInitialized = true;
+            SyncLegacyDirection();
         }
 
 #if UNITY_EDITOR
         private void OnValidate()
         {
+            EnsureLayoutSettingsInitialized();
+
             // Inspector 中修改参数时实时预览布局
             if (Application.isPlaying)
                 RefreshLayout();

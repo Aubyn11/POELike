@@ -105,6 +105,9 @@ namespace POELike.Game.UI
         /// <summary>装备后缀词条文本（用于提示显示）</summary>
         public List<string> SuffixDescriptions { get; } = new List<string>();
 
+        /// <summary>装备已随机出的词条（含数值）。用于装备上身时生成 <see cref="StatModifier"/>。</summary>
+        public List<RolledMod> EquipmentMods { get; } = new List<RolledMod>();
+
         public bool IsEquipment => ItemKind == BagItemKind.Equipment;
         public bool IsGem       => ItemKind == BagItemKind.Gem;
         public bool IsFlask     => ItemKind == BagItemKind.Flask;
@@ -220,8 +223,94 @@ namespace POELike.Game.UI
                 FlaskCurrentCharges = item.FlaskCurrentCharges;
             }
 
+            if (IsEquipment)
+            {
+                RebuildItemModifiersFromEquipmentMods(item);
+            }
+
             RuntimeItemData = item;
             return item;
+        }
+
+        /// <summary>
+        /// 根据 <see cref="EquipmentMods"/> 中的词条配置，重建 <see cref="ItemData.Prefixes"/> /
+        /// <see cref="ItemData.Suffixes"/> 中的 <see cref="StatModifier"/>，让装备上身后
+        /// <c>StatsSystem</c> 能正确聚合到 <c>StatsComponent</c> 上。
+        /// </summary>
+        private void RebuildItemModifiersFromEquipmentMods(ItemData item)
+        {
+            // 对于商店/掉落生成的装备，优先根据 EquipmentMods 重建词条；
+            // 若当前装备只是手工构造的演示装备（没有 EquipmentMods），则保留 RuntimeItemData 中原有的前后缀。
+            if (EquipmentMods == null || EquipmentMods.Count == 0)
+                return;
+
+            item.Prefixes.Clear();
+            item.Suffixes.Clear();
+
+            foreach (var rolled in EquipmentMods)
+            {
+                if (rolled?.Mod == null || rolled.Values == null)
+                    continue;
+
+                bool isPrefix = rolled.Mod.EquipmentModType == "1";
+                string source = string.IsNullOrEmpty(rolled.Mod.EquipmentModName)
+                    ? "equipment"
+                    : $"equipment:{rolled.Mod.EquipmentModName}";
+
+                foreach (var value in rolled.Values)
+                {
+                    if (value?.Config == null)
+                        continue;
+
+                    if (!TryResolveStatType(rolled.Mod, value.Config, out var statType))
+                        continue;
+
+                    var modifierType = ResolveModifierType(rolled.Mod);
+                    float statValue = ConvertRolledValueToStatValue(rolled.Mod, value.Config, value.RolledValue);
+                    var modifier = new StatModifier(statType, modifierType, statValue, source);
+
+                    if (isPrefix)
+                        item.Prefixes.Add(modifier);
+                    else
+                        item.Suffixes.Add(modifier);
+                }
+            }
+        }
+
+        private static bool TryResolveStatType(EquipmentModData mod, EquipmentModValueData _, out StatType statType)
+        {
+            statType = default;
+            if (mod == null || string.IsNullOrWhiteSpace(mod.EquipmentModStatType))
+                return false;
+
+            return System.Enum.TryParse(mod.EquipmentModStatType.Trim(), true, out statType);
+        }
+
+        private static ModifierType ResolveModifierType(EquipmentModData mod)
+        {
+            if (mod == null || string.IsNullOrWhiteSpace(mod.EquipmentModModifierType))
+                return ModifierType.Flat;
+
+            return System.Enum.TryParse(mod.EquipmentModModifierType.Trim(), true, out ModifierType parsed)
+                ? parsed
+                : ModifierType.Flat;
+        }
+
+        /// <summary>
+        /// 将配置里的原始数值转换为 StatModifier 的实际数值。
+        /// 某些词条（例如生命偷取）在配置里以 ‰ 的形式存储（20 表示 2.0%），
+        /// 通过识别词缀描述中的 ‰ 占位符做 /10 转换。
+        /// </summary>
+        private static float ConvertRolledValueToStatValue(EquipmentModData mod, EquipmentModValueData valueConfig, int rolledValue)
+        {
+            if (valueConfig == null)
+                return rolledValue;
+
+            var desc = valueConfig.EquipmentModValueDesc;
+            if (!string.IsNullOrEmpty(desc) && desc.IndexOf('‰') >= 0)
+                return rolledValue / 10f;
+
+            return rolledValue;
         }
 
         private ItemType ResolveItemType()

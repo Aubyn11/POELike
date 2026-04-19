@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using POELike.ECS.Components;
 using POELike.Game.Equipment;
+using POELike.Managers;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -201,6 +202,63 @@ namespace POELike.Game.UI
             equipmentItem.GetLinkedGems(socketIndex, results);
         }
 
+        public bool CanAddItemToBag(BagItemData data, out string failureReason)
+        {
+            failureReason = string.Empty;
+            if (data == null)
+            {
+                failureReason = "道具数据为空";
+                return false;
+            }
+
+            if (_isInitializing)
+            {
+                failureReason = "背包仍在初始化中";
+                return false;
+            }
+
+            if (!_initialized)
+                EnsureInitialized();
+
+            if (_bag == null)
+            {
+                failureReason = "背包容器未初始化";
+                return false;
+            }
+
+            if (!_bag.HasSpaceFor(data))
+            {
+                failureReason = $"背包空间不足：{data.Name}";
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool TryAddItemToBag(BagItemData data, out string failureReason)
+        {
+            if (!CanAddItemToBag(data, out failureReason))
+                return false;
+
+            if (!_bag.TryAutoPlaceItem(data))
+            {
+                failureReason = $"背包空间不足：{data.Name}";
+                return false;
+            }
+
+            var view = CreateRuntimeItemView(data);
+            if (view == null)
+            {
+                _bag.RemoveItem(data);
+                failureReason = $"创建道具视图失败：{data.Name}";
+                return false;
+            }
+
+            view.BindToBag(_bag);
+            UIManager.Instance?.RefreshCharactorMainPanel();
+            return true;
+        }
+
         private static Transform FindChildRecursive(Transform root, string nodeName)
         {
 
@@ -237,7 +295,17 @@ namespace POELike.Game.UI
                 color: new Color(0.40f, 0.60f, 1.00f),
                 sockets: new[] { SocketColor.Red, SocketColor.Blue, SocketColor.Green },
                 prefixes: new[] { "最大生命 +32", "护甲提高 24%" },
-                suffixes: new[] { "火焰抗性 +18%", "冰霜抗性 +12%" }
+                suffixes: new[] { "火焰抗性 +18%", "冰霜抗性 +12%" },
+                prefixModifiers: new[]
+                {
+                    new StatModifier(StatType.MaxHealth, ModifierType.Flat, 32f, "equipment:demo"),
+                    new StatModifier(StatType.Armor, ModifierType.PercentAdd, 24f, "equipment:demo"),
+                },
+                suffixModifiers: new[]
+                {
+                    new StatModifier(StatType.FireResistance, ModifierType.Flat, 18f, "equipment:demo"),
+                    new StatModifier(StatType.ColdResistance, ModifierType.Flat, 12f, "equipment:demo"),
+                }
             );
             SpawnItemInBag(chestData, 0, 0);
 
@@ -250,7 +318,16 @@ namespace POELike.Game.UI
                 color: new Color(1.00f, 0.82f, 0.28f),
                 sockets: new[] { SocketColor.Red, SocketColor.Green },
                 prefixes: new[] { "附加 3 - 7 点物理伤害", "物理伤害提高 19%" },
-                suffixes: new[] { "攻击速度提高 8%", "命中值 +42" }
+                suffixes: new[] { "攻击速度提高 8%", "命中值 +42" },
+                prefixModifiers: new[]
+                {
+                    new StatModifier(StatType.PhysicalDamage, ModifierType.Flat, 5f, "equipment:demo"),
+                    new StatModifier(StatType.PhysicalDamage, ModifierType.PercentAdd, 19f, "equipment:demo"),
+                },
+                suffixModifiers: new[]
+                {
+                    new StatModifier(StatType.AttackSpeed, ModifierType.PercentAdd, 8f, "equipment:demo"),
+                }
             );
             SpawnItemInBag(swordData, 3, 0);
 
@@ -263,7 +340,16 @@ namespace POELike.Game.UI
                 color: new Color(0.85f, 0.85f, 0.92f),
                 sockets: new[] { SocketColor.Blue },
                 prefixes: new[] { "护甲提高 15%" },
-                suffixes: new[] { "智慧 +12", "闪电抗性 +14%" }
+                suffixes: new[] { "智慧 +12", "闪电抗性 +14%" },
+                prefixModifiers: new[]
+                {
+                    new StatModifier(StatType.Armor, ModifierType.PercentAdd, 15f, "equipment:demo"),
+                },
+                suffixModifiers: new[]
+                {
+                    new StatModifier(StatType.Intelligence, ModifierType.Flat, 12f, "equipment:demo"),
+                    new StatModifier(StatType.LightningResistance, ModifierType.Flat, 14f, "equipment:demo"),
+                }
             );
             SpawnItemInBag(helmData, 5, 0);
 
@@ -275,7 +361,16 @@ namespace POELike.Game.UI
                 height: 2,
                 color: new Color(0.82f, 0.62f, 0.38f),
                 prefixes: new[] { "最大生命 +18" },
-                suffixes: new[] { "移动速度提高 10%", "混沌抗性 +9%" }
+                suffixes: new[] { "移动速度提高 10%", "混沌抗性 +9%" },
+                prefixModifiers: new[]
+                {
+                    new StatModifier(StatType.MaxHealth, ModifierType.Flat, 18f, "equipment:demo"),
+                },
+                suffixModifiers: new[]
+                {
+                    new StatModifier(StatType.MovementSpeed, ModifierType.PercentAdd, 10f, "equipment:demo"),
+                    new StatModifier(StatType.ChaosResistance, ModifierType.Flat, 9f, "equipment:demo"),
+                }
             );
             SpawnItemInBag(bootsData, 7, 0);
 
@@ -287,7 +382,15 @@ namespace POELike.Game.UI
                 height: 1,
                 color: new Color(1.00f, 0.92f, 0.48f),
                 prefixes: new[] { "最大魔力 +18" },
-                suffixes: new[] { "火焰抗性 +20%" }
+                suffixes: new[] { "火焰抗性 +20%" },
+                prefixModifiers: new[]
+                {
+                    new StatModifier(StatType.MaxMana, ModifierType.Flat, 18f, "equipment:demo"),
+                },
+                suffixModifiers: new[]
+                {
+                    new StatModifier(StatType.FireResistance, ModifierType.Flat, 20f, "equipment:demo"),
+                }
             );
             ringData.SetAcceptedEquipmentSlots(new[] { EquipmentSlot.RingLeft, EquipmentSlot.RingRight });
             SpawnItemInBag(ringData, 9, 0);
@@ -317,7 +420,9 @@ namespace POELike.Game.UI
             Color color,
             IEnumerable<SocketColor> sockets = null,
             IEnumerable<string> prefixes = null,
-            IEnumerable<string> suffixes = null)
+            IEnumerable<string> suffixes = null,
+            IEnumerable<StatModifier> prefixModifiers = null,
+            IEnumerable<StatModifier> suffixModifiers = null)
         {
             var data = new BagItemData(itemId, name, width, height)
             {
@@ -349,6 +454,30 @@ namespace POELike.Game.UI
                         data.SuffixDescriptions.Add(suffix);
                 }
             }
+
+            var runtimeItem = new ItemData();
+            bool hasRuntimeModifiers = false;
+
+            if (prefixModifiers != null)
+            {
+                foreach (var modifier in prefixModifiers)
+                {
+                    runtimeItem.Prefixes.Add(modifier);
+                    hasRuntimeModifiers = true;
+                }
+            }
+
+            if (suffixModifiers != null)
+            {
+                foreach (var modifier in suffixModifiers)
+                {
+                    runtimeItem.Suffixes.Add(modifier);
+                    hasRuntimeModifiers = true;
+                }
+            }
+
+            if (hasRuntimeModifiers)
+                data.RuntimeItemData = runtimeItem;
 
             return data;
         }

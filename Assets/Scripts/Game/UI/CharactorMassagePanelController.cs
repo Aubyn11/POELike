@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using POELike.ECS.Components;
+using POELike.Game.Equipment;
 using POELike.Managers;
 
 namespace POELike.Game.UI
@@ -257,6 +258,66 @@ namespace POELike.Game.UI
 
                 addedTypes.Add(statType);
                 TryAppendEntry(stats, statType, results);
+            }
+
+            // 追加"由装备词缀配置显式指定 DisplayTab 的条目"
+            AppendEquipmentModEntriesForCurrentCategory(results);
+        }
+
+        /// <summary>
+        /// 从当前玩家所有已装备的装备里收集 <see cref="RolledMod"/>，
+        /// 根据 <see cref="EquipmentModData.EquipmentModDisplayTab"/> 配置把词条直接追加到当前页签。
+        /// 这样即便词条未能映射到 <see cref="StatType"/>，或已被其他方式聚合，
+        /// 也能按配置指定的分类显示到正确的页签下。
+        /// </summary>
+        private void AppendEquipmentModEntriesForCurrentCategory(List<StatDisplayEntry> results)
+        {
+            var bagPanel = UIManager.Instance != null ? UIManager.Instance.CurrentBagPanel : null;
+            if (bagPanel == null)
+                return;
+
+            foreach (EquipmentSlot slot in Enum.GetValues(typeof(EquipmentSlot)))
+            {
+                var bagData = bagPanel.GetEquippedItemData(slot);
+                if (bagData == null || bagData.EquipmentMods == null || bagData.EquipmentMods.Count == 0)
+                    continue;
+
+                foreach (var rolled in bagData.EquipmentMods)
+                {
+                    if (rolled?.Mod == null) continue;
+
+                    var tab = ParseDisplayTab(rolled.Mod.EquipmentModDisplayTab);
+                    if (!tab.HasValue || tab.Value != _activeCategory)
+                        continue;
+
+                    if (rolled.Values == null || rolled.Values.Count == 0)
+                        continue;
+
+                    foreach (var value in rolled.Values)
+                    {
+                        if (value?.Config == null) continue;
+
+                        string desc = string.IsNullOrWhiteSpace(value.Config.EquipmentModValueDesc)
+                            ? rolled.Mod.EquipmentModName
+                            : value.Config.EquipmentModValueDesc;
+
+                        results.Add(new StatDisplayEntry(desc, value.RolledValue.ToString()));
+                    }
+                }
+            }
+        }
+
+        private static StatCategory? ParseDisplayTab(string displayTab)
+        {
+            if (string.IsNullOrWhiteSpace(displayTab))
+                return null;
+
+            switch (displayTab.Trim())
+            {
+                case "1": return StatCategory.Damage;
+                case "2": return StatCategory.Defense;
+                case "3": return StatCategory.Other;
+                default:  return null;
             }
         }
 

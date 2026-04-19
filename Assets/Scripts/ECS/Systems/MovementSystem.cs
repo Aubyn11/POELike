@@ -92,6 +92,8 @@ namespace POELike.ECS.Systems
         public ComputeBuffer GpuPositionBuffer => _gpuOutputBuffer;
         /// <summary>当前帧有效的怪物数量</summary>
         public int MonsterCount => _monsterTCs.Count;
+        /// <summary>怪物实体缓存（与 GPU Buffer 下标一一对应），供技能/GPU 系统共享</summary>
+        public List<Entity> MonsterEntitiesShared => _monsterEntities;
         /// <summary>怪物 MonsterComponent 缓存（与 GPU Buffer 下标一一对应），供渲染器共享</summary>
         public List<MonsterComponent> MonsterMCsShared => _monsterMCsShared;
         /// <summary>怪物 MovementComponent 缓存（与 GPU Buffer 下标一一对应），供渲染器共享</summary>
@@ -274,9 +276,17 @@ namespace POELike.ECS.Systems
             if (entity == null || !entity.IsAlive) { _playerCached = false; return; }
             if (transform == null || movement == null) return;
 
-            bool canMove = movement.IsEnabled && !movement.IsImmobilized;
+            bool canMove = movement.IsEnabled
+                && !movement.IsImmobilized
+                && !movement.IsMovementLockedByCasting;
+            if (!canMove && movement.IsMovementLockedByCasting)
+            {
+                movement.HasTarget = false;
+                movement.MoveDirection = Vector3.zero;
+            }
             if (canMove)
             {
+
                 // 点击寻路
                 if (movement.HasTarget)
                 {

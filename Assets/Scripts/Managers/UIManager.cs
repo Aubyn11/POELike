@@ -3,6 +3,9 @@ using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using POELike.Game.UI;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem.UI;
+#endif
 
 namespace POELike.Managers
 {
@@ -39,8 +42,10 @@ namespace POELike.Managers
         private GameObject           _charactorMassagePanel;
         private InputAction          _bagToggleAction;
         private InputAction          _charactorMassageToggleAction;
+        private InputAction          _uiCancelAction;
         private int                  _lastBagToggleFrame = -1;
         private int                  _lastCharactorMassageToggleFrame = -1;
+        private int                  _lastUiCancelFrame = -1;
 
         public BagPanel CurrentBagPanel
         {
@@ -66,6 +71,36 @@ namespace POELike.Managers
             }
         }
 
+        public BagPanel GetOrCreateBagPanel(bool showPanel = true)
+        {
+            bool wasVisible = _bagPanel != null && _bagPanel.activeSelf;
+
+            if (_bagPanel == null)
+            {
+                _bagPanel = GetUI(_bagPanelPath);
+                if (_bagPanel == null)
+                    return null;
+            }
+
+            EnsureBagPanelController();
+
+            if (showPanel)
+            {
+                if (!_bagPanel.activeSelf)
+                    _bagPanel.SetActive(true);
+
+                RegisterBagOccluder();
+                RefreshCharactorMainPanel();
+            }
+            else if (!wasVisible)
+            {
+                _bagPanel.SetActive(false);
+                UnregisterBagOccluder();
+            }
+
+            return _bagPanel.GetComponent<BagPanel>();
+        }
+
         // ── 生命周期 ──────────────────────────────────────────────────
 
         private void Awake()
@@ -88,6 +123,7 @@ namespace POELike.Managers
         {
             HandleBagHotkey();
             HandleCharactorMassageHotkey();
+            HandleUiCancelHotkey();
         }
 
         private void OnGUI()
@@ -126,6 +162,9 @@ namespace POELike.Managers
                 _charactorMassageToggleAction.Dispose();
             }
 
+            if (_uiCancelAction != null)
+                _uiCancelAction.Dispose();
+
             if (Instance == this)
             {
                 HideBagPanel();
@@ -144,6 +183,11 @@ namespace POELike.Managers
             _charactorMassageToggleAction = new InputAction("CharactorMassageToggle", InputActionType.Button, "<Keyboard>/c");
             _charactorMassageToggleAction.performed += OnCharactorMassageTogglePerformed;
             _charactorMassageToggleAction.Enable();
+
+            _uiCancelAction = new InputAction("UICancel", InputActionType.Button, "<Keyboard>/escape");
+            _uiCancelAction.Enable();
+
+            DisableDefaultEventSystemCancel();
         }
 
         private void OnBagTogglePerformed(InputAction.CallbackContext context)
@@ -499,6 +543,43 @@ namespace POELike.Managers
                 return;
 
             TryToggleCharactorMassagePanel();
+        }
+
+        private void HandleUiCancelHotkey()
+        {
+            if (!CanUseGameplayPanels())
+                return;
+
+            if (_uiCancelAction == null || !_uiCancelAction.WasPressedThisFrame())
+                return;
+
+            if (_lastUiCancelFrame == Time.frameCount)
+                return;
+
+            _lastUiCancelFrame = Time.frameCount;
+            EventSystem.current?.SetSelectedGameObject(null);
+            CloseAllClosableGameplayUi();
+        }
+
+        private void CloseAllClosableGameplayUi()
+        {
+            UIGamePanelManager.CloseAll();
+            HideCharactorMassagePanel();
+            HideBagPanel();
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void DisableDefaultEventSystemCancelOnSceneLoad()
+        {
+            DisableDefaultEventSystemCancel();
+        }
+
+        private static void DisableDefaultEventSystemCancel()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (EventSystem.current?.currentInputModule is InputSystemUIInputModule inputModule)
+                inputModule.cancel = null;
+#endif
         }
 
         private bool CanUseGameplayPanels()

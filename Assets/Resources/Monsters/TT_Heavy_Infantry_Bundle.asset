@@ -75,7 +75,7 @@ MonoBehaviour:
       e32: 0
       e33: 1
   - PartName: Body_06b
-    Mesh: {fileID: 5223242251157465999}
+    Mesh: {fileID: 9129382037592350382}
     Material: {fileID: 2100000, guid: dccf8e44ede71db42b49378af93c5fb7, type: 2}
     LocalMatrix:
       e00: 1
@@ -94,14 +94,14 @@ MonoBehaviour:
       e31: 0
       e32: 0
       e33: 1
---- !u!43 &5223242251157465999
+--- !u!43 &9129382037592350382
 Mesh:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Body_06b_Baked
-  serializedVersion: 11
+  serializedVersion: 12
   m_SubMeshes:
   - serializedVersion: 2
     firstByte: 0
@@ -259,3 +259,16 @@ Mesh:
     offset: 0
     size: 0
     path: 
+  m_MeshLodInfo:
+    serializedVersion: 2
+    m_LodSelectionCurve:
+      serializedVersion: 1
+      m_LodSlope: 0
+      m_LodBias: 0
+    m_NumLevels: 1
+    m_SubMeshes:
+    - serializedVersion: 2
+      m_Levels:
+      - serializedVersion: 1
+        m_IndexStart: 0
+        m_IndexCount: 0

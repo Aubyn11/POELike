@@ -20,6 +20,7 @@ namespace POELike.Game
         [SerializeField] private bool _autoAssignTestSkills = true;
         
         private void Start()
+
         {
             // 等待GameManager和PlayerController初始化完成
             Invoke(nameof(InitializeGameScene), 0.1f);
@@ -33,11 +34,14 @@ namespace POELike.Game
                 Debug.LogError("[GameSceneInitializer] GameManager未找到！");
                 return;
             }
+
+            SkillEffectPool.EnsureInitialized();
+            SkillEffectPool.PreloadConfiguredEffects();
             
             // 订阅事件
-            world.EventBus.Subscribe<EnemyDiedEvent>(OnEnemyDied);
             world.EventBus.Subscribe<DamageResultEvent>(OnDamageResult);
             world.EventBus.Subscribe<PlayerDiedEvent>(OnPlayerDied);
+
             
             // 获取玩家实体
             var playerEntity = world.FindEntityByTag("Player");
@@ -54,10 +58,15 @@ namespace POELike.Game
             // 自动分配测试技能
             if (_autoAssignTestSkills)
                 AssignTestSkills(playerEntity);
+
+            var skillComp = playerEntity.GetComponent<SkillComponent>();
+            if (skillComp != null)
+                SkillEffectPool.PreloadSkillEffects(skillComp.SkillSlots);
             
             Debug.Log("[GameSceneInitializer] 游戏场景初始化完成！");
             PrintPlayerStats(playerEntity);
         }
+
         
         /// <summary>
         /// 为玩家装备测试物品
@@ -102,9 +111,10 @@ namespace POELike.Game
             var skillComp = playerEntity.GetComponent<SkillComponent>();
             if (skillComp == null) return;
             
-            // 槽位0：普通攻击
+            // 槽位0：重击（当前替代原普通攻击，已接配置表与技能特效）
             var slot0 = skillComp.GetSlot(0);
-            if (slot0 != null) slot0.SkillData = SkillFactory.CreateNormalAttack();
+            if (slot0 != null) slot0.SkillData = SkillFactory.CreateHeavyStrike();
+
             
             // 槽位1：火球术（带多重投射支持宝石）
             var slot1 = skillComp.GetSlot(1);
@@ -151,19 +161,8 @@ namespace POELike.Game
             Debug.Log("================");
         }
         
-        private void OnEnemyDied(EnemyDiedEvent evt)
-        {
-            Debug.Log($"[游戏] 击杀敌人！获得 {evt.ExperienceReward} 经验");
-            
-            // 随机掉落物品
-            if (Random.value < 0.5f)
-            {
-                var droppedItem = ItemFactory.CreateRandomItem(5);
-                Debug.Log($"[游戏] 掉落物品: [{droppedItem.Rarity}] {droppedItem.Name}");
-            }
-        }
-        
         private void OnDamageResult(DamageResultEvent evt)
+
         {
             string critText = evt.IsCritical ? " (暴击!)" : "";
             Debug.Log($"[战斗] {evt.Source?.Tag} -> {evt.Target?.Tag}: {evt.FinalDamage:F1} {evt.DamageType}伤害{critText}");
@@ -178,10 +177,10 @@ namespace POELike.Game
         {
             if (GameManager.Instance?.World != null)
             {
-                GameManager.Instance.World.EventBus.Unsubscribe<EnemyDiedEvent>(OnEnemyDied);
                 GameManager.Instance.World.EventBus.Unsubscribe<DamageResultEvent>(OnDamageResult);
                 GameManager.Instance.World.EventBus.Unsubscribe<PlayerDiedEvent>(OnPlayerDied);
             }
         }
+
     }
 }

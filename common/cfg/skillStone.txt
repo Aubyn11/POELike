@@ -8,10 +8,11 @@ ActiveSkillStoneConf{
     string ActiveSkillStoneCode = 2,
     string ActiveSkillStoneName = 3,
     string ActiveSkillStoneDesc = 4,
-    int32 SkillColor = 5,
-    int32 SkillCastType = 6,
-    repeated int32 SkillTags = 7,
-    int32 SkillShapeType = 8
+    string SkillEffectName = 5,
+    int32 SkillColor = 6,
+    int32 SkillCastType = 7,
+    repeated int32 SkillTags = 8,
+    int32 SkillShapeType = 9
 }
 
 // 主动技能宝石每级成长

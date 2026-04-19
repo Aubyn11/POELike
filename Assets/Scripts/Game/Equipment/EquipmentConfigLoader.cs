@@ -33,6 +33,21 @@ namespace POELike.Game.Equipment
         public string EquipmentModRequireLevel;
         public List<int> EquipmentModSubCategories = new List<int>();
         public string EquipmentModWeight;
+        /// <summary>
+        /// 词条应显示在角色信息面板的哪个页签。
+        /// 1=伤害 Damage，2=防御 Defense，3=其他 Other。
+        /// 为空或未配置时回退到按 EquipmentModStatType 的默认分类。
+        /// </summary>
+        public string EquipmentModDisplayTab;
+        /// <summary>
+        /// 词条对应的属性类型名（对应 StatType 枚举名，例如 "PhysicalDamage"、"FireResistance"）。
+        /// 若为空或解析失败，词条不会写入 StatsComponent。
+        /// </summary>
+        public string EquipmentModStatType;
+        /// <summary>
+        /// 词条对应的属性修改类型（Flat / PercentAdd / PercentMore）。默认 Flat。
+        /// </summary>
+        public string EquipmentModModifierType;
     }
 
     [Serializable]

@@ -166,7 +166,12 @@ namespace POELike.ECS.Systems
             if (!health.IsAlive)
             {
                 World.EventBus.Publish(new EntityDiedEvent { Entity = evt.Target, Killer = evt.Source });
+
+                // 纯 ECS 怪物死亡后立即销毁实体，保证 GPU 缓存与渲染列表及时清理
+                if (evt.Target.Tag == "Monster")
+                    World.DestroyEntity(evt.Target);
             }
+
         }
         
         /// <summary>

@@ -117,6 +117,33 @@ flowchart TD
 - [EquipmentItem.cs](Assets/Scripts/Game/UI/EquipmentItem.cs)
   - 装备图标可视层、插槽显示、Tips 入口
   - 当前负责宝石槽动态布局、动态缩放、自动连接线
+- [PlayerInputComponent.cs](Assets/Scripts/ECS/Components/PlayerInputComponent.cs)
+  - 当前 `SkillInputs` 已扩容到 8
+- 8 个技能槽位真实快捷键约定为：`LMB / MMB / RMB / Q / W / E / R / T`
+
+- [CharactorMainPanelController.cs](Assets/Scripts/Game/UI/CharactorMainPanelController.cs)
+  - 真实技能栏按钮标签已与上述键位同步
+  - 最后两个扩展槽位当前显示为 `X` / `V`
+- [SkillEffectPool.cs](Assets/Scripts/Game/Skills/SkillEffectPool.cs)
+  - 运行时兜底粒子模板创建时，必须先禁用模板对象，并在配置粒子参数前先 `Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear)`
+  - 否则刚 `AddComponent<ParticleSystem>()` 的系统可能还处于默认播放态，随后改 `main.duration` / `startLifetime` 会触发 Unity 警告
+- [ActiveSkillStoneConf.pb](Assets/Cfg/ActiveSkillStoneConf.pb) / [SkillConfigLoader.cs](Assets/Scripts/Game/Skills/SkillConfigLoader.cs)
+  - 主动技能表新增 `IsChannelingSkill` 与 `CanMoveWhileCasting`
+  - 当前已为 `fireball / frost_nova / blink / heavy_strike` 补值，并新增 `cyclone` 条目
+- [SkillComponent.cs](Assets/Scripts/ECS/Components/SkillComponent.cs)
+  - `SkillData` 已新增 `IsChannelingSkill` 与 `CanMoveWhileCasting`
+  - `SkillComponent` 已新增引导态字段：`IsChanneling` / `ChannelTickTimer` / `ActiveChannelRuntime`
+- [PlayerInputComponent.cs](Assets/Scripts/ECS/Components/PlayerInputComponent.cs)
+  - 技能输入现在不只有 `SkillInputs`，还包括 `SkillHeldInputs` 与 `SkillReleasedInputs`
+  - `GameSceneManager` / `PlayerController` 都已统一采集 8 槽技能键的按下、按住、松开三态
+- [SkillSystem.cs](Assets/Scripts/ECS/Systems/SkillSystem.cs)
+  - 已补完整引导状态机：按下开始、按住维持、松手结束、缺蓝停止
+  - `IsChannelingSkill=true` 且 `SkillType=Channeling` 时，会维持单个持续运行时实体；其它引导技能则按间隔重复释放
+  - 普通施法与引导施法都会在 `CanMoveWhileCasting=false` 时给移动组件加锁
+- [MovementComponent.cs](Assets/Scripts/ECS/Components/MovementComponent.cs) / [MovementSystem.cs](Assets/Scripts/ECS/Systems/MovementSystem.cs)
+  - 新增 `IsMovementLockedByCasting`
+  - 施法锁移动期间会清空寻路目标与移动方向，防止施法结束后补走旧路径
+
 - [EquipmentSlotView.cs](Assets/Scripts/Game/UI/EquipmentSlotView.cs)
   - 装备栏槽位
 - [SocketItem.cs](Assets/Scripts/Game/UI/SocketItem.cs)
@@ -130,6 +157,7 @@ flowchart TD
   - 角色信息 / 属性详情面板控制器
   - 当前负责角色名称、等级、力量、智力、敏捷，以及伤害 / 防御 / 其他属性分类列表刷新
   - 当前会在保留预置属性顺序的基础上，把新增属性按三类自动归类追加到面板列表
+  - 当前还会从 `BagPanel.GetEquippedItemData(slot)` 读取所有已装备装备的 `RolledMod`，按 `EquipmentModData.EquipmentModDisplayTab` 显式分类追加到对应页签
 
 #### 角色选择 / 存档 / 调试
 
@@ -425,11 +453,46 @@ flowchart TD
 
 #### `GameSceneInitializer` 当前自动分配的测试技能
 
-- 槽位 0：普通攻击
+- 槽位 0：重击（当前替代原普通攻击，已接配置表特效）
 - 槽位 1：火球术 + 多重投射支持宝石 + 附加火焰伤害支持宝石
 - 槽位 2：冰霜新星
 - 槽位 3：闪现
 - 槽位 4：旋风斩
+
+补充记忆：
+
+- `SkillData` 现已新增 `SkillEffectName`
+- `Assets/Cfg/ActiveSkillStoneConf.pb` / `common/cfg/skillStone.txt` 中的 `ActiveSkillStoneConf` 现已新增 `SkillEffectName` 字段
+- 新增 [SkillConfigLoader.cs](Assets/Scripts/Game/Skills/SkillConfigLoader.cs) 负责读取主动技能基础配置，并按 `ActiveSkillStoneCode` 查询技能特效名
+- 新增 [SkillEffectPool.cs](Assets/Scripts/Game/Skills/SkillEffectPool.cs) 负责技能特效池化；进入游戏时会先预加载配置表中的技能特效，再按玩家当前 `SkillSlot` 里的技能再预热一次
+- [SkillSystem.cs](Assets/Scripts/ECS/Systems/SkillSystem.cs) 现在会在 `ExecuteSkill(...)` 里统一调用 `SkillEffectPool.PlaySkillEffect(...)`
+- 当前特效资源路径约定为 `Resources/Effects/Skills/<SkillEffectName>.prefab`；若 prefab 缺失，会自动回退为运行时生成的占位粒子，便于先联调技能逻辑链路
+
+#### GM 面板与物品生成链路补充
+
+- [GMPanel.cs](Assets/Scripts/Game/UI/GMPanel.cs) 现已支持生成装备和宝石到当前背包，入口仍是 `F1`
+- [BagPanel.cs](Assets/Scripts/Game/UI/BagPanel.cs) 已补充 `POELike.Managers` 命名空间引用，修复 `UIManager` 未识别的编译错误
+- 新增客户端技能拓展入口：[Assets/Scripts/Game/UI/ClientSkillExtensionPanel.cs](D:/Learning/POELike/Assets/Scripts/Game/UI/ClientSkillExtensionPanel.cs) 使用 `F2` 打开 IMGUI 面板，点击临时技能 Prefab 按钮可直接触发技能
+- 已修复 [Assets/Scripts/ECS/Systems/SkillGpuSystem.cs](D:/Learning/POELike/Assets/Scripts/ECS/Systems/SkillGpuSystem.cs) 中未使用的 `AsyncGPUReadbackRequest` 残留字段导致的编译错误，当前实现仅保留同步 `GetData` 读回
+- 已将 [Assets/Scripts/Game/UI/CharactorMainPanelController.cs](D:/Learning/POELike/Assets/Scripts/Game/UI/CharactorMainPanelController.cs) 从展示型底栏升级为真实技能栏：UI 槽位同步玩家 `SkillComponent`，支持从装备中的主动/支持宝石还原技能并可点击施法
+- 新增 [Assets/Scripts/Game/UI/SkillBarSlotButton.cs](D:/Learning/POELike/Assets/Scripts/Game/UI/SkillBarSlotButton.cs) 底栏点击组件；[Assets/Scripts/Game/Skills/SkillFactory.cs](D:/Learning/POELike/Assets/Scripts/Game/Skills/SkillFactory.cs) 已补充从宝石名称/代码解析 `SkillData` 与 `SupportGem` 的方法
+- [Assets/Scripts/ECS/Components/SkillComponent.cs](D:/Learning/POELike/Assets/Scripts/ECS/Components/SkillComponent.cs)、[Assets/Scripts/Game/GameSceneManager.cs](D:/Learning/POELike/Assets/Scripts/Game/GameSceneManager.cs)、[Assets/Scripts/Game/Character/PlayerController.cs](D:/Learning/POELike/Assets/Scripts/Game/Character/PlayerController.cs) 已统一为 8 槽技能栏容量，技能栏点击与键盘输入共用同一套 ECS 施法链
+
+- 新增技能运行时 ECS/GPU 闭环：[Assets/Scripts/ECS/Components/SkillRuntimeComponent.cs](D:/Learning/POELike/Assets/Scripts/ECS/Components/SkillRuntimeComponent.cs)、[Assets/Scripts/ECS/Systems/SkillGpuSystem.cs](D:/Learning/POELike/Assets/Scripts/ECS/Systems/SkillGpuSystem.cs)、[Assets/Resources/Shaders/SkillRangeHitCompute.compute](D:/Learning/POELike/Assets/Resources/Shaders/SkillRangeHitCompute.compute) 负责技能范围命中 GPU 计算与 ECS 伤害回写
+- 新增技能范围可视化：[Assets/Scripts/Game/SkillRuntimeRenderer.cs](D:/Learning/POELike/Assets/Scripts/Game/SkillRuntimeRenderer.cs) 和 [Assets/Resources/SkillRuntimeOverlay.shader](D:/Learning/POELike/Assets/Resources/SkillRuntimeOverlay.shader) 在主摄像机上绘制技能运行时圆环
+- [Assets/Scripts/ECS/Systems/SkillSystem.cs](D:/Learning/POELike/Assets/Scripts/ECS/Systems/SkillSystem.cs) 已扩展为创建技能运行时实体； [Assets/Scripts/Game/GameSceneManager.cs](D:/Learning/POELike/Assets/Scripts/Game/GameSceneManager.cs) 现会分配默认技能并初始化客户端技能拓展面板； [Assets/Scripts/ECS/Systems/CombatSystem.cs](D:/Learning/POELike/Assets/Scripts/ECS/Systems/CombatSystem.cs) 已补充纯 ECS 怪物死亡回收
+
+- GM 面板中的装备/宝石参数选择已枚举化：装备基础、前缀、后缀、宝石内容都改成运行时下拉式选择
+- GM 装备生成区现使用“候选下拉 + 已选列表”管理前后缀，最多各 3 条；孔数使用数值按钮，孔颜色和连接状态使用枚举按钮
+- GM 宝石生成区现使用主动/辅助切换 + 宝石内容下拉 + 宝石颜色枚举按钮，不再依赖手工输入名称/code/ID
+
+- 新增 [GMItemFactory.cs](Assets/Scripts/Game/Items/GMItemFactory.cs) 负责把 GM 面板输入解析为 `BagItemData`
+- 新增 [EquipmentBagDataFactory.cs](Assets/Scripts/Game/Equipment/EquipmentBagDataFactory.cs) 负责共享 `GeneratedEquipment -> BagItemData` 转换逻辑；[ShopPanel.cs](Assets/Scripts/Game/UI/ShopPanel.cs) 已切到复用这层能力
+- [BagPanel.cs](Assets/Scripts/Game/UI/BagPanel.cs) 现已新增 `TryAddItemToBag(...)` 供 GM / 后续掉落 / 调试功能直接塞包
+- [SkillConfigLoader.cs](Assets/Scripts/Game/Skills/SkillConfigLoader.cs) 现已同时支持主动技能和辅助宝石配置读取（`ActiveSkillStoneConf.pb` + `SupportSkillStoneConf.pb`）
+- `SocketData` 现已新增 `LinkedToPrevious`，装备孔连结状态不再默认由“相邻孔”隐式决定，而是由每个孔显式记录
+- [EquipmentItem.cs](Assets/Scripts/Game/UI/EquipmentItem.cs) 中 `AreSocketsLinked(...)` / `TryGetLinkedSocketIndices(...)` / `GetLinkedGems(...)` 均已改为读取 `SocketData.LinkedToPrevious`
+- `EquipmentPart` 配置当前为数值编码：`1=主手, 2=副手, 3=头盔, 4=胸甲, 5=手套, 6=鞋子, 7=饰品`；其中饰品再通过 `EquipmentSubCategoryConf` 细分为腰带 / 戒指 / 项链
 
 #### 当前技能实现状态的一个关键事实
 
@@ -457,6 +520,15 @@ flowchart TD
 - `RefreshFromCurrentState()` 会先调用 `SyncSkillSlotAssignments()`
 - `SyncSkillSlotAssignments()` 会清掉已卸下的主动技能石，再把新出现的主动技能补到空槽
 - `ApplySkills()` 当前根据 `_skillSlotAssignments` 渲染技能槽，而不是每次按 `_socketedActiveGems` 顺序压缩重排
+- 每个技能槽下新增的 `SkillSlot` `ListBox` 当前用于显示**与该主动宝石已连接的辅助宝石**
+  - `CharactorMainPanelController` 会遍历已装备物品的插槽连结关系，找到包含该主动宝石的相邻连结宝石，再过滤出 `BagGemKind.Support`
+  - 每颗已连接辅助宝石都会生成一个 `FZSlot`
+  - `FZSlot/Bg` 使用辅助宝石的 `ItemColor`
+  - `FZSlot/Color` 使用 `R` / `G` / `B` 标记辅助宝石颜色（白色宝石显示 `W`）
+  - 角色底栏里的这些 `FZSlot` 通过 `ListBox.StretchItemsOnCrossAxis = false` 保持 prefab 原始尺寸，不做横向拉伸，只更新显示内容
+  - `ListBox` 现已支持双轴布局：`PrimaryAxis` 控制先按行还是先按列排，`HorizontalDirection` / `VerticalDirection` 分别控制横纵方向；如需真正使用两个方向同时排布，需要开启 `WrapItems`
+  - 旧 `Direction` 仍保留为兼容旧 prefab 的入口，但后续新界面优先使用双轴字段
+  - `CharactorMainPanelController` 这里依赖的 `EquipmentSlot` 实际定义在 `POELike.ECS.Components`；如果只引 `POELike.Game.Equipment` 会触发 `CS0246`
 
 因此当前底栏默认具备“稳定槽位”行为：
 
@@ -577,6 +649,10 @@ flowchart LR
 - **背包移动方式**：从拖拽改为点击拿起 / 点击放下
 - **背包点击平滑跟手**：`BagItemView` 当前使用 `DragFollowSmoothTime` + `SmoothDamp` 追随鼠标与背包预览格；首次拿起仍立即贴到鼠标，避免起手迟滞
 - **角色信息面板接入**：`CharactorMassagePanel` 当前不再随进入 `GameScene` 自动弹出，而是由 `UIManager` 使用 `C` 键开关
+- **游戏内 ESC 关闭策略**：当前由 `UIManager` 接管 `ESC`，一次关闭所有当前已打开的可关闭游戏内 UI，不再依赖 Unity EventSystem 默认 `Cancel`
+  - 当前覆盖范围包括：背包、`CharactorMassagePanel`、以及继承 `UIGamePanel` 的窗口
+  - 当前实现会先调用 `UIGamePanelManager.CloseAll()`，再隐藏背包与 `CharactorMassagePanel`
+- **默认 Cancel 已禁用**：当前 `UIManager` 会把 `InputSystemUIInputModule.cancel` 置空，避免 `ESC` 被派发给当前焦点按钮后引发多个 UI 连锁关闭
 - **角色信息面板数据来源**：`CharactorMassagePanelController` 当前从 `SceneLoader.PendingCharacterData` 读取角色名称 / 等级，从玩家实体 `StatsComponent` 读取力量 / 智力 / 敏捷及属性明细
 - **角色信息面板实时刷新**：穿戴 / 卸下装备、插入 / 取下宝石后，`EquipmentSlotView` / `SocketItem` 会继续调用 `UIManager.RefreshCharactorMainPanel()`，`CharactorMassagePanel` 会同步刷新最新属性
 - **角色信息面板按钮分类**：
@@ -598,6 +674,25 @@ flowchart LR
 - **宝石槽布局升级**：装备宝石槽改为动态布局、动态缩放、自动连接线，装备栏放大时宝石区域同步放大
 - **宝石连线限制**：当前连接线仍然是 UI 推导，不是数据驱动拓扑
 - **历史编译问题**：曾发生过误把补丁标记写进源码，导致 `BagItemView.cs` 报 `CS0106`，后续若出现类似问题先检查源码里是否混入了 `+` / `-` / `@@`
+
+#### 装备词条 → 角色属性链路（**已打通**）
+
+近期已确认并落地：
+
+- `EquipmentModConf` 新增三个字段：
+  - **`EquipmentModDisplayTab`**：`"1"` / `"2"` / `"3"` 表示词条显示在 **伤害 / 防御 / 其他** 哪个页签
+  - **`EquipmentModStatType`**：对应 `StatType` 枚举名。留空表示该词条不写入 `StatsComponent`
+  - **`EquipmentModModifierType`**：`Flat` / `PercentAdd` / `PercentMore`，默认 `Flat`
+- `BagItemData` 新增 `EquipmentMods : List<RolledMod>`，承载运行时词条数据
+- `BagItemData.ToItemData()` 根据 `EquipmentMods` 重新构建 `ItemData.Prefixes` / `ItemData.Suffixes` 中的 `StatModifier`，使装备上身后 `StatsSystem` 能正确聚合到 `StatsComponent`
+- `ShopPanel.PopulateEquipmentBagData(...)` 把 `GeneratedEquipment.Mods` / `Sockets` / 前后缀描述 / 可装备槽位一并填入 `BagItemData`，解决了此前"商店装备进背包后词条丢失"的问题
+- `CharactorMassagePanelController` 的每次刷新会：
+  1. 先按 `StatsComponent` 聚合值渲染当前页签下的属性
+  2. 再遍历所有已装备装备的 `RolledMod`，按配置表的 `DisplayTab` 显式追加词条条目
+- 若装备词条的 `StatType` 留空（如命中值），该词条不会影响角色属性，但仍能按 `DisplayTab` 显示到对应页签下
+- **演示装备额外注意**：`BagPanel.PopulateDemoItems()` 手工创建的演示装备不走 `EquipmentMods` 生成链路，必须同时写入真实 `RuntimeItemData.Prefixes` / `Suffixes`
+  - 仅填写 `PrefixDescriptions` / `SuffixDescriptions` 只会影响 Tips 文本，不会影响 `StatsSystem`
+  - `BagItemData.RebuildItemModifiersFromEquipmentMods(...)` 已修复为：当 `EquipmentMods` 为空时保留现有前后缀，不再误清空演示装备的真实属性
 
 ### 维护时的高风险点
 
@@ -710,3 +805,26 @@ flowchart LR
 1. **项目主干是 `GameManager + World + Systems + GameSceneManager + UIManager`。**
 2. **背包主干是 `BagItemView`，Tips 主干是 `EquipmentItem + EquipmentTips`，角色底栏主干是 `CharactorMainPanelController`。**
 3. **技能释放链与底栏技能显示链要分开理解；装备展示也要同时注意 `GeneratedEquipment` 与 `BagItemData` 两条数据路径。**
+
+- **角色主面板血蓝遮罩**：`CharactorMainPanelController` 当前会绑定 `CharactorMainPanel` 里的 `Hp/Mask` 与 `Mp/Mask`，从玩家 `HealthComponent` 的 `HealthPercent / ManaPercent` 驱动 `Image.fillAmount`
+- **角色主面板血蓝实时刷新**：当前不仅在 `UIManager.RefreshCharactorMainPanel()` 时更新一次血蓝，还会在面板激活后订阅 `HealthComponent.OnHealthChanged / OnManaChanged`，因此技能耗蓝、受伤、回血时遮罩会实时变更
+- **角色主面板血蓝显示方式**：当前 `Hp/Mask` 与 `Mp/Mask` 使用 `Image.Type.Filled + Vertical + Bottom Origin` 作为百分比显示实现；若视觉方向需要调整，优先修改 [CharactorMainPanelController.cs](D:/Learning/POELike/Assets/Scripts/Game/UI/CharactorMainPanelController.cs) 的 `ApplyMaskFill()`，不要先改技能或战斗逻辑
+- **技能默认键位约定**：当前 `skill1~8` 默认映射为 `LMB / MMB / RMB / Q / W / E / R / T`，代码实现位于 [PlayerController.cs](D:/Learning/POELike/Assets/Scripts/Game/Character/PlayerController.cs) 与 [GameSceneManager.cs](D:/Learning/POELike/Assets/Scripts/Game/GameSceneManager.cs)
+- **技能栏默认标签同步**：`CharactorMainPanelController.ResolveDefaultSkillKey()` 当前必须与实际输入映射保持一致，现底栏显示为 `LMB / MMB / RMB / Q / W / E / R / T`
+- **左键分流约定**：当前 [GameSceneManager.cs](D:/Learning/POELike/Assets/Scripts/Game/GameSceneManager.cs) 会把一次左键按下锁定为 `Skill1 / Move / Blocked` 三种意图之一，整次按住过程不会在中途切换路径
+- **左键触发 skill1 的条件**：仅当 `skill1` 槽位有技能、未冷却、蓝量足够、未被其它施法状态阻塞，且鼠标附近吸附到存活怪物、目标距离在由 `SkillData.Range / AreaRadius` 推导出的有效范围内时，当前左键交互才视为 `skill1`
+- **左键移动回退**：若任一技能条件不满足，则当前左键交互回退为普通地面寻路；点击 UI、关闭面板、点击 NPC 名称标签时会进入 `Blocked`，直到松开前都不会误触技能或移动
+- **左键分流实现入口**：当前鼠标左键 `skill1 / 移动 / 阻断` 判定集中在 [GameSceneManager.cs](D:/Learning/POELike/Assets/Scripts/Game/GameSceneManager.cs) 的 `ResolveLeftMouseIntent()`、`TryBeginLeftClickSkill()`、`FindMonsterUnderCursor()`、`ResolveLeftClickSkillRange()`；后续若要改 POE 左键体验，优先改这里
+- **左键选怪方式**：当前不是 Physics 射线命中怪物，而是根据鼠标落点在 ECS 怪物列表中吸附最近存活怪物；因此命中手感主要受 `LeftClickMonsterSnapPadding`、`MonsterSpawner.CollisionRadius` 和技能有效距离推导影响
+- **技能栏冷却 Mask 约定**：当前 [CharactorMainPanelController.cs](D:/Learning/POELike/Assets/Scripts/Game/UI/CharactorMainPanelController.cs) 会读取 `SkillSlotArr` 每个技能槽子节点 `Mask` 的 `Image`，并按 `SkillSlot.CooldownTimer / SkillData.Cooldown` 驱动冷却遮罩显示
+- **技能栏冷却方向**：当前技能冷却遮罩使用 `Image.Type.Filled + Radial360 + Top Origin + fillClockwise=true`，视觉效果为从顶部开始按**顺时针**方向收缩；若后续视觉要改方向，优先修改 `ApplySkillCooldownMask()`
+- **接手文档已模块化拆分**：根目录的 [POELike_接手Skill.md](POELike_接手Skill.md) 现在只保留为**总索引入口**，详细内容已拆到 `POELike_接手Skill/Skill_01 ~ Skill_07` 多个子文档中
+- **后续推荐读取方式**：先读 [POELike_接手Skill.md](POELike_接手Skill.md) 判断问题归属，再按需定向读取对应子模块，而不是一次性读取整份长文
+- **当前子 skill 模块划分**：`skill-01=全局入口与阅读顺序`、`skill-02=ECS与运行时主链`、`skill-03=背包/装备/宝石交互`、`skill-04=UI/Tips与角色面板`、`skill-05=技能系统/技能栏与快捷键`、`skill-06=装备生成/商店/NPC与配置工具链`、`skill-07=SOP/排错与高风险点`
+- **怪物死亡地面掉落名称链**：当前真实实现不是 `EnemyController` 旧桥接链，而是 [CombatSystem.cs](Assets/Scripts/ECS/Systems/CombatSystem.cs) 发布 `EntityDiedEvent`，由 [GameSceneManager.cs](Assets/Scripts/Game/GameSceneManager.cs) 过滤 `Monster` 死亡并按概率创建 `ItemData`，随后发布 `GroundItemDroppedEvent`
+
+- **地面掉落名称渲染入口**：新增 [GroundItemLabelRenderer.cs](Assets/Scripts/Game/GroundItemLabelRenderer.cs) 挂在主摄像机上，由 [CameraController.cs](Assets/Scripts/Game/CameraController.cs) 自动添加并注入 `World`；负责把掉落装备名称绘制在怪物死亡位置
+- **地面掉落名称悬停规则**：当前标签默认带深色背景，鼠标移入时会按名称实际宽高整块高亮背景与文字，而不是只改文字色；多个同点掉落标签会向上错层排列
+- **地面掉落点击拾取规则**：当前 [GroundItemLabelRenderer.cs](Assets/Scripts/Game/GroundItemLabelRenderer.cs) 会先把掉落转换成 `BagItemData` 并调用 [BagPanel.cs](Assets/Scripts/Game/UI/BagPanel.cs) 的 `CanAddItemToBag(...)` 做背包空间检测；放不下时固定提示“背包放不下了”，放得下时才真正 `TryAddItemToBag(...)` 并移除地面标签
+- **地面掉落点击消费规则**：当前 [GameSceneManager.cs](Assets/Scripts/Game/GameSceneManager.cs) 左键意图分流已把 `GroundItemLabelRenderer.ClickConsumedThisFrame` 纳入阻断条件，点击掉落名称后不会再继续触发地面移动或左键技能
+- **`StatModifier` 类型约束**：当前 [StatTypes.cs](Assets/Scripts/ECS/Components/StatTypes.cs) 中的 `StatModifier` 是 `struct` 而不是 `class`，因此像 [GroundItemLabelRenderer.cs](Assets/Scripts/Game/GroundItemLabelRenderer.cs) 这类构造词条描述的代码不能写 `modifier == null` 判空，否则会触发 `CS0019`

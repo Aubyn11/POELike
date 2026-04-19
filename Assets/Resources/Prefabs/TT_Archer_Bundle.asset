@@ -1,107 +1,13 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &11400000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e93ced6356345994198bfc21bf5c6592, type: 3}
-  m_Name: TT_Archer_Bundle
-  m_EditorClassIdentifier: 
-  PrefabName: TT_Archer
-  Parts:
-  - PartName: quiver_A
-    Mesh: {fileID: 4300870, guid: 02ded044b8e0963439276550f50be6f9, type: 3}
-    Material: {fileID: 2100000, guid: dccf8e44ede71db42b49378af93c5fb7, type: 2}
-    LocalMatrix:
-      e00: 0.00000016688739
-      e01: 0.9999998
-      e02: -0.0000013113034
-      e03: -0.00000048986186
-      e10: -0.0000012991948
-      e11: 0.0000013698663
-      e12: 0.99999994
-      e13: 0.8014757
-      e20: 0.9999998
-      e21: -0.00000016702836
-      e22: 0.0000013291101
-      e23: -0.25952095
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-  - PartName: w_long_bow
-    Mesh: {fileID: 4300392, guid: 02ded044b8e0963439276550f50be6f9, type: 3}
-    Material: {fileID: 2100000, guid: dccf8e44ede71db42b49378af93c5fb7, type: 2}
-    LocalMatrix:
-      e00: -0.07967252
-      e01: 0.7059376
-      e02: -0.7037784
-      e03: -0.59100026
-      e10: -0.056096
-      e11: -0.7080791
-      e12: -0.7039013
-      e13: 0.57201517
-      e20: -0.99524087
-      e21: -0.016602395
-      e22: 0.09601462
-      e23: 0.0934829
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-  - PartName: Head_03b
-    Mesh: {fileID: 4300904, guid: 02ded044b8e0963439276550f50be6f9, type: 3}
-    Material: {fileID: 2100000, guid: dccf8e44ede71db42b49378af93c5fb7, type: 2}
-    LocalMatrix:
-      e00: 0.82999974
-      e01: -0.0000012763686
-      e02: -0.000000062665926
-      e03: -0.000000939266
-      e10: 0.00000016161138
-      e11: 0.0000003021698
-      e12: 0.83
-      e13: 1.2199997
-      e20: -0.0000012268966
-      e21: -0.8299998
-      e22: 0.00000030228625
-      e23: 0.028108284
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-  - PartName: Body_03a
-    Mesh: {fileID: 419484276440840508}
-    Material: {fileID: 2100000, guid: dccf8e44ede71db42b49378af93c5fb7, type: 2}
-    LocalMatrix:
-      e00: 1
-      e01: 0
-      e02: 0
-      e03: 0
-      e10: 0
-      e11: -0.00000011920929
-      e12: 1.0000001
-      e13: 0
-      e20: 0
-      e21: -1.0000001
-      e22: -0.00000011920929
-      e23: 0
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
---- !u!43 &419484276440840508
+--- !u!43 &-3313546400586807030
 Mesh:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Body_03a_Baked
-  serializedVersion: 11
+  serializedVersion: 12
   m_SubMeshes:
   - serializedVersion: 2
     firstByte: 0
@@ -259,3 +165,110 @@ Mesh:
     offset: 0
     size: 0
     path: 
+  m_MeshLodInfo:
+    serializedVersion: 2
+    m_LodSelectionCurve:
+      serializedVersion: 1
+      m_LodSlope: 0
+      m_LodBias: 0
+    m_NumLevels: 1
+    m_SubMeshes:
+    - serializedVersion: 2
+      m_Levels:
+      - serializedVersion: 1
+        m_IndexStart: 0
+        m_IndexCount: 0
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e93ced6356345994198bfc21bf5c6592, type: 3}
+  m_Name: TT_Archer_Bundle
+  m_EditorClassIdentifier: 
+  PrefabName: TT_Archer
+  Parts:
+  - PartName: quiver_A
+    Mesh: {fileID: 4300870, guid: 02ded044b8e0963439276550f50be6f9, type: 3}
+    Material: {fileID: 2100000, guid: dccf8e44ede71db42b49378af93c5fb7, type: 2}
+    LocalMatrix:
+      e00: 0.00000016688739
+      e01: 0.9999998
+      e02: -0.0000013113034
+      e03: -0.00000048986186
+      e10: -0.0000012991948
+      e11: 0.0000013698663
+      e12: 0.99999994
+      e13: 0.8014757
+      e20: 0.9999998
+      e21: -0.00000016702836
+      e22: 0.0000013291101
+      e23: -0.25952095
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1
+  - PartName: w_long_bow
+    Mesh: {fileID: 4300392, guid: 02ded044b8e0963439276550f50be6f9, type: 3}
+    Material: {fileID: 2100000, guid: dccf8e44ede71db42b49378af93c5fb7, type: 2}
+    LocalMatrix:
+      e00: -0.07967252
+      e01: 0.7059376
+      e02: -0.7037784
+      e03: -0.59100026
+      e10: -0.056096
+      e11: -0.7080791
+      e12: -0.7039013
+      e13: 0.57201517
+      e20: -0.99524087
+      e21: -0.016602395
+      e22: 0.09601462
+      e23: 0.0934829
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1
+  - PartName: Head_03b
+    Mesh: {fileID: 4300904, guid: 02ded044b8e0963439276550f50be6f9, type: 3}
+    Material: {fileID: 2100000, guid: dccf8e44ede71db42b49378af93c5fb7, type: 2}
+    LocalMatrix:
+      e00: 0.82999974
+      e01: -0.0000012763686
+      e02: -0.000000062665926
+      e03: -0.000000939266
+      e10: 0.00000016161138
+      e11: 0.0000003021698
+      e12: 0.83
+      e13: 1.2199997
+      e20: -0.0000012268966
+      e21: -0.8299998
+      e22: 0.00000030228625
+      e23: 0.028108284
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1
+  - PartName: Body_03a
+    Mesh: {fileID: -3313546400586807030}
+    Material: {fileID: 2100000, guid: dccf8e44ede71db42b49378af93c5fb7, type: 2}
+    LocalMatrix:
+      e00: 1
+      e01: 0
+      e02: 0
+      e03: 0
+      e10: 0
+      e11: -0.00000011920929
+      e12: 1.0000001
+      e13: 0
+      e20: 0
+      e21: -1.0000001
+      e22: -0.00000011920929
+      e23: 0
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1

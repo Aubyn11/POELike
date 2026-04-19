@@ -44,6 +44,9 @@ namespace POELike.Game.Character
         private InputAction _skill4Action;
         private InputAction _skill5Action;
         private InputAction _skill6Action;
+        private InputAction _skill7Action;
+        private InputAction _skill8Action;
+
         
         private void Start()
         {
@@ -128,7 +131,8 @@ namespace POELike.Game.Character
             
             // 技能组件
             _skillComp = PlayerEntity.AddComponent(new SkillComponent());
-            _skillComp.InitializeSlots(6);
+            _skillComp.InitializeSlots(8);
+
             
             // 装备组件
             PlayerEntity.AddComponent(new EquipmentComponent());
@@ -147,21 +151,28 @@ namespace POELike.Game.Character
         {
             // 使用Unity Input System
             _moveAction = InputSystem.actions.FindAction("Move");
-            _skill1Action = InputSystem.actions.FindAction("Attack");
+            _skill1Action = new InputAction("Skill1", InputActionType.Button, "<Mouse>/leftButton");
             
-            // 也可以直接创建InputAction
-            _skill2Action = new InputAction("Skill2", InputActionType.Button, "<Keyboard>/e");
-            _skill3Action = new InputAction("Skill3", InputActionType.Button, "<Keyboard>/r");
-            _skill4Action = new InputAction("Skill4", InputActionType.Button, "<Keyboard>/t");
-            _skill5Action = new InputAction("Skill5", InputActionType.Button, "<Keyboard>/f");
-            _skill6Action = new InputAction("Skill6", InputActionType.Button, "<Keyboard>/g");
+            // 默认技能键位：鼠标左/中/右 + Q/W/E/R/T
+            _skill2Action = new InputAction("Skill2", InputActionType.Button, "<Mouse>/middleButton");
+            _skill3Action = new InputAction("Skill3", InputActionType.Button, "<Mouse>/rightButton");
+            _skill4Action = new InputAction("Skill4", InputActionType.Button, "<Keyboard>/q");
+            _skill5Action = new InputAction("Skill5", InputActionType.Button, "<Keyboard>/w");
+            _skill6Action = new InputAction("Skill6", InputActionType.Button, "<Keyboard>/e");
+            _skill7Action = new InputAction("Skill7", InputActionType.Button, "<Keyboard>/r");
+            _skill8Action = new InputAction("Skill8", InputActionType.Button, "<Keyboard>/t");
             
+            _skill1Action.Enable();
             _skill2Action.Enable();
             _skill3Action.Enable();
             _skill4Action.Enable();
             _skill5Action.Enable();
             _skill6Action.Enable();
+            _skill7Action.Enable();
+            _skill8Action.Enable();
+
         }
+
         
         private void Update()
         {
@@ -189,14 +200,18 @@ namespace POELike.Game.Character
             _inputComp.MouseWorldPosition = GetMouseWorldPosition();
             
             // 技能输入
-            _inputComp.SkillInputs[0] = _skill1Action?.WasPressedThisFrame() ?? false;
-            _inputComp.SkillInputs[1] = _skill2Action.WasPressedThisFrame();
-            _inputComp.SkillInputs[2] = _skill3Action.WasPressedThisFrame();
-            _inputComp.SkillInputs[3] = _skill4Action.WasPressedThisFrame();
-            _inputComp.SkillInputs[4] = _skill5Action.WasPressedThisFrame();
-            _inputComp.SkillInputs[5] = _skill6Action.WasPressedThisFrame();
+            UpdateSkillInputState(0, _skill1Action);
+            UpdateSkillInputState(1, _skill2Action);
+            UpdateSkillInputState(2, _skill3Action);
+            UpdateSkillInputState(3, _skill4Action);
+            UpdateSkillInputState(4, _skill5Action);
+            UpdateSkillInputState(5, _skill6Action);
+            UpdateSkillInputState(6, _skill7Action);
+            UpdateSkillInputState(7, _skill8Action);
+
             
             // 处理技能激活
+
             for (int i = 0; i < _inputComp.SkillInputs.Length; i++)
             {
                 if (_inputComp.SkillInputs[i])
@@ -214,10 +229,21 @@ namespace POELike.Game.Character
             }
         }
         
+        private void UpdateSkillInputState(int index, InputAction action)
+        {
+            if (_inputComp == null || index < 0 || index >= _inputComp.SkillInputs.Length)
+                return;
+
+            _inputComp.SkillInputs[index] = action?.WasPressedThisFrame() ?? false;
+            _inputComp.SkillHeldInputs[index] = action?.IsPressed() ?? false;
+            _inputComp.SkillReleasedInputs[index] = action?.WasReleasedThisFrame() ?? false;
+        }
+
         /// <summary>
         /// 根据属性更新移动速度
         /// </summary>
         private void UpdateMovementSpeed()
+
         {
             var stats = PlayerEntity.GetComponent<StatsComponent>();
             if (stats != null)
@@ -255,13 +281,17 @@ namespace POELike.Game.Character
         
         private void OnDestroy()
         {
+            _skill1Action?.Dispose();
             _skill2Action?.Dispose();
             _skill3Action?.Dispose();
             _skill4Action?.Dispose();
             _skill5Action?.Dispose();
             _skill6Action?.Dispose();
+            _skill7Action?.Dispose();
+            _skill8Action?.Dispose();
             
             if (PlayerEntity != null && GameManager.Instance != null)
+
                 GameManager.Instance.World.DestroyEntity(PlayerEntity);
         }
     }

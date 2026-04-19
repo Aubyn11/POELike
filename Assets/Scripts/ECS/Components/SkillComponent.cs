@@ -12,9 +12,10 @@ namespace POELike.ECS.Components
         public bool IsEnabled { get; set; } = true;
         
         /// <summary>
-        /// 技能槽位列表（对应快捷键1-6）
+        /// 技能槽位列表（底栏默认显示 1-8，前 6 个带默认快捷键）
         /// </summary>
         public List<SkillSlot> SkillSlots { get; } = new List<SkillSlot>();
+
         
         /// <summary>
         /// 当前正在施放的技能
@@ -25,11 +26,27 @@ namespace POELike.ECS.Components
         /// 是否正在施法
         /// </summary>
         public bool IsCasting { get; set; } = false;
+
+        /// <summary>
+        /// 是否处于引导施法状态
+        /// </summary>
+        public bool IsChanneling { get; set; } = false;
         
         /// <summary>
         /// 施法计时器
         /// </summary>
         public float CastTimer { get; set; } = 0f;
+
+        /// <summary>
+        /// 引导施法的脉冲计时器
+        /// </summary>
+        public float ChannelTickTimer { get; set; } = 0f;
+
+        /// <summary>
+        /// 当前引导技能对应的运行时实体
+        /// </summary>
+        public Entity ActiveChannelRuntime { get; set; }
+
         
         /// <summary>
         /// 初始化技能槽位
@@ -37,9 +54,21 @@ namespace POELike.ECS.Components
         public void InitializeSlots(int count = 6)
         {
             SkillSlots.Clear();
-            for (int i = 0; i < count; i++)
+            EnsureSlotCapacity(count);
+        }
+
+        /// <summary>
+        /// 确保技能槽位数量至少达到指定值，并保留已有槽位数据。
+        /// </summary>
+        public void EnsureSlotCapacity(int count)
+        {
+            if (count < 0)
+                count = 0;
+
+            for (int i = SkillSlots.Count; i < count; i++)
                 SkillSlots.Add(new SkillSlot { SlotIndex = i });
         }
+
         
         /// <summary>
         /// 获取指定槽位的技能
@@ -54,12 +83,17 @@ namespace POELike.ECS.Components
         public void Reset()
         {
             ActiveSkill = null;
+            ActiveChannelRuntime = null;
             IsCasting = false;
+            IsChanneling = false;
             CastTimer = 0f;
+            ChannelTickTimer = 0f;
             foreach (var slot in SkillSlots)
+
                 slot.CooldownTimer = 0f;
         }
     }
+
     
     /// <summary>
     /// 技能槽位
@@ -68,10 +102,12 @@ namespace POELike.ECS.Components
     {
         public int SlotIndex { get; set; }
         public SkillData SkillData { get; set; }
+        public string BoundActiveGemId { get; set; } = string.Empty;
         public float CooldownTimer { get; set; } = 0f;
         public bool IsOnCooldown => CooldownTimer > 0f;
         public bool HasSkill => SkillData != null;
     }
+
     
     /// <summary>
     /// 技能数据（ScriptableObject数据的运行时表示）
@@ -81,6 +117,7 @@ namespace POELike.ECS.Components
         public string Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
+        public string SkillEffectName { get; set; }
         public SkillType Type { get; set; }
         public float ManaCost { get; set; }
         public float Cooldown { get; set; }
@@ -90,10 +127,14 @@ namespace POELike.ECS.Components
         public float AreaRadius { get; set; }
         public int ProjectileCount { get; set; } = 1;
         public float Duration { get; set; }     // 持续时间（用于持续技能）
+        public bool IsChannelingSkill { get; set; }
+        public bool CanMoveWhileCasting { get; set; } = true;
         
         // 技能支持宝石（类似POE的技能宝石系统）
         public List<SupportGem> SupportGems { get; } = new List<SupportGem>();
+
     }
+
     
     /// <summary>
     /// 技能类型
