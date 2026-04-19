@@ -17,5 +17,8 @@ namespace POELike.Game
 
         /// <summary>打开商店（EventID=1003）</summary>
         OpenShop = 1003,
+
+        /// <summary>打开传送门面板（EventID=1004）</summary>
+        OpenDoorPanel = 1004,
     }
 }

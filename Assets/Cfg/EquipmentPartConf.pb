@@ -2,37 +2,37 @@
   "EquipmentPartConf": [
     {
       "EquipmentPartId": "1",
-      "EquipmentPartName": "\u4E3B\u624B",
+      "EquipmentPartName": "\u4e3b\u624b",
       "CanDualWield": "True"
     },
     {
       "EquipmentPartId": "2",
-      "EquipmentPartName": "\u526F\u624B",
+      "EquipmentPartName": "\u526f\u624b",
       "CanDualWield": "True"
     },
     {
       "EquipmentPartId": "3",
-      "EquipmentPartName": "\u5934\u76D4",
+      "EquipmentPartName": "\u5934\u76d4",
       "CanDualWield": "False"
     },
     {
       "EquipmentPartId": "4",
-      "EquipmentPartName": "\u80F8\u7532",
+      "EquipmentPartName": "\u80f8\u7532",
       "CanDualWield": "False"
     },
     {
       "EquipmentPartId": "5",
-      "EquipmentPartName": "\u624B\u5957",
+      "EquipmentPartName": "\u624b\u5957",
       "CanDualWield": "False"
     },
     {
       "EquipmentPartId": "6",
-      "EquipmentPartName": "\u978B\u5B50",
+      "EquipmentPartName": "\u978b\u5b50",
       "CanDualWield": "False"
     },
     {
       "EquipmentPartId": "7",
-      "EquipmentPartName": "\u9970\u54C1",
+      "EquipmentPartName": "\u9970\u54c1",
       "CanDualWield": "False"
     }
   ]

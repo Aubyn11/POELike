@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -50,6 +51,7 @@ namespace POELike.Game
         private float _pickupHintExpireTime;
 
         public bool ClickConsumedThisFrame { get; private set; }
+        public Action<ItemData, Vector3> OnGroundItemLabelClicked;
 
         [Header("地面掉落名称")]
         [SerializeField] private int _labelFontSize = 13;
@@ -149,7 +151,10 @@ namespace POELike.Game
                     if (mouseDown && hovered && !UIGamePanelManager.IsPointerOverAnyPanel(mousePixel))
                     {
                         ClickConsumedThisFrame = true;
-                        TryPickupLabel(i);
+                        if (OnGroundItemLabelClicked != null && label.Item != null)
+                            OnGroundItemLabelClicked.Invoke(label.Item, label.Position);
+                        else
+                            TryPickupLabelAtIndex(i);
                         continue;
                     }
 
@@ -187,49 +192,74 @@ namespace POELike.Game
             _pickupHintStyle.normal.textColor = Color.white;
         }
 
-        private void TryPickupLabel(int labelIndex)
+        public bool ContainsItem(ItemData item)
+        {
+            return FindLabelIndex(item) >= 0;
+        }
+
+        public bool TryPickupItem(ItemData item)
+        {
+            return TryPickupLabelAtIndex(FindLabelIndex(item));
+        }
+
+        private int FindLabelIndex(ItemData item)
+        {
+            if (item == null)
+                return -1;
+
+            for (int i = _labels.Count - 1; i >= 0; i--)
+            {
+                if (_labels[i].Item == item)
+                    return i;
+            }
+
+            return -1;
+        }
+
+        private bool TryPickupLabelAtIndex(int labelIndex)
         {
             if (labelIndex < 0 || labelIndex >= _labels.Count)
-                return;
+                return false;
 
             var label = _labels[labelIndex];
             if (label.Item == null)
-                return;
+                return false;
 
             var uiManager = UIManager.Instance;
             if (uiManager == null)
             {
                 ShowPickupHint("背包不可用");
-                return;
+                return false;
             }
 
             var bagPanel = uiManager.GetOrCreateBagPanel(false);
             if (bagPanel == null)
             {
                 ShowPickupHint("背包不可用");
-                return;
+                return false;
             }
 
             var bagItem = CreateBagItemData(label.Item);
             if (bagItem == null)
             {
                 ShowPickupHint("掉落数据异常");
-                return;
+                return false;
             }
 
             if (!bagPanel.CanAddItemToBag(bagItem, out var capacityFailureReason))
             {
                 ShowPickupHint(string.IsNullOrWhiteSpace(capacityFailureReason) ? "背包放不下了" : "背包放不下了");
-                return;
+                return false;
             }
 
             if (!bagPanel.TryAddItemToBag(bagItem, out var failureReason))
             {
                 ShowPickupHint(string.IsNullOrWhiteSpace(failureReason) ? "拾取失败" : failureReason);
-                return;
+                return false;
             }
 
             _labels.RemoveAt(labelIndex);
+            return true;
         }
 
         private static BagItemData CreateBagItemData(ItemData item)
@@ -244,21 +274,7 @@ namespace POELike.Game
                 RuntimeItemData = item,
             };
 
-            switch (item.Type)
-            {
-                case ItemType.Weapon:
-                    bagItem.AcceptedEquipmentSlot = EquipmentSlot.MainHand;
-                    bagItem.SetAcceptedEquipmentSlots(new[] { EquipmentSlot.MainHand, EquipmentSlot.OffHand });
-                    break;
-                case ItemType.Armour:
-                    bagItem.AcceptedEquipmentSlot = EquipmentSlot.BodyArmour;
-                    bagItem.SetAcceptedEquipmentSlots(new[] { EquipmentSlot.BodyArmour, EquipmentSlot.Helmet, EquipmentSlot.Gloves, EquipmentSlot.Boots });
-                    break;
-                case ItemType.Accessory:
-                    bagItem.AcceptedEquipmentSlot = EquipmentSlot.Amulet;
-                    bagItem.SetAcceptedEquipmentSlots(new[] { EquipmentSlot.RingLeft, EquipmentSlot.RingRight, EquipmentSlot.Amulet, EquipmentSlot.Belt });
-                    break;
-            }
+            ApplyAcceptedEquipmentSlots(bagItem, item);
 
             foreach (var modifier in item.Prefixes)
             {
@@ -271,6 +287,171 @@ namespace POELike.Game
             }
 
             return bagItem;
+        }
+
+        private static void ApplyAcceptedEquipmentSlots(BagItemData bagItem, ItemData item)
+        {
+            if (bagItem == null || item == null)
+                return;
+
+            var slots = ResolveAcceptedEquipmentSlots(item);
+            if (slots.Count == 0)
+                return;
+
+            bagItem.AcceptedEquipmentSlot = slots[0];
+            bagItem.SetAcceptedEquipmentSlots(slots);
+        }
+
+        private static List<EquipmentSlot> ResolveAcceptedEquipmentSlots(ItemData item)
+        {
+            var result = new List<EquipmentSlot>();
+            if (item == null)
+                return result;
+
+            AddAcceptedEquipmentSlots(result, item.AllowedEquipmentSlots);
+            if (result.Count == 0 && item.PrimaryEquipmentSlot.HasValue)
+                AddAcceptedEquipmentSlot(result, item.PrimaryEquipmentSlot.Value);
+
+            if (result.Count == 0)
+            {
+                TryAppendAcceptedSlotsFromText(result, item.BaseType);
+                if (result.Count == 0)
+                    TryAppendAcceptedSlotsFromText(result, item.Name);
+            }
+
+            if (result.Count == 0)
+            {
+                switch (item.Type)
+                {
+                    case ItemType.Weapon:
+                        AddAcceptedEquipmentSlot(result, EquipmentSlot.MainHand);
+                        AddAcceptedEquipmentSlot(result, EquipmentSlot.OffHand);
+                        break;
+                    case ItemType.Armour:
+                        AddAcceptedEquipmentSlot(result, EquipmentSlot.BodyArmour);
+                        break;
+                    case ItemType.Accessory:
+                        AddAcceptedEquipmentSlot(result, EquipmentSlot.Amulet);
+                        break;
+                }
+            }
+
+            if (item.PrimaryEquipmentSlot.HasValue)
+                MovePrimarySlotToFront(result, item.PrimaryEquipmentSlot.Value);
+
+            return result;
+        }
+
+        private static void AddAcceptedEquipmentSlots(List<EquipmentSlot> result, IEnumerable<EquipmentSlot> slots)
+        {
+            if (result == null || slots == null)
+                return;
+
+            foreach (var slot in slots)
+                AddAcceptedEquipmentSlot(result, slot);
+        }
+
+        private static void AddAcceptedEquipmentSlot(List<EquipmentSlot> result, EquipmentSlot slot)
+        {
+            if (result == null || result.Contains(slot))
+                return;
+
+            result.Add(slot);
+        }
+
+        private static void MovePrimarySlotToFront(List<EquipmentSlot> result, EquipmentSlot primarySlot)
+        {
+            if (result == null)
+                return;
+
+            int index = result.IndexOf(primarySlot);
+            if (index <= 0)
+                return;
+
+            result.RemoveAt(index);
+            result.Insert(0, primarySlot);
+        }
+
+        private static bool TryAppendAcceptedSlotsFromText(List<EquipmentSlot> result, string text)
+        {
+            if (result == null || string.IsNullOrWhiteSpace(text))
+                return false;
+
+            if (ContainsKeyword(text, "戒指", "ring"))
+            {
+                AddAcceptedEquipmentSlot(result, EquipmentSlot.RingLeft);
+                AddAcceptedEquipmentSlot(result, EquipmentSlot.RingRight);
+                return true;
+            }
+
+            if (ContainsKeyword(text, "项链", "护身符", "amulet"))
+            {
+                AddAcceptedEquipmentSlot(result, EquipmentSlot.Amulet);
+                return true;
+            }
+
+            if (ContainsKeyword(text, "腰带", "belt"))
+            {
+                AddAcceptedEquipmentSlot(result, EquipmentSlot.Belt);
+                return true;
+            }
+
+            if (ContainsKeyword(text, "头盔", "helmet", "helm"))
+            {
+                AddAcceptedEquipmentSlot(result, EquipmentSlot.Helmet);
+                return true;
+            }
+
+            if (ContainsKeyword(text, "手套", "glove"))
+            {
+                AddAcceptedEquipmentSlot(result, EquipmentSlot.Gloves);
+                return true;
+            }
+
+            if (ContainsKeyword(text, "鞋", "靴", "boots", "boot"))
+            {
+                AddAcceptedEquipmentSlot(result, EquipmentSlot.Boots);
+                return true;
+            }
+
+            if (ContainsKeyword(text, "盾", "箭袋", "法器", "副手", "shield", "quiver", "focus", "offhand"))
+            {
+                AddAcceptedEquipmentSlot(result, EquipmentSlot.OffHand);
+                return true;
+            }
+
+            if (ContainsKeyword(text, "胸甲", "板甲", "铠甲", "铁甲", "armor", "armour", "chest", "plate"))
+            {
+                AddAcceptedEquipmentSlot(result, EquipmentSlot.BodyArmour);
+                return true;
+            }
+
+            if (ContainsKeyword(text, "武器", "剑", "斧", "锤", "弓", "匕首", "爪", "杖", "长矛", "权杖", "sword", "axe", "mace", "bow", "dagger", "claw", "wand", "staff", "spear", "weapon"))
+            {
+                AddAcceptedEquipmentSlot(result, EquipmentSlot.MainHand);
+                AddAcceptedEquipmentSlot(result, EquipmentSlot.OffHand);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool ContainsKeyword(string text, params string[] keywords)
+        {
+            if (string.IsNullOrWhiteSpace(text) || keywords == null)
+                return false;
+
+            for (int i = 0; i < keywords.Length; i++)
+            {
+                var keyword = keywords[i];
+                if (!string.IsNullOrWhiteSpace(keyword) &&
+                    text.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static int ResolveGridWidth(ItemType itemType)

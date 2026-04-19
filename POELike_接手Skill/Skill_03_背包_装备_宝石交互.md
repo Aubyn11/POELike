@@ -104,6 +104,8 @@
 - **后续跟随鼠标与预览格，会走短时平滑阻尼**
 - **从装备栏卸下装备时，会恢复背包原始占格大小**
 - **`BagPanel.EnsureInitialized()` 当前带 `_isInitializing` 防重入保护**
+- **地面掉落 / GM 生成物入包当前允许走隐藏背包路径**：`GroundItemLabelRenderer` / `GMPanel` 可能会通过 `UIManager.GetOrCreateBagPanel(false)` 在背包不可见时创建运行时物品视图，因此 `BagItemView` / `EquipmentItem` 不能依赖 `Awake()` 先执行，当前已改为惰性缓存组件引用
+- **地面掉落装备当前不能再按 `ItemType.Armour / Accessory` 直接展开大类槽位**：掉落拾取转 `BagItemData` 时，必须优先使用 `ItemData.PrimaryEquipmentSlot / AllowedEquipmentSlots` 里的精确部位；若是旧数据缺失精确槽位，当前会再按 `BaseType / Name` 关键词兜底推断，否则 Tips 会把胸甲显示成 `胸甲 / 头盔 / 手套 / 鞋子`、把护身符显示成 `左戒指 / 右戒指 / 项链 / 腰带`
 - **装备栏 / 宝石孔 / 药剂槽目标已占位时，只要其他条件满足，就直接替换**
 
 ### 宝石孔与连结约定

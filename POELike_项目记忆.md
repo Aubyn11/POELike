@@ -621,7 +621,9 @@ flowchart TD
 配置链路中至少有以下已知节点：
 
 - [Program.cs](Tools/GenEquipmentExcel/Program.cs)
+- [export_excel_to_cfg.py](Tools/excelConvert/export_excel_to_cfg.py)
 - [启动ExcelConvert.bat](启动ExcelConvert.bat)
+  - 当前会优先使用内部 `ExcelExporter / excelConvert` 发布产物；若仓库里未提供这些内部工具，则自动走仓库内降级链：先刷新 `equipment.xlsx`，再把 `common/excel/xls/*.xlsx` 全量导出到 `Assets/Cfg/*.pb`
 - 各类 ConfigLoader
 
 推荐理解为：
@@ -668,10 +670,21 @@ flowchart LR
 - **Tips 层级**：装备 Tips 使用独立 `TooltipOverlay` 最高层，保证显示在状态栏之上
 - **卸下恢复尺寸**：从装备栏拿起时恢复背包原始大小
 - **背包初始化防重入**：`BagPanel.EnsureInitialized()` 使用 `_isInitializing` 保护，角色底栏刷新遇到初始化期会直接返回
+- **隐藏背包动态入包安全性**：`GroundItemLabelRenderer` / `GMPanel` 会通过 `UIManager.GetOrCreateBagPanel(false)` 在背包不可见时向 `BagPanel` 动态创建运行时物品视图；`BagItemView` 与 `EquipmentItem` 现已改为惰性缓存组件引用，不能再依赖 `Awake()` 先执行，否则容易在 `BagItemView.BindToBag()` 报 `NullReferenceException`
+- **地面掉落装备槽位精确映射**：`GroundItemLabelRenderer.CreateBagItemData()` 不能再按 `ItemType.Armour / Accessory` 直接展开整组大类槽位，否则会把胸甲显示成 `胸甲 / 头盔 / 手套 / 鞋子`、把护身符显示成 `左戒指 / 右戒指 / 项链 / 腰带`；当前已改为优先读取 `ItemData.PrimaryEquipmentSlot / AllowedEquipmentSlots`，旧掉落数据再按 `BaseType / Name` 关键词兜底推断
 - **装备底栏刷新保护**：`CharactorMainPanelController.RefreshFromCurrentState()` 会在 `bagPanel == null` 或 `bagPanel.IsInitializing` 时跳过刷新
+
 - **技能栏稳定槽位**：`CharactorMainPanelController` 通过 `_skillSlotAssignments` / `SyncSkillSlotAssignments()` 保留主动技能宝石原槽位；卸下某颗技能石时只清空对应槽位，其余技能不再自动左移，新技能补进空槽
+
 - **文档同步约定**：后续每次有效开发步骤完成后，都要同步更新 `POELike_接手Skill.md` 与 `POELike_项目记忆.md`
+- **传送门面板链路**：NPC 按钮 `EventID=1004` 当前由 `GameSceneManager.OnNpcButtonClicked()` 分发到 `OpenDoorPanel()`；`DoorPanel` 打开时会从 `MapLevelConf.pb` 读取地图关卡数据，根据条目数量动态创建 `MapBtn.prefab` 列表项，并把 `MapName` 写到按钮文本；点击地图按钮后会通过 `DoorPanel.MapSelected` 回调到 `GameSceneManager`，在当前 `GameScene` 内执行真实传送，并按对应 `CfgID` 刷新玩家出生布局、地图装饰布局、NPC 组合 / 布局和当前地图怪物内容
+- **地图关卡配置**：当前新增 `common/cfg/map.txt`、`common/excel/xls/map.xlsx`、`Assets/Cfg/MapLevelConf.pb`，字段为 `MapID / SceneID / CfgID / MapName`；当前运行时会用 `MapID` 选择基础出生锚点，并使用 `CfgID` 读取 `Assets/Cfg/MapLayoutConf.pb` 叠加玩家出生偏移与 NPC 组合 / 布局，再读取 `Assets/Cfg/MapDecorationConf.pb` 刷新地图装饰布局，并读取 `Assets/Cfg/MapContentConf.pb` 刷新地图怪物内容，`SceneID` 继续作为后续多场景扩展预留字段
+- **地图布局配置**：当前新增 `common/cfg/mapLayout.txt`、`Assets/Scripts/Game/MapLayoutConfigLoader.cs`、`Assets/Cfg/MapLayoutConf.pb`；`MapLayoutConf.pb` 以 `MapPlayerSpawnConf(CfgID / OffsetX / OffsetZ)` 与 `MapNpcLayoutConf(CfgID / NPCID / OffsetX / OffsetZ)` 描述不同地图的玩家出生偏移与 NPC 组合 / 布局；当前 A1 测试数据中 `CfgID=1001` 刷 `NPCID=1001 + 1002`，`CfgID=1002` 刷 `NPCID=1001 + 1003`；其中 `NPCID=1001` 是当前测试数据里的 DoorPanel 入口 NPC，若某张地图未保留任意带 `EventID=1004` 的 NPC，`GameSceneManager` 会输出警告
+- **地图装饰配置**：当前新增 `common/cfg/mapDecoration.txt`、`Assets/Scripts/Game/MapDecorationConfigLoader.cs`、`Assets/Cfg/MapDecorationConf.pb`；`MapDecorationConf.pb` 以 `CfgID / DecorationType / OffsetX / OffsetZ / ScaleX / ScaleY / ScaleZ / RotationY` 描述不同地图的装饰物布局；当前 A2 测试数据中 `CfgID=1001` 刷柱子 + 祭坛布局，`CfgID=1002` 刷箱体 + 标记物布局
+- **地图内容配置**：当前新增 `common/cfg/mapContent.txt`、`Assets/Scripts/Game/MapContentConfigLoader.cs`、`Assets/Cfg/MapContentConf.pb`；`MapContentConf.pb` 以 `CfgID / GroupName / MonsterID / Count / OffsetX / OffsetZ` 描述当前地图要刷出的怪物组
+
 - **宝石槽布局升级**：装备宝石槽改为动态布局、动态缩放、自动连接线，装备栏放大时宝石区域同步放大
+
 - **宝石连线限制**：当前连接线仍然是 UI 推导，不是数据驱动拓扑
 - **历史编译问题**：曾发生过误把补丁标记写进源码，导致 `BagItemView.cs` 报 `CS0106`，后续若出现类似问题先检查源码里是否混入了 `+` / `-` / `@@`
 
@@ -825,6 +838,8 @@ flowchart LR
 
 - **地面掉落名称渲染入口**：新增 [GroundItemLabelRenderer.cs](Assets/Scripts/Game/GroundItemLabelRenderer.cs) 挂在主摄像机上，由 [CameraController.cs](Assets/Scripts/Game/CameraController.cs) 自动添加并注入 `World`；负责把掉落装备名称绘制在怪物死亡位置
 - **地面掉落名称悬停规则**：当前标签默认带深色背景，鼠标移入时会按名称实际宽高整块高亮背景与文字，而不是只改文字色；多个同点掉落标签会向上错层排列
-- **地面掉落点击拾取规则**：当前 [GroundItemLabelRenderer.cs](Assets/Scripts/Game/GroundItemLabelRenderer.cs) 会先把掉落转换成 `BagItemData` 并调用 [BagPanel.cs](Assets/Scripts/Game/UI/BagPanel.cs) 的 `CanAddItemToBag(...)` 做背包空间检测；放不下时固定提示“背包放不下了”，放得下时才真正 `TryAddItemToBag(...)` 并移除地面标签
+- **NPC / 地面掉落点击交互规则**：当前点击 [NpcMeshRenderer.cs](Assets/Scripts/Game/NpcMeshRenderer.cs) 的 NPC 名称或点击 [GroundItemLabelRenderer.cs](Assets/Scripts/Game/GroundItemLabelRenderer.cs) 的掉落名称时，[GameSceneManager.cs](Assets/Scripts/Game/GameSceneManager.cs) 会立即把本次左键锁定为交互路径，避免被同一左键的普通点地移动覆盖；进入交互距离后会立刻停下并继续执行下一步（打开对话 / 执行拾取）
+- **地面掉落点击拾取规则**：当前点击 [GroundItemLabelRenderer.cs](Assets/Scripts/Game/GroundItemLabelRenderer.cs) 上的掉落名称时，不会再直接秒捡，而是先由 [GameSceneManager.cs](Assets/Scripts/Game/GameSceneManager.cs) 驱动玩家走近掉落；进入拾取范围后才会把掉落转换成 `BagItemData` 并调用 [BagPanel.cs](Assets/Scripts/Game/UI/BagPanel.cs) 的 `CanAddItemToBag(...)` 做背包空间检测，放不下时固定提示“背包放不下了”，放得下时才真正 `TryAddItemToBag(...)` 并移除地面标签；到点后只尝试一次，避免失败时持续刷提示
 - **地面掉落点击消费规则**：当前 [GameSceneManager.cs](Assets/Scripts/Game/GameSceneManager.cs) 左键意图分流已把 `GroundItemLabelRenderer.ClickConsumedThisFrame` 纳入阻断条件，点击掉落名称后不会再继续触发地面移动或左键技能
+
 - **`StatModifier` 类型约束**：当前 [StatTypes.cs](Assets/Scripts/ECS/Components/StatTypes.cs) 中的 `StatModifier` 是 `struct` 而不是 `class`，因此像 [GroundItemLabelRenderer.cs](Assets/Scripts/Game/GroundItemLabelRenderer.cs) 这类构造词条描述的代码不能写 `modifier == null` 判空，否则会触发 `CS0019`

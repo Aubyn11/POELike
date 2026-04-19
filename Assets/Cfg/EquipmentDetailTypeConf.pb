@@ -2,7 +2,7 @@
   "EquipmentDetailTypeConf": [
     {
       "EquipmentDetailTypeId": "1",
-      "EquipmentDetailTypeName": "\u864E\u722A",
+      "EquipmentDetailTypeName": "\u864e\u722a",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -17,7 +17,7 @@
     },
     {
       "EquipmentDetailTypeId": "2",
-      "EquipmentDetailTypeName": "\u732B\u722A",
+      "EquipmentDetailTypeName": "\u732b\u722a",
       "EquipmentDemandLevel": "6",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -32,7 +32,7 @@
     },
     {
       "EquipmentDetailTypeId": "3",
-      "EquipmentDetailTypeName": "\u9E1F\u722A",
+      "EquipmentDetailTypeName": "\u9e1f\u722a",
       "EquipmentDemandLevel": "14",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -47,7 +47,7 @@
     },
     {
       "EquipmentDetailTypeId": "4",
-      "EquipmentDetailTypeName": "\u53CC\u722A",
+      "EquipmentDetailTypeName": "\u53cc\u722a",
       "EquipmentDemandLevel": "21",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -62,7 +62,7 @@
     },
     {
       "EquipmentDetailTypeId": "5",
-      "EquipmentDetailTypeName": "\u5C16\u722A",
+      "EquipmentDetailTypeName": "\u5c16\u722a",
       "EquipmentDemandLevel": "28",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -77,7 +77,7 @@
     },
     {
       "EquipmentDetailTypeId": "6",
-      "EquipmentDetailTypeName": "\u6218\u722A",
+      "EquipmentDetailTypeName": "\u6218\u722a",
       "EquipmentDemandLevel": "36",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -92,7 +92,7 @@
     },
     {
       "EquipmentDetailTypeId": "7",
-      "EquipmentDetailTypeName": "\u6BD2\u722A",
+      "EquipmentDetailTypeName": "\u6bd2\u722a",
       "EquipmentDemandLevel": "44",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -107,7 +107,7 @@
     },
     {
       "EquipmentDetailTypeId": "8",
-      "EquipmentDetailTypeName": "\u5E7B\u722A",
+      "EquipmentDetailTypeName": "\u5e7b\u722a",
       "EquipmentDemandLevel": "52",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -122,7 +122,7 @@
     },
     {
       "EquipmentDetailTypeId": "9",
-      "EquipmentDetailTypeName": "\u6DF7\u6C8C\u722A",
+      "EquipmentDetailTypeName": "\u6df7\u6c8c\u722a",
       "EquipmentDemandLevel": "60",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -137,7 +137,7 @@
     },
     {
       "EquipmentDetailTypeId": "10",
-      "EquipmentDetailTypeName": "\u7C97\u7CD9\u5315\u9996",
+      "EquipmentDetailTypeName": "\u7c97\u7cd9\u5315\u9996",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -152,7 +152,7 @@
     },
     {
       "EquipmentDetailTypeId": "11",
-      "EquipmentDetailTypeName": "\u523A\u5200",
+      "EquipmentDetailTypeName": "\u523a\u5200",
       "EquipmentDemandLevel": "5",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -167,7 +167,7 @@
     },
     {
       "EquipmentDetailTypeId": "12",
-      "EquipmentDetailTypeName": "\u94C1\u5315\u9996",
+      "EquipmentDetailTypeName": "\u94c1\u5315\u9996",
       "EquipmentDemandLevel": "13",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -182,7 +182,7 @@
     },
     {
       "EquipmentDetailTypeId": "13",
-      "EquipmentDetailTypeName": "\u5E7D\u7075\u5203",
+      "EquipmentDetailTypeName": "\u5e7d\u7075\u5203",
       "EquipmentDemandLevel": "21",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -197,7 +197,7 @@
     },
     {
       "EquipmentDetailTypeId": "14",
-      "EquipmentDetailTypeName": "\u9AA8\u5203",
+      "EquipmentDetailTypeName": "\u9aa8\u5203",
       "EquipmentDemandLevel": "30",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -212,7 +212,7 @@
     },
     {
       "EquipmentDetailTypeId": "15",
-      "EquipmentDetailTypeName": "\u6697\u5F71\u5203",
+      "EquipmentDetailTypeName": "\u6697\u5f71\u5203",
       "EquipmentDemandLevel": "40",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -227,7 +227,7 @@
     },
     {
       "EquipmentDetailTypeId": "16",
-      "EquipmentDetailTypeName": "\u7B26\u6587\u5315\u9996",
+      "EquipmentDetailTypeName": "\u7b26\u6587\u5315\u9996",
       "EquipmentDemandLevel": "50",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -242,7 +242,7 @@
     },
     {
       "EquipmentDetailTypeId": "17",
-      "EquipmentDetailTypeName": "\u6DF7\u6C8C\u5315\u9996",
+      "EquipmentDetailTypeName": "\u6df7\u6c8c\u5315\u9996",
       "EquipmentDemandLevel": "60",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -257,7 +257,7 @@
     },
     {
       "EquipmentDetailTypeId": "18",
-      "EquipmentDetailTypeName": "\u626D\u66F2\u9B54\u6756",
+      "EquipmentDetailTypeName": "\u626d\u66f2\u9b54\u6756",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -272,7 +272,7 @@
     },
     {
       "EquipmentDetailTypeId": "19",
-      "EquipmentDetailTypeName": "\u539F\u59CB\u9B54\u6756",
+      "EquipmentDetailTypeName": "\u539f\u59cb\u9b54\u6756",
       "EquipmentDemandLevel": "5",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -287,7 +287,7 @@
     },
     {
       "EquipmentDetailTypeId": "20",
-      "EquipmentDetailTypeName": "\u5927\u9B54\u6756",
+      "EquipmentDetailTypeName": "\u5927\u9b54\u6756",
       "EquipmentDemandLevel": "13",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -302,7 +302,7 @@
     },
     {
       "EquipmentDetailTypeId": "21",
-      "EquipmentDetailTypeName": "\u6C34\u6676\u9B54\u6756",
+      "EquipmentDetailTypeName": "\u6c34\u6676\u9b54\u6756",
       "EquipmentDemandLevel": "21",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -317,7 +317,7 @@
     },
     {
       "EquipmentDetailTypeId": "22",
-      "EquipmentDetailTypeName": "\u7B26\u6587\u9B54\u6756",
+      "EquipmentDetailTypeName": "\u7b26\u6587\u9b54\u6756",
       "EquipmentDemandLevel": "30",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -332,7 +332,7 @@
     },
     {
       "EquipmentDetailTypeId": "23",
-      "EquipmentDetailTypeName": "\u5965\u672F\u9B54\u6756",
+      "EquipmentDetailTypeName": "\u5965\u672f\u9b54\u6756",
       "EquipmentDemandLevel": "40",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -347,7 +347,7 @@
     },
     {
       "EquipmentDetailTypeId": "24",
-      "EquipmentDetailTypeName": "\u795E\u5723\u9B54\u6756",
+      "EquipmentDetailTypeName": "\u795e\u5723\u9b54\u6756",
       "EquipmentDemandLevel": "50",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -362,7 +362,7 @@
     },
     {
       "EquipmentDetailTypeId": "25",
-      "EquipmentDetailTypeName": "\u6DF7\u6C8C\u9B54\u6756",
+      "EquipmentDetailTypeName": "\u6df7\u6c8c\u9b54\u6756",
       "EquipmentDemandLevel": "60",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -377,7 +377,7 @@
     },
     {
       "EquipmentDetailTypeId": "26",
-      "EquipmentDetailTypeName": "\u94C1\u5251",
+      "EquipmentDetailTypeName": "\u94c1\u5251",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -392,7 +392,7 @@
     },
     {
       "EquipmentDetailTypeId": "27",
-      "EquipmentDetailTypeName": "\u5BBD\u5203\u5251",
+      "EquipmentDetailTypeName": "\u5bbd\u5203\u5251",
       "EquipmentDemandLevel": "8",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -422,7 +422,7 @@
     },
     {
       "EquipmentDetailTypeId": "29",
-      "EquipmentDetailTypeName": "\u53E4\u4EE3\u5251",
+      "EquipmentDetailTypeName": "\u53e4\u4ee3\u5251",
       "EquipmentDemandLevel": "26",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -437,7 +437,7 @@
     },
     {
       "EquipmentDetailTypeId": "30",
-      "EquipmentDetailTypeName": "\u7CBE\u94A2\u5251",
+      "EquipmentDetailTypeName": "\u7cbe\u94a2\u5251",
       "EquipmentDemandLevel": "36",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -452,7 +452,7 @@
     },
     {
       "EquipmentDetailTypeId": "31",
-      "EquipmentDetailTypeName": "\u9A91\u58EB\u5251",
+      "EquipmentDetailTypeName": "\u9a91\u58eb\u5251",
       "EquipmentDemandLevel": "47",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -467,7 +467,7 @@
     },
     {
       "EquipmentDetailTypeId": "32",
-      "EquipmentDetailTypeName": "\u6DF7\u6C8C\u5251",
+      "EquipmentDetailTypeName": "\u6df7\u6c8c\u5251",
       "EquipmentDemandLevel": "60",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -482,7 +482,7 @@
     },
     {
       "EquipmentDetailTypeId": "33",
-      "EquipmentDetailTypeName": "\u77F3\u65A7",
+      "EquipmentDetailTypeName": "\u77f3\u65a7",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -497,7 +497,7 @@
     },
     {
       "EquipmentDetailTypeId": "34",
-      "EquipmentDetailTypeName": "\u6218\u65A7",
+      "EquipmentDetailTypeName": "\u6218\u65a7",
       "EquipmentDemandLevel": "9",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -512,7 +512,7 @@
     },
     {
       "EquipmentDetailTypeId": "35",
-      "EquipmentDetailTypeName": "\u88C2\u9885\u65A7",
+      "EquipmentDetailTypeName": "\u88c2\u9885\u65a7",
       "EquipmentDemandLevel": "18",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -527,7 +527,7 @@
     },
     {
       "EquipmentDetailTypeId": "36",
-      "EquipmentDetailTypeName": "\u7CBE\u94A2\u65A7",
+      "EquipmentDetailTypeName": "\u7cbe\u94a2\u65a7",
       "EquipmentDemandLevel": "28",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -542,7 +542,7 @@
     },
     {
       "EquipmentDetailTypeId": "37",
-      "EquipmentDetailTypeName": "\u5C60\u592B\u65A7",
+      "EquipmentDetailTypeName": "\u5c60\u592b\u65a7",
       "EquipmentDemandLevel": "40",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -557,7 +557,7 @@
     },
     {
       "EquipmentDetailTypeId": "38",
-      "EquipmentDetailTypeName": "\u6DF7\u6C8C\u65A7",
+      "EquipmentDetailTypeName": "\u6df7\u6c8c\u65a7",
       "EquipmentDemandLevel": "55",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -587,7 +587,7 @@
     },
     {
       "EquipmentDetailTypeId": "40",
-      "EquipmentDetailTypeName": "\u77F3\u9524",
+      "EquipmentDetailTypeName": "\u77f3\u9524",
       "EquipmentDemandLevel": "8",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -617,7 +617,7 @@
     },
     {
       "EquipmentDetailTypeId": "42",
-      "EquipmentDetailTypeName": "\u7CBE\u94A2\u9524",
+      "EquipmentDetailTypeName": "\u7cbe\u94a2\u9524",
       "EquipmentDemandLevel": "28",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -632,7 +632,7 @@
     },
     {
       "EquipmentDetailTypeId": "43",
-      "EquipmentDetailTypeName": "\u7834\u788E\u9524",
+      "EquipmentDetailTypeName": "\u7834\u788e\u9524",
       "EquipmentDemandLevel": "40",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -647,7 +647,7 @@
     },
     {
       "EquipmentDetailTypeId": "44",
-      "EquipmentDetailTypeName": "\u6DF7\u6C8C\u9524",
+      "EquipmentDetailTypeName": "\u6df7\u6c8c\u9524",
       "EquipmentDemandLevel": "55",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -677,7 +677,7 @@
     },
     {
       "EquipmentDetailTypeId": "46",
-      "EquipmentDetailTypeName": "\u94C1\u6743\u6756",
+      "EquipmentDetailTypeName": "\u94c1\u6743\u6756",
       "EquipmentDemandLevel": "10",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -707,7 +707,7 @@
     },
     {
       "EquipmentDetailTypeId": "48",
-      "EquipmentDetailTypeName": "\u7CBE\u94A2\u6743\u6756",
+      "EquipmentDetailTypeName": "\u7cbe\u94a2\u6743\u6756",
       "EquipmentDemandLevel": "33",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -722,7 +722,7 @@
     },
     {
       "EquipmentDetailTypeId": "49",
-      "EquipmentDetailTypeName": "\u6DF7\u6C8C\u6743\u6756",
+      "EquipmentDetailTypeName": "\u6df7\u6c8c\u6743\u6756",
       "EquipmentDemandLevel": "50",
       "EquipmentHeight": "3",
       "EquipmentWidth": "1",
@@ -737,7 +737,7 @@
     },
     {
       "EquipmentDetailTypeId": "50",
-      "EquipmentDetailTypeName": "\u6728\u5F13",
+      "EquipmentDetailTypeName": "\u6728\u5f13",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -752,7 +752,7 @@
     },
     {
       "EquipmentDetailTypeId": "51",
-      "EquipmentDetailTypeName": "\u77ED\u5F13",
+      "EquipmentDetailTypeName": "\u77ed\u5f13",
       "EquipmentDemandLevel": "8",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -767,7 +767,7 @@
     },
     {
       "EquipmentDetailTypeId": "52",
-      "EquipmentDetailTypeName": "\u957F\u5F13",
+      "EquipmentDetailTypeName": "\u957f\u5f13",
       "EquipmentDemandLevel": "17",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -782,7 +782,7 @@
     },
     {
       "EquipmentDetailTypeId": "53",
-      "EquipmentDetailTypeName": "\u590D\u5408\u5F13",
+      "EquipmentDetailTypeName": "\u590d\u5408\u5f13",
       "EquipmentDemandLevel": "26",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -797,7 +797,7 @@
     },
     {
       "EquipmentDetailTypeId": "54",
-      "EquipmentDetailTypeName": "\u6218\u5F13",
+      "EquipmentDetailTypeName": "\u6218\u5f13",
       "EquipmentDemandLevel": "36",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -812,7 +812,7 @@
     },
     {
       "EquipmentDetailTypeId": "55",
-      "EquipmentDetailTypeName": "\u7CBE\u94A2\u5F13",
+      "EquipmentDetailTypeName": "\u7cbe\u94a2\u5f13",
       "EquipmentDemandLevel": "47",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -827,7 +827,7 @@
     },
     {
       "EquipmentDetailTypeId": "56",
-      "EquipmentDetailTypeName": "\u6DF7\u6C8C\u5F13",
+      "EquipmentDetailTypeName": "\u6df7\u6c8c\u5f13",
       "EquipmentDemandLevel": "60",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -842,7 +842,7 @@
     },
     {
       "EquipmentDetailTypeId": "57",
-      "EquipmentDetailTypeName": "\u53CC\u624B\u94C1\u5251",
+      "EquipmentDetailTypeName": "\u53cc\u624b\u94c1\u5251",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -857,7 +857,7 @@
     },
     {
       "EquipmentDetailTypeId": "58",
-      "EquipmentDetailTypeName": "\u53CC\u624B\u6218\u5251",
+      "EquipmentDetailTypeName": "\u53cc\u624b\u6218\u5251",
       "EquipmentDemandLevel": "14",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -872,7 +872,7 @@
     },
     {
       "EquipmentDetailTypeId": "59",
-      "EquipmentDetailTypeName": "\u53CC\u624B\u53E4\u4EE3\u5251",
+      "EquipmentDetailTypeName": "\u53cc\u624b\u53e4\u4ee3\u5251",
       "EquipmentDemandLevel": "26",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -887,7 +887,7 @@
     },
     {
       "EquipmentDetailTypeId": "60",
-      "EquipmentDetailTypeName": "\u53CC\u624B\u7CBE\u94A2\u5251",
+      "EquipmentDetailTypeName": "\u53cc\u624b\u7cbe\u94a2\u5251",
       "EquipmentDemandLevel": "40",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -902,7 +902,7 @@
     },
     {
       "EquipmentDetailTypeId": "61",
-      "EquipmentDetailTypeName": "\u53CC\u624B\u6DF7\u6C8C\u5251",
+      "EquipmentDetailTypeName": "\u53cc\u624b\u6df7\u6c8c\u5251",
       "EquipmentDemandLevel": "55",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -917,7 +917,7 @@
     },
     {
       "EquipmentDetailTypeId": "62",
-      "EquipmentDetailTypeName": "\u53CC\u624B\u77F3\u65A7",
+      "EquipmentDetailTypeName": "\u53cc\u624b\u77f3\u65a7",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -932,7 +932,7 @@
     },
     {
       "EquipmentDetailTypeId": "63",
-      "EquipmentDetailTypeName": "\u53CC\u624B\u6218\u65A7",
+      "EquipmentDetailTypeName": "\u53cc\u624b\u6218\u65a7",
       "EquipmentDemandLevel": "14",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -947,7 +947,7 @@
     },
     {
       "EquipmentDetailTypeId": "64",
-      "EquipmentDetailTypeName": "\u53CC\u624B\u88C2\u9885\u65A7",
+      "EquipmentDetailTypeName": "\u53cc\u624b\u88c2\u9885\u65a7",
       "EquipmentDemandLevel": "26",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -962,7 +962,7 @@
     },
     {
       "EquipmentDetailTypeId": "65",
-      "EquipmentDetailTypeName": "\u53CC\u624B\u7CBE\u94A2\u65A7",
+      "EquipmentDetailTypeName": "\u53cc\u624b\u7cbe\u94a2\u65a7",
       "EquipmentDemandLevel": "40",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -977,7 +977,7 @@
     },
     {
       "EquipmentDetailTypeId": "66",
-      "EquipmentDetailTypeName": "\u53CC\u624B\u6DF7\u6C8C\u65A7",
+      "EquipmentDetailTypeName": "\u53cc\u624b\u6df7\u6c8c\u65a7",
       "EquipmentDemandLevel": "55",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -992,7 +992,7 @@
     },
     {
       "EquipmentDetailTypeId": "67",
-      "EquipmentDetailTypeName": "\u53CC\u624B\u6728\u9524",
+      "EquipmentDetailTypeName": "\u53cc\u624b\u6728\u9524",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -1007,7 +1007,7 @@
     },
     {
       "EquipmentDetailTypeId": "68",
-      "EquipmentDetailTypeName": "\u53CC\u624B\u77F3\u9524",
+      "EquipmentDetailTypeName": "\u53cc\u624b\u77f3\u9524",
       "EquipmentDemandLevel": "14",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -1022,7 +1022,7 @@
     },
     {
       "EquipmentDetailTypeId": "69",
-      "EquipmentDetailTypeName": "\u53CC\u624B\u6218\u9524",
+      "EquipmentDetailTypeName": "\u53cc\u624b\u6218\u9524",
       "EquipmentDemandLevel": "26",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -1037,7 +1037,7 @@
     },
     {
       "EquipmentDetailTypeId": "70",
-      "EquipmentDetailTypeName": "\u53CC\u624B\u7CBE\u94A2\u9524",
+      "EquipmentDetailTypeName": "\u53cc\u624b\u7cbe\u94a2\u9524",
       "EquipmentDemandLevel": "40",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -1052,7 +1052,7 @@
     },
     {
       "EquipmentDetailTypeId": "71",
-      "EquipmentDetailTypeName": "\u53CC\u624B\u6DF7\u6C8C\u9524",
+      "EquipmentDetailTypeName": "\u53cc\u624b\u6df7\u6c8c\u9524",
       "EquipmentDemandLevel": "55",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -1067,7 +1067,7 @@
     },
     {
       "EquipmentDetailTypeId": "72",
-      "EquipmentDetailTypeName": "\u6728\u77DB",
+      "EquipmentDetailTypeName": "\u6728\u77db",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -1082,7 +1082,7 @@
     },
     {
       "EquipmentDetailTypeId": "73",
-      "EquipmentDetailTypeName": "\u94C1\u77DB",
+      "EquipmentDetailTypeName": "\u94c1\u77db",
       "EquipmentDemandLevel": "13",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -1097,7 +1097,7 @@
     },
     {
       "EquipmentDetailTypeId": "74",
-      "EquipmentDetailTypeName": "\u6218\u77DB",
+      "EquipmentDetailTypeName": "\u6218\u77db",
       "EquipmentDemandLevel": "26",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -1112,7 +1112,7 @@
     },
     {
       "EquipmentDetailTypeId": "75",
-      "EquipmentDetailTypeName": "\u7CBE\u94A2\u77DB",
+      "EquipmentDetailTypeName": "\u7cbe\u94a2\u77db",
       "EquipmentDemandLevel": "40",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -1127,7 +1127,7 @@
     },
     {
       "EquipmentDetailTypeId": "76",
-      "EquipmentDetailTypeName": "\u6DF7\u6C8C\u77DB",
+      "EquipmentDetailTypeName": "\u6df7\u6c8c\u77db",
       "EquipmentDemandLevel": "55",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -1142,7 +1142,7 @@
     },
     {
       "EquipmentDetailTypeId": "77",
-      "EquipmentDetailTypeName": "\u6728\u6CD5\u6756",
+      "EquipmentDetailTypeName": "\u6728\u6cd5\u6756",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -1157,7 +1157,7 @@
     },
     {
       "EquipmentDetailTypeId": "78",
-      "EquipmentDetailTypeName": "\u94C1\u6CD5\u6756",
+      "EquipmentDetailTypeName": "\u94c1\u6cd5\u6756",
       "EquipmentDemandLevel": "13",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -1172,7 +1172,7 @@
     },
     {
       "EquipmentDetailTypeId": "79",
-      "EquipmentDetailTypeName": "\u6218\u6CD5\u6756",
+      "EquipmentDetailTypeName": "\u6218\u6cd5\u6756",
       "EquipmentDemandLevel": "26",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -1187,7 +1187,7 @@
     },
     {
       "EquipmentDetailTypeId": "80",
-      "EquipmentDetailTypeName": "\u7CBE\u94A2\u6CD5\u6756",
+      "EquipmentDetailTypeName": "\u7cbe\u94a2\u6cd5\u6756",
       "EquipmentDemandLevel": "40",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -1202,7 +1202,7 @@
     },
     {
       "EquipmentDetailTypeId": "81",
-      "EquipmentDetailTypeName": "\u6DF7\u6C8C\u6CD5\u6756",
+      "EquipmentDetailTypeName": "\u6df7\u6c8c\u6cd5\u6756",
       "EquipmentDemandLevel": "55",
       "EquipmentHeight": "4",
       "EquipmentWidth": "2",
@@ -1217,7 +1217,7 @@
     },
     {
       "EquipmentDetailTypeId": "82",
-      "EquipmentDetailTypeName": "\u94C1\u5E3D",
+      "EquipmentDetailTypeName": "\u94c1\u5e3d",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1232,7 +1232,7 @@
     },
     {
       "EquipmentDetailTypeId": "83",
-      "EquipmentDetailTypeName": "\u6218\u76D4",
+      "EquipmentDetailTypeName": "\u6218\u76d4",
       "EquipmentDemandLevel": "14",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1247,7 +1247,7 @@
     },
     {
       "EquipmentDetailTypeId": "84",
-      "EquipmentDetailTypeName": "\u5927\u76D4",
+      "EquipmentDetailTypeName": "\u5927\u76d4",
       "EquipmentDemandLevel": "30",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1262,7 +1262,7 @@
     },
     {
       "EquipmentDetailTypeId": "85",
-      "EquipmentDetailTypeName": "\u7CBE\u94A2\u76D4",
+      "EquipmentDetailTypeName": "\u7cbe\u94a2\u76d4",
       "EquipmentDemandLevel": "50",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1277,7 +1277,7 @@
     },
     {
       "EquipmentDetailTypeId": "86",
-      "EquipmentDetailTypeName": "\u76AE\u5E3D",
+      "EquipmentDetailTypeName": "\u76ae\u5e3d",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1292,7 +1292,7 @@
     },
     {
       "EquipmentDetailTypeId": "87",
-      "EquipmentDetailTypeName": "\u76AE\u76D4",
+      "EquipmentDetailTypeName": "\u76ae\u76d4",
       "EquipmentDemandLevel": "14",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1307,7 +1307,7 @@
     },
     {
       "EquipmentDetailTypeId": "88",
-      "EquipmentDetailTypeName": "\u730E\u4EBA\u5E3D",
+      "EquipmentDetailTypeName": "\u730e\u4eba\u5e3d",
       "EquipmentDemandLevel": "30",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1322,7 +1322,7 @@
     },
     {
       "EquipmentDetailTypeId": "89",
-      "EquipmentDetailTypeName": "\u7CBE\u94A2\u76AE\u76D4",
+      "EquipmentDetailTypeName": "\u7cbe\u94a2\u76ae\u76d4",
       "EquipmentDemandLevel": "50",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1337,7 +1337,7 @@
     },
     {
       "EquipmentDetailTypeId": "90",
-      "EquipmentDetailTypeName": "\u5E03\u5E3D",
+      "EquipmentDetailTypeName": "\u5e03\u5e3d",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1352,7 +1352,7 @@
     },
     {
       "EquipmentDetailTypeId": "91",
-      "EquipmentDetailTypeName": "\u6CD5\u5E08\u5E3D",
+      "EquipmentDetailTypeName": "\u6cd5\u5e08\u5e3d",
       "EquipmentDemandLevel": "14",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1367,7 +1367,7 @@
     },
     {
       "EquipmentDetailTypeId": "92",
-      "EquipmentDetailTypeName": "\u5927\u6CD5\u5E08\u5E3D",
+      "EquipmentDetailTypeName": "\u5927\u6cd5\u5e08\u5e3d",
       "EquipmentDemandLevel": "30",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1382,7 +1382,7 @@
     },
     {
       "EquipmentDetailTypeId": "93",
-      "EquipmentDetailTypeName": "\u7CBE\u94A2\u6CD5\u5E08\u5E3D",
+      "EquipmentDetailTypeName": "\u7cbe\u94a2\u6cd5\u5e08\u5e3d",
       "EquipmentDemandLevel": "50",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1397,7 +1397,7 @@
     },
     {
       "EquipmentDetailTypeId": "94",
-      "EquipmentDetailTypeName": "\u94C1\u7532",
+      "EquipmentDetailTypeName": "\u94c1\u7532",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "3",
       "EquipmentWidth": "2",
@@ -1427,7 +1427,7 @@
     },
     {
       "EquipmentDetailTypeId": "96",
-      "EquipmentDetailTypeName": "\u677F\u7532",
+      "EquipmentDetailTypeName": "\u677f\u7532",
       "EquipmentDemandLevel": "30",
       "EquipmentHeight": "3",
       "EquipmentWidth": "2",
@@ -1442,7 +1442,7 @@
     },
     {
       "EquipmentDetailTypeId": "97",
-      "EquipmentDetailTypeName": "\u7CBE\u94A2\u7532",
+      "EquipmentDetailTypeName": "\u7cbe\u94a2\u7532",
       "EquipmentDemandLevel": "50",
       "EquipmentHeight": "3",
       "EquipmentWidth": "2",
@@ -1457,7 +1457,7 @@
     },
     {
       "EquipmentDetailTypeId": "98",
-      "EquipmentDetailTypeName": "\u76AE\u7532",
+      "EquipmentDetailTypeName": "\u76ae\u7532",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "3",
       "EquipmentWidth": "2",
@@ -1472,7 +1472,7 @@
     },
     {
       "EquipmentDetailTypeId": "99",
-      "EquipmentDetailTypeName": "\u730E\u4EBA\u7532",
+      "EquipmentDetailTypeName": "\u730e\u4eba\u7532",
       "EquipmentDemandLevel": "14",
       "EquipmentHeight": "3",
       "EquipmentWidth": "2",
@@ -1487,7 +1487,7 @@
     },
     {
       "EquipmentDetailTypeId": "100",
-      "EquipmentDetailTypeName": "\u7CBE\u94A2\u76AE\u7532",
+      "EquipmentDetailTypeName": "\u7cbe\u94a2\u76ae\u7532",
       "EquipmentDemandLevel": "30",
       "EquipmentHeight": "3",
       "EquipmentWidth": "2",
@@ -1502,7 +1502,7 @@
     },
     {
       "EquipmentDetailTypeId": "101",
-      "EquipmentDetailTypeName": "\u5E03\u7532",
+      "EquipmentDetailTypeName": "\u5e03\u7532",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "3",
       "EquipmentWidth": "2",
@@ -1517,7 +1517,7 @@
     },
     {
       "EquipmentDetailTypeId": "102",
-      "EquipmentDetailTypeName": "\u6CD5\u5E08\u7532",
+      "EquipmentDetailTypeName": "\u6cd5\u5e08\u7532",
       "EquipmentDemandLevel": "14",
       "EquipmentHeight": "3",
       "EquipmentWidth": "2",
@@ -1532,7 +1532,7 @@
     },
     {
       "EquipmentDetailTypeId": "103",
-      "EquipmentDetailTypeName": "\u7CBE\u94A2\u6CD5\u5E08\u7532",
+      "EquipmentDetailTypeName": "\u7cbe\u94a2\u6cd5\u5e08\u7532",
       "EquipmentDemandLevel": "30",
       "EquipmentHeight": "3",
       "EquipmentWidth": "2",
@@ -1547,7 +1547,7 @@
     },
     {
       "EquipmentDetailTypeId": "104",
-      "EquipmentDetailTypeName": "\u94C1\u624B\u5957",
+      "EquipmentDetailTypeName": "\u94c1\u624b\u5957",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1562,7 +1562,7 @@
     },
     {
       "EquipmentDetailTypeId": "105",
-      "EquipmentDetailTypeName": "\u6218\u624B\u5957",
+      "EquipmentDetailTypeName": "\u6218\u624b\u5957",
       "EquipmentDemandLevel": "20",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1577,7 +1577,7 @@
     },
     {
       "EquipmentDetailTypeId": "106",
-      "EquipmentDetailTypeName": "\u7CBE\u94A2\u624B\u5957",
+      "EquipmentDetailTypeName": "\u7cbe\u94a2\u624b\u5957",
       "EquipmentDemandLevel": "40",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1592,7 +1592,7 @@
     },
     {
       "EquipmentDetailTypeId": "107",
-      "EquipmentDetailTypeName": "\u76AE\u624B\u5957",
+      "EquipmentDetailTypeName": "\u76ae\u624b\u5957",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1607,7 +1607,7 @@
     },
     {
       "EquipmentDetailTypeId": "108",
-      "EquipmentDetailTypeName": "\u730E\u4EBA\u624B\u5957",
+      "EquipmentDetailTypeName": "\u730e\u4eba\u624b\u5957",
       "EquipmentDemandLevel": "20",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1622,7 +1622,7 @@
     },
     {
       "EquipmentDetailTypeId": "109",
-      "EquipmentDetailTypeName": "\u7CBE\u94A2\u76AE\u624B\u5957",
+      "EquipmentDetailTypeName": "\u7cbe\u94a2\u76ae\u624b\u5957",
       "EquipmentDemandLevel": "40",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1637,7 +1637,7 @@
     },
     {
       "EquipmentDetailTypeId": "110",
-      "EquipmentDetailTypeName": "\u5E03\u624B\u5957",
+      "EquipmentDetailTypeName": "\u5e03\u624b\u5957",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1652,7 +1652,7 @@
     },
     {
       "EquipmentDetailTypeId": "111",
-      "EquipmentDetailTypeName": "\u6CD5\u5E08\u624B\u5957",
+      "EquipmentDetailTypeName": "\u6cd5\u5e08\u624b\u5957",
       "EquipmentDemandLevel": "20",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1667,7 +1667,7 @@
     },
     {
       "EquipmentDetailTypeId": "112",
-      "EquipmentDetailTypeName": "\u7CBE\u94A2\u6CD5\u5E08\u624B\u5957",
+      "EquipmentDetailTypeName": "\u7cbe\u94a2\u6cd5\u5e08\u624b\u5957",
       "EquipmentDemandLevel": "40",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1682,7 +1682,7 @@
     },
     {
       "EquipmentDetailTypeId": "113",
-      "EquipmentDetailTypeName": "\u94C1\u9774",
+      "EquipmentDetailTypeName": "\u94c1\u9774",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1712,7 +1712,7 @@
     },
     {
       "EquipmentDetailTypeId": "115",
-      "EquipmentDetailTypeName": "\u7CBE\u94A2\u9774",
+      "EquipmentDetailTypeName": "\u7cbe\u94a2\u9774",
       "EquipmentDemandLevel": "40",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1727,7 +1727,7 @@
     },
     {
       "EquipmentDetailTypeId": "116",
-      "EquipmentDetailTypeName": "\u76AE\u9774",
+      "EquipmentDetailTypeName": "\u76ae\u9774",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1742,7 +1742,7 @@
     },
     {
       "EquipmentDetailTypeId": "117",
-      "EquipmentDetailTypeName": "\u730E\u4EBA\u9774",
+      "EquipmentDetailTypeName": "\u730e\u4eba\u9774",
       "EquipmentDemandLevel": "20",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1757,7 +1757,7 @@
     },
     {
       "EquipmentDetailTypeId": "118",
-      "EquipmentDetailTypeName": "\u7CBE\u94A2\u76AE\u9774",
+      "EquipmentDetailTypeName": "\u7cbe\u94a2\u76ae\u9774",
       "EquipmentDemandLevel": "40",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1772,7 +1772,7 @@
     },
     {
       "EquipmentDetailTypeId": "119",
-      "EquipmentDetailTypeName": "\u5E03\u9774",
+      "EquipmentDetailTypeName": "\u5e03\u9774",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1787,7 +1787,7 @@
     },
     {
       "EquipmentDetailTypeId": "120",
-      "EquipmentDetailTypeName": "\u6CD5\u5E08\u9774",
+      "EquipmentDetailTypeName": "\u6cd5\u5e08\u9774",
       "EquipmentDemandLevel": "20",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1802,7 +1802,7 @@
     },
     {
       "EquipmentDetailTypeId": "121",
-      "EquipmentDetailTypeName": "\u7CBE\u94A2\u6CD5\u5E08\u9774",
+      "EquipmentDetailTypeName": "\u7cbe\u94a2\u6cd5\u5e08\u9774",
       "EquipmentDemandLevel": "40",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -1817,7 +1817,7 @@
     },
     {
       "EquipmentDetailTypeId": "122",
-      "EquipmentDetailTypeName": "\u76AE\u8170\u5E26",
+      "EquipmentDetailTypeName": "\u76ae\u8170\u5e26",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "1",
       "EquipmentWidth": "2",
@@ -1832,7 +1832,7 @@
     },
     {
       "EquipmentDetailTypeId": "123",
-      "EquipmentDetailTypeName": "\u91CD\u578B\u8170\u5E26",
+      "EquipmentDetailTypeName": "\u91cd\u578b\u8170\u5e26",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "1",
       "EquipmentWidth": "2",
@@ -1847,7 +1847,7 @@
     },
     {
       "EquipmentDetailTypeId": "124",
-      "EquipmentDetailTypeName": "\u8170\u5E26",
+      "EquipmentDetailTypeName": "\u8170\u5e26",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "1",
       "EquipmentWidth": "2",
@@ -1862,7 +1862,7 @@
     },
     {
       "EquipmentDetailTypeId": "125",
-      "EquipmentDetailTypeName": "\u7EF3\u8170\u5E26",
+      "EquipmentDetailTypeName": "\u7ef3\u8170\u5e26",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "1",
       "EquipmentWidth": "2",
@@ -1877,7 +1877,7 @@
     },
     {
       "EquipmentDetailTypeId": "134",
-      "EquipmentDetailTypeName": "\u94C1\u6212\u6307",
+      "EquipmentDetailTypeName": "\u94c1\u6212\u6307",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "1",
       "EquipmentWidth": "1",
@@ -1892,7 +1892,7 @@
     },
     {
       "EquipmentDetailTypeId": "135",
-      "EquipmentDetailTypeName": "\u91D1\u6212\u6307",
+      "EquipmentDetailTypeName": "\u91d1\u6212\u6307",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "1",
       "EquipmentWidth": "1",
@@ -1907,7 +1907,7 @@
     },
     {
       "EquipmentDetailTypeId": "136",
-      "EquipmentDetailTypeName": "\u5B9D\u77F3\u6212\u6307",
+      "EquipmentDetailTypeName": "\u5b9d\u77f3\u6212\u6307",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "1",
       "EquipmentWidth": "1",
@@ -1922,7 +1922,7 @@
     },
     {
       "EquipmentDetailTypeId": "137",
-      "EquipmentDetailTypeName": "\u94C1\u9879\u94FE",
+      "EquipmentDetailTypeName": "\u94c1\u9879\u94fe",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "1",
       "EquipmentWidth": "1",
@@ -1937,7 +1937,7 @@
     },
     {
       "EquipmentDetailTypeId": "138",
-      "EquipmentDetailTypeName": "\u91D1\u9879\u94FE",
+      "EquipmentDetailTypeName": "\u91d1\u9879\u94fe",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "1",
       "EquipmentWidth": "1",
@@ -1952,7 +1952,7 @@
     },
     {
       "EquipmentDetailTypeId": "139",
-      "EquipmentDetailTypeName": "\u5B9D\u77F3\u9879\u94FE",
+      "EquipmentDetailTypeName": "\u5b9d\u77f3\u9879\u94fe",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "1",
       "EquipmentWidth": "1",
@@ -1967,7 +1967,7 @@
     },
     {
       "EquipmentDetailTypeId": "126",
-      "EquipmentDetailTypeName": "\u6728\u76FE",
+      "EquipmentDetailTypeName": "\u6728\u76fe",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "3",
       "EquipmentWidth": "2",
@@ -1982,7 +1982,7 @@
     },
     {
       "EquipmentDetailTypeId": "127",
-      "EquipmentDetailTypeName": "\u94C1\u76FE",
+      "EquipmentDetailTypeName": "\u94c1\u76fe",
       "EquipmentDemandLevel": "14",
       "EquipmentHeight": "3",
       "EquipmentWidth": "2",
@@ -1997,7 +1997,7 @@
     },
     {
       "EquipmentDetailTypeId": "128",
-      "EquipmentDetailTypeName": "\u6218\u76FE",
+      "EquipmentDetailTypeName": "\u6218\u76fe",
       "EquipmentDemandLevel": "30",
       "EquipmentHeight": "3",
       "EquipmentWidth": "2",
@@ -2012,7 +2012,7 @@
     },
     {
       "EquipmentDetailTypeId": "129",
-      "EquipmentDetailTypeName": "\u7CBE\u9493\u76FE",
+      "EquipmentDetailTypeName": "\u7cbe\u9493\u76fe",
       "EquipmentDemandLevel": "50",
       "EquipmentHeight": "3",
       "EquipmentWidth": "2",
@@ -2027,7 +2027,7 @@
     },
     {
       "EquipmentDetailTypeId": "130",
-      "EquipmentDetailTypeName": "\u7BAD\u888B",
+      "EquipmentDetailTypeName": "\u7bad\u888b",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "3",
       "EquipmentWidth": "2",
@@ -2042,7 +2042,7 @@
     },
     {
       "EquipmentDetailTypeId": "131",
-      "EquipmentDetailTypeName": "\u7CBE\u9493\u7BAD\u888B",
+      "EquipmentDetailTypeName": "\u7cbe\u9493\u7bad\u888b",
       "EquipmentDemandLevel": "30",
       "EquipmentHeight": "3",
       "EquipmentWidth": "2",
@@ -2057,7 +2057,7 @@
     },
     {
       "EquipmentDetailTypeId": "132",
-      "EquipmentDetailTypeName": "\u6CD5\u7403",
+      "EquipmentDetailTypeName": "\u6cd5\u7403",
       "EquipmentDemandLevel": "1",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",
@@ -2072,7 +2072,7 @@
     },
     {
       "EquipmentDetailTypeId": "133",
-      "EquipmentDetailTypeName": "\u7CBE\u9493\u6CD5\u7403",
+      "EquipmentDetailTypeName": "\u7cbe\u9493\u6cd5\u7403",
       "EquipmentDemandLevel": "30",
       "EquipmentHeight": "2",
       "EquipmentWidth": "2",

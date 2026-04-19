@@ -97,6 +97,10 @@ namespace POELike.ECS.Components
         public int RequiredDexterity { get; set; }
         public int RequiredIntelligence { get; set; }
 
+        // 精确可装备槽位（用于地面掉落转背包、Tips 展示与装备栏校验）
+        public EquipmentSlot? PrimaryEquipmentSlot { get; set; }
+        public List<EquipmentSlot> AllowedEquipmentSlots { get; } = new List<EquipmentSlot>();
+
         // 药剂字段（对齐 POE 的基础药剂结构）
         public FlaskKind? FlaskType { get; set; }
         public int FlaskRecoverLife { get; set; }

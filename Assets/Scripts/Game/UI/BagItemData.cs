@@ -204,6 +204,22 @@ namespace POELike.Game.UI
             item.Id = ItemId;
             item.Name = Name;
             item.Type = ResolveItemType();
+            item.PrimaryEquipmentSlot = ResolvePrimaryEquipmentSlot();
+            item.AllowedEquipmentSlots.Clear();
+
+            if (AcceptedEquipmentSlots != null && AcceptedEquipmentSlots.Count > 0)
+            {
+                for (int i = 0; i < AcceptedEquipmentSlots.Count; i++)
+                {
+                    var slot = AcceptedEquipmentSlots[i];
+                    if (!item.AllowedEquipmentSlots.Contains(slot))
+                        item.AllowedEquipmentSlots.Add(slot);
+                }
+            }
+            else if (AcceptedEquipmentSlot.HasValue)
+            {
+                item.AllowedEquipmentSlots.Add(AcceptedEquipmentSlot.Value);
+            }
 
             if (IsFlask)
             {

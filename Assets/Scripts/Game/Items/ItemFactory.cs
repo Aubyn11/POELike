@@ -60,6 +60,8 @@ namespace POELike.Game.Items
                 ItemLevel = itemLevel,
                 RequiredLevel = Mathf.Max(1, itemLevel - 5),
             };
+
+            SetAllowedEquipmentSlots(item, EquipmentSlot.MainHand, EquipmentSlot.OffHand);
             
             // 隐式词缀：武器基础伤害
             float avgDamage = (minDamage + maxDamage) / 2f;
@@ -84,6 +86,8 @@ namespace POELike.Game.Items
                 ItemLevel = itemLevel,
                 RequiredLevel = Mathf.Max(1, itemLevel - 5),
             };
+
+            SetAllowedEquipmentSlots(item, slot);
             
             item.ImplicitMods.Add(new StatModifier(StatType.Armor, ModifierType.Flat, armor, "implicit"));
             
@@ -94,6 +98,7 @@ namespace POELike.Game.Items
         {
             item.BaseType = "单手剑";
             item.Name = "铁剑";
+            SetAllowedEquipmentSlots(item, EquipmentSlot.MainHand, EquipmentSlot.OffHand);
             float baseDamage = 5f + itemLevel * 2f;
             item.ImplicitMods.Add(new StatModifier(StatType.PhysicalDamage, ModifierType.Flat, baseDamage, "implicit"));
             item.ImplicitMods.Add(new StatModifier(StatType.AttackSpeed, ModifierType.Flat, 1.2f, "implicit"));
@@ -103,6 +108,7 @@ namespace POELike.Game.Items
         {
             item.BaseType = "板甲";
             item.Name = "铁甲";
+            SetAllowedEquipmentSlots(item, EquipmentSlot.BodyArmour);
             float baseArmor = 10f + itemLevel * 3f;
             item.ImplicitMods.Add(new StatModifier(StatType.Armor, ModifierType.Flat, baseArmor, "implicit"));
         }
@@ -111,6 +117,7 @@ namespace POELike.Game.Items
         {
             item.BaseType = "护身符";
             item.Name = "铜制护身符";
+            SetAllowedEquipmentSlots(item, EquipmentSlot.Amulet);
         }
         
         /// <summary>
@@ -192,6 +199,29 @@ namespace POELike.Game.Items
             var (statType, modType, value) = pool[Random.Range(0, pool.Length)];
             
             return new StatModifier(statType, modType, value);
+        }
+
+        private static void SetAllowedEquipmentSlots(ItemData item, params EquipmentSlot[] slots)
+        {
+            if (item == null)
+                return;
+
+            item.PrimaryEquipmentSlot = null;
+            item.AllowedEquipmentSlots.Clear();
+
+            if (slots == null || slots.Length == 0)
+                return;
+
+            for (int i = 0; i < slots.Length; i++)
+            {
+                var slot = slots[i];
+                if (item.AllowedEquipmentSlots.Contains(slot))
+                    continue;
+
+                item.AllowedEquipmentSlots.Add(slot);
+                if (!item.PrimaryEquipmentSlot.HasValue)
+                    item.PrimaryEquipmentSlot = slot;
+            }
         }
         
         private static readonly string[] _rareNameParts = { "血腥", "暗影", "烈焰", "寒冰", "雷霆", "混沌", "神圣", "腐化" };

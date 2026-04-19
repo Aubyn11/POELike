@@ -1,0 +1,11 @@
+MapPlayerSpawnConf{
+    int32 CfgID = 1,
+    float OffsetX = 2,
+    float OffsetZ = 3
+}
+MapNpcLayoutConf{
+    int32 CfgID = 1,
+    int32 NPCID = 2,
+    float OffsetX = 3,
+    float OffsetZ = 4
+}

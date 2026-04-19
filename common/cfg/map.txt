@@ -1,0 +1,6 @@
+MapLevelConf{
+    int32 MapID = 1,
+    int32 SceneID = 2,
+    int32 CfgID = 3,
+    string MapName = 4
+}

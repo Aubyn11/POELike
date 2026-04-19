@@ -41,8 +41,8 @@
   - 负责：`GameSceneManager / PlayerInputComponent / SkillComponent / SkillFactory / SkillSystem / CharactorMainPanelController`
 
 - [skill-06 装备生成 / 商店 / NPC 与配置工具链](POELike_接手Skill/Skill_06_装备生成_商店_NPC与配置工具链.md)
-  - 适合：配置不生效、商店到背包映射、NPC 对话 / 商店入口类问题
-  - 负责：`EquipmentConfigLoader / EquipmentGenerator / EquipmentBagDataFactory / ShopPanel / Npc* / 工具链`
+  - 适合：配置不生效、商店到背包映射、NPC 对话 / 商店入口、地图布局 / 地图装饰 / 地图内容配置类问题
+  - 负责：`EquipmentConfigLoader / EquipmentGenerator / EquipmentBagDataFactory / ShopPanel / Npc* / MapLayoutConfigLoader / MapDecorationConfigLoader / MapContentConfigLoader / 工具链`
 
 - [skill-07 SOP / 排错与高风险点](POELike_接手Skill/Skill_07_SOP_排错与高风险点.md)
   - 适合：准备动手修改、快速排障、担心踩坑时
@@ -95,10 +95,16 @@
 - **正式运行时技能槽位当前是 8 槽**
 - **默认技能键位当前是 `LMB / MMB / RMB / Q / W / E / R / T`**
 - **左键当前有 `Skill1 / Move / Blocked` 判定分流**
-- **怪物死亡地面掉落名当前走 `EntityDiedEvent -> GameSceneManager -> GroundItemDroppedEvent -> GroundItemLabelRenderer`**
+- **`启动ExcelConvert.bat` 当前会优先使用内部 `ExcelExporter / excelConvert` 发布产物；若仓库里未提供这些内部工具，则自动走仓库内降级链：先刷新 `equipment.xlsx`，再把 `common/excel/xls/*.xlsx` 全量导出到 `Assets/Cfg/*.pb`**
+- **NPC 按钮 `EventID=1004` 当前会打开 `DoorPanel`，并从 `MapLevelConf.pb` 读取地图关卡数据后动态生成地图按钮；点击地图按钮后会在当前 `GameScene` 内把玩家真实传送到对应地图出生点，并按对应 `CfgID` 从 `MapLayoutConf.pb` 刷新玩家出生布局、NPC 组合与 NPC 布局，从 `MapDecorationConf.pb` 刷新地图装饰布局，从 `MapContentConf.pb` 刷新该地图怪物内容，按钮文字显示 `MapName`；当前 A1 / A2 测试数据要求每张地图至少保留一个带 `EventID=1004` 的 NPC（当前是 `NPCID=1001`），且 `CfgID=1001` 额外会刷柱子 + 祭坛布局、`CfgID=1002` 额外会刷箱体 + 标记物布局**
+
+- **地面掉落 / GM 入包当前可能走隐藏背包路径：`GroundItemLabelRenderer` 与 `GMPanel` 会通过 `UIManager.GetOrCreateBagPanel(false)` 在背包不可见时创建运行时物品视图；因此 `BagItemView` / `EquipmentItem` 当前都已改为惰性缓存组件引用，不能再假设 `Awake()` 一定先于 `Setup()` / `BindToBag()` 执行**
+
+- **怪物死亡地面掉落名当前走 `EntityDiedEvent -> GameSceneManager -> GroundItemDroppedEvent -> GroundItemLabelRenderer`；地面掉落转 `BagItemData` 时不能再按 `ItemType.Armour / Accessory` 展开整组大类槽位，当前已改为优先使用 `ItemData.PrimaryEquipmentSlot / AllowedEquipmentSlots` 的精确部位数据，旧数据再按名称关键词兜底推断**
 
 - **地面掉落名称标签当前自带背景，鼠标移入时会按名称实际宽高整块高亮背景与文字**
-- **点击地面掉落名称时，当前会先做背包空间检测；放不下时提示“背包放不下了”，放得下才真正入包并移除地面标签**
+- **点击 NPC 名称或地面掉落名称时，当前会先锁定为交互意图，避免被同一左键的普通地面移动覆盖；角色进入交互距离后会立即停下并继续执行下一步（打开对话 / 执行拾取）**
+- **点击地面掉落名称时，当前不会再直接秒捡，而是由 `GameSceneManager` 驱动角色先走近掉落；进入拾取范围后才会做背包空间检测，放不下时提示“背包放不下了”，放得下才真正入包并移除地面标签**
 - **`StatModifier` 当前定义在 `StatTypes.cs` 中为 `struct`，处理 `Prefixes / Suffixes` 时不要写 `modifier == null` 这类判空**
 
 - **装备孔位连结当前仍只支持相邻索引，但连结开关已由 `SocketData.LinkedToPrevious` 数据驱动**

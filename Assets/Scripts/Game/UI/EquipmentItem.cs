@@ -155,31 +155,35 @@ namespace POELike.Game.UI
 
         private void Awake()
         {
-            _rt      = GetComponent<RectTransform>();
-            _bgImage = GetComponent<Image>();
+            EnsureCachedReferences();
+
+            if (BagData != null)
+                ApplyItemVisuals(BagData.Icon, BagData.ItemColor);
+        }
+
+        private void EnsureCachedReferences()
+        {
+            _rt ??= GetComponent<RectTransform>();
+            _bgImage ??= GetComponent<Image>();
 
             if (_lastBagVisualWidth <= 0f)
-                _lastBagVisualWidth = Mathf.Max(1f, _rt.rect.width);
+                _lastBagVisualWidth = Mathf.Max(1f, _rt != null ? _rt.rect.width : 1f);
             if (_lastBagVisualHeight <= 0f)
-                _lastBagVisualHeight = Mathf.Max(1f, _rt.rect.height);
+                _lastBagVisualHeight = Mathf.Max(1f, _rt != null ? _rt.rect.height : 1f);
 
-            // 若根节点 Image 没有 sprite，则复用共享白底 Sprite，避免每个物体单独创建运行时资源
             if (_bgImage != null && _bgImage.sprite == null)
                 _bgImage.sprite = SharedWhiteSprite;
 
-            // _icon 优先使用 Inspector 赋值的子节点图标，未赋值时回退到根节点 Image
             _icon ??= _bgImage;
 
-            // 自动查找子节点上的 SocketPanel（Inspector 未赋值时兜底）
             if (_socketPanel == null)
             {
-                // 尝试按名称查找
                 var child = transform.Find("SocketPanel");
-                if (child != null) _socketPanel = child.GetComponent<RectTransform>();
+                if (child != null)
+                    _socketPanel = child.GetComponent<RectTransform>();
             }
 
-            // 默认隐藏插槽面板
-            if (_socketPanel != null)
+            if (_socketPanel != null && !_tipsShown)
                 _socketPanel.gameObject.SetActive(false);
         }
 
@@ -216,6 +220,8 @@ namespace POELike.Game.UI
         /// </summary>
         public void Init(BagItemData itemData, Sprite icon = null)
         {
+            EnsureCachedReferences();
+
             if (itemData == null)
                 return;
 
@@ -242,6 +248,8 @@ namespace POELike.Game.UI
                          string itemName, Sprite icon = null, Color? itemColor = null,
                          List<SocketData> sockets = null)
         {
+            EnsureCachedReferences();
+
             DetailTypeId = detailTypeId;
             GridWidth    = Mathf.Max(1, gridWidth);
             GridHeight   = Mathf.Max(1, gridHeight);

@@ -3,15 +3,12 @@
     {
       "ActiveSkillStoneId": "1",
       "ActiveSkillStoneCode": "fireball",
-      "ActiveSkillStoneName": "\u706B\u7403\u672F",
-      "ActiveSkillStoneDesc": "\u53D1\u5C04\u4E00\u679A\u706B\u7403\uFF0C\u547D\u4E2D\u65F6\u7206\u70B8\u9020\u6210\u8303\u56F4\u706B\u7130\u4F24\u5BB3",
+      "ActiveSkillStoneName": "\u706b\u7403\u672f",
+      "ActiveSkillStoneDesc": "\u53d1\u5c04\u4e00\u679a\u706b\u7403\uff0c\u547d\u4e2d\u65f6\u7206\u70b8\u9020\u6210\u8303\u56f4\u706b\u7130\u4f24\u5bb3",
       "SkillEffectName": "FireballCast",
       "SkillColor": "2",
       "SkillCastType": "2",
-      "IsChannelingSkill": "0",
-      "CanMoveWhileCasting": "true",
       "SkillTags": [
-
         1,
         2,
         3
@@ -21,15 +18,12 @@
     {
       "ActiveSkillStoneId": "2",
       "ActiveSkillStoneCode": "frost_nova",
-      "ActiveSkillStoneName": "\u51B0\u971C\u65B0\u661F",
-      "ActiveSkillStoneDesc": "\u5728\u5468\u56F4\u91CA\u653E\u51B0\u971C\u7206\u70B8\uFF0C\u51BB\u7ED3\u9644\u8FD1\u654C\u4EBA",
+      "ActiveSkillStoneName": "\u51b0\u971c\u65b0\u661f",
+      "ActiveSkillStoneDesc": "\u5728\u5468\u56f4\u91ca\u653e\u51b0\u971c\u7206\u70b8\uff0c\u51bb\u7ed3\u9644\u8fd1\u654c\u4eba",
       "SkillEffectName": "FrostNovaBurst",
       "SkillColor": "2",
       "SkillCastType": "3",
-      "IsChannelingSkill": "0",
-      "CanMoveWhileCasting": "false",
       "SkillTags": [
-
         1,
         3
       ],
@@ -38,15 +32,12 @@
     {
       "ActiveSkillStoneId": "3",
       "ActiveSkillStoneCode": "blink",
-      "ActiveSkillStoneName": "\u95EA\u73B0",
-      "ActiveSkillStoneDesc": "\u77AC\u95F4\u79FB\u52A8\u5230\u76EE\u6807\u4F4D\u7F6E",
+      "ActiveSkillStoneName": "\u95ea\u73b0",
+      "ActiveSkillStoneDesc": "\u77ac\u95f4\u79fb\u52a8\u5230\u76ee\u6807\u4f4d\u7f6e",
       "SkillEffectName": "BlinkFlash",
       "SkillColor": "2",
       "SkillCastType": "4",
-      "IsChannelingSkill": "0",
-      "CanMoveWhileCasting": "true",
       "SkillTags": [
-
         1,
         4
       ],
@@ -55,34 +46,15 @@
     {
       "ActiveSkillStoneId": "4",
       "ActiveSkillStoneCode": "heavy_strike",
-      "ActiveSkillStoneName": "\u91CD\u51FB",
-      "ActiveSkillStoneDesc": "\u7528\u6C89\u91CD\u4E00\u51FB\u6253\u51FB\u5355\u4F53\u76EE\u6807",
+      "ActiveSkillStoneName": "\u91cd\u51fb",
+      "ActiveSkillStoneDesc": "\u7528\u6c89\u91cd\u4e00\u51fb\u6253\u51fb\u5355\u4f53\u76ee\u6807",
       "SkillEffectName": "HeavyStrikeSlash",
       "SkillColor": "0",
       "SkillCastType": "0",
-      "IsChannelingSkill": "0",
-      "CanMoveWhileCasting": "true",
       "SkillTags": [
         0
       ],
       "SkillShapeType": "0"
-    },
-    {
-      "ActiveSkillStoneId": "5",
-      "ActiveSkillStoneCode": "cyclone",
-      "ActiveSkillStoneName": "\u65CB\u98CE\u65A9",
-      "ActiveSkillStoneDesc": "\u6301\u7EED\u65CB\u8F6C\u5E76\u653B\u51FB\u5468\u56F4\u654C\u4EBA",
-      "SkillEffectName": "CycloneSpin",
-      "SkillColor": "0",
-      "SkillCastType": "channeling",
-      "IsChannelingSkill": "1",
-      "CanMoveWhileCasting": "true",
-      "SkillTags": [
-        0,
-        3
-      ],
-      "SkillShapeType": "1"
     }
   ]
 }
-

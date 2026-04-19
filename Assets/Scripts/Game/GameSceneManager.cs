@@ -38,7 +38,15 @@ namespace POELike.Game
         // NPC实体列表
         private List<Entity> _npcEntities = new List<Entity>();
 
+        // 当前地图内容刷出的怪物实体列表
+        private readonly List<Entity> _currentMapMonsterEntities = new List<Entity>();
+
+        // 当前地图刷出的运行时装饰物
+        private readonly List<GameObject> _currentMapDecorationObjects = new List<GameObject>();
+        private Transform _mapDecorationRoot;
+
         // 玩家输入组件引用（每帧写入）
+
         private PlayerInputComponent _inputComp;
         private MovementComponent _movementComp;
         private TransformComponent _transformComp;
@@ -65,12 +73,37 @@ namespace POELike.Game
         // 商店面板
         private ShopPanel _shopPanel;
 
+        // 传送门面板
+        private DoorPanel _doorPanel;
+
+        // 当前地图关卡上下文
+        private MapLevelData _currentMapLevel;
+
+        private const float MapTeleportHeight = 0.5f;
+        private static readonly Vector3[] MapTeleportAnchors =
+        {
+            new Vector3(-24f, MapTeleportHeight, 24f),
+            new Vector3(24f, MapTeleportHeight, 24f),
+            new Vector3(-24f, MapTeleportHeight, -24f),
+            new Vector3(24f, MapTeleportHeight, -24f),
+            new Vector3(0f, MapTeleportHeight, 28f),
+            new Vector3(28f, MapTeleportHeight, 0f),
+            new Vector3(0f, MapTeleportHeight, -28f),
+            new Vector3(-28f, MapTeleportHeight, 0f),
+        };
+
         // 当前寻路目标NPC实体（点击NPC名称时记录）
         private Entity _targetNpcEntity;
+
         // 是否正在前往NPC（用于到达检测）
         private bool _walkingToNpc;
         // 上一帧 HasTarget 状态（用于检测到达时机）
         private bool _prevHasTarget;
+
+        private ItemData _pendingGroundPickupItem;
+        private Vector3 _pendingGroundPickupPosition;
+        private bool _walkingToGroundItem;
+        private const float GroundPickupStopDistance = 1.35f;
 
         // 左键交互意图：一次按下只在“技能 / 移动 / 阻断”里走一条路径
         private enum LeftMouseIntent
@@ -129,13 +162,20 @@ namespace POELike.Game
             if (_autoGenerateEnvironment)
                 BuildEnvironment();
 
+            if (_currentMapLevel == null)
+                _currentMapLevel = BuildDefaultMapContext();
+
+            _playerSpawnPoint = ResolveMapSpawnPoint(_currentMapLevel);
             SpawnPlayer(data);
             AssignDefaultSkills();
             UIManager.Instance?.RefreshCharactorMainPanel();
-            SpawnNPCs();
+            RefreshCurrentMapDecoration();
+            RefreshCurrentMapLayout();
             SetupInputActions();
             SetupGMPanel();
             SetupClientSkillExtensionPanel();
+
+            RefreshCurrentMapContent();
 
         }
 
@@ -146,6 +186,7 @@ namespace POELike.Game
             UpdateMovementSpeed();
             ResolveNPCCollisions();
             CheckNpcArrival();
+            CheckGroundItemArrival();
         }
 
         private void OnDestroy()
@@ -166,25 +207,27 @@ namespace POELike.Game
             _flask4Action?.Dispose();
             _flask5Action?.Dispose();
 
+            if (_doorPanel != null)
+                _doorPanel.MapSelected -= OnDoorPanelMapSelected;
+
             if (GameManager.Instance?.World != null)
                 GameManager.Instance.World.EventBus.Unsubscribe<EntityDiedEvent>(OnEntityDied);
 
             if (_playerEntity != null && GameManager.Instance != null)
                 GameManager.Instance.World.DestroyEntity(_playerEntity);
 
-            // 销毁NPC实体
-            if (GameManager.Instance != null)
-            {
-                foreach (var npc in _npcEntities)
-                    GameManager.Instance.World.DestroyEntity(npc);
-            }
-            _npcEntities.Clear();
+            ClearCurrentMapNpcs();
+
+            ClearCurrentMapMonsters();
+            ClearCurrentMapDecorations();
 
             // 销毁 GM 生成的怪物实体
+
             if (_gmPanel != null && GameManager.Instance != null)
             {
                 _gmPanel.DestroyAllSpawnedMonsters(false);
             }
+
         }
 
         // ── 场景环境构建 ──────────────────────────────────────────────
@@ -214,34 +257,11 @@ namespace POELike.Game
             RenderSettings.ambientMode  = UnityEngine.Rendering.AmbientMode.Flat;
             RenderSettings.ambientLight = new Color(0.15f, 0.15f, 0.2f);
 
-            SpawnDecoration();
-
             Debug.Log("[GameSceneManager] 场景环境构建完成");
         }
 
-        private void SpawnDecoration()
-        {
-            var positions = new Vector3[]
-            {
-                new Vector3( 8f, 1f,  8f),
-                new Vector3(-8f, 1f,  8f),
-                new Vector3( 8f, 1f, -8f),
-                new Vector3(-8f, 1f, -8f),
-                new Vector3(15f, 1f,  0f),
-                new Vector3(-15f,1f,  0f),
-            };
-
-            foreach (var pos in positions)
-            {
-                var pillar = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                pillar.name = "Pillar";
-                pillar.transform.position   = pos;
-                pillar.transform.localScale = new Vector3(1f, 2f, 1f);
-                SetMaterialColor(pillar, new Color(0.4f, 0.38f, 0.35f));
-            }
-        }
-
         private void SetMaterialColor(GameObject go, Color color)
+
         {
             var renderer = go.GetComponent<Renderer>();
             if (renderer == null) return;
@@ -521,6 +541,7 @@ namespace POELike.Game
 
             _targetNpcEntity = null;
             _walkingToNpc = false;
+            ClearPendingGroundItemPickup();
 
             var combat = _playerEntity?.GetComponent<CombatComponent>();
             if (combat != null)
@@ -548,6 +569,7 @@ namespace POELike.Game
             _movementComp.MoveDirection = Vector3.zero;
             _targetNpcEntity = null;
             _walkingToNpc = false;
+            ClearPendingGroundItemPickup();
             _inputComp.HasClickTarget = false;
             return true;
         }
@@ -864,14 +886,24 @@ namespace POELike.Game
         // ── NPC 生成 ──────────────────────────────────────────────────
 
         /// <summary>
-        /// 从 NPCDataConf.pb 加载配置并创建NPC ECS实体
+        /// 清理当前地图的 NPC 实体
         /// </summary>
-        private void SpawnNPCs()
+        private void ClearCurrentMapNpcs()
         {
             var world = GameManager.Instance?.World;
-            if (world == null) return;
+            if (world == null)
+            {
+                _npcEntities.Clear();
+                return;
+            }
 
-            _npcEntities = NPCSpawner.SpawnAllNPCs(world);
+            foreach (var npc in _npcEntities)
+            {
+                if (npc != null && npc.IsAlive)
+                    world.DestroyEntity(npc);
+            }
+
+            _npcEntities.Clear();
         }
 
         // ── NPC 碰撞检测 ──────────────────────────────────────────────
@@ -976,11 +1008,21 @@ namespace POELike.Game
         {
             if (_movementComp == null) return;
 
+            _leftMouseIntent = LeftMouseIntent.Blocked;
+            if (_inputComp != null)
+                _inputComp.HasClickTarget = false;
+
             // 关闭已有对话框
             _npcDialogPanel?.Close();
+            ClearPendingGroundItemPickup();
 
             // 找到对应的NPC实体
             _targetNpcEntity = FindNpcEntityByWorldPos(npcWorldPos);
+            if (_targetNpcEntity == null)
+            {
+                _walkingToNpc = false;
+                return;
+            }
 
             // 计算NPC附近的目标点：在玩家与NPC连线方向上，距NPC一个碰撞半径+玩家半径的位置
             const float playerR = 0.4f;
@@ -999,6 +1041,8 @@ namespace POELike.Game
             else
             {
                 // 已经很近了，直接打开对话框
+                _movementComp.HasTarget = false;
+                _movementComp.MoveDirection = Vector3.zero;
                 OpenNpcDialog(_targetNpcEntity);
                 return;
             }
@@ -1010,19 +1054,115 @@ namespace POELike.Game
             _prevHasTarget               = true;
         }
 
+        private void OnGroundItemLabelClicked(ItemData item, Vector3 itemWorldPos)
+        {
+            if (_movementComp == null || _groundItemLabelRenderer == null || item == null)
+                return;
+
+            _leftMouseIntent = LeftMouseIntent.Blocked;
+            if (_inputComp != null)
+                _inputComp.HasClickTarget = false;
+
+            _npcDialogPanel?.Close();
+            _npcMeshRenderer?.SetTalkingNpc(null);
+            _targetNpcEntity = null;
+            _walkingToNpc = false;
+
+            if (!_groundItemLabelRenderer.ContainsItem(item))
+            {
+                ClearPendingGroundItemPickup();
+                return;
+            }
+
+            Vector3 playerPos = _transformComp?.Position ?? Vector3.zero;
+            Vector3 flattenedPlayerPos = new Vector3(playerPos.x, 0f, playerPos.z);
+            Vector3 flattenedItemPos = new Vector3(itemWorldPos.x, 0f, itemWorldPos.z);
+            float distance = Vector3.Distance(flattenedPlayerPos, flattenedItemPos);
+
+            if (distance <= GroundPickupStopDistance)
+            {
+                _movementComp.HasTarget = false;
+                _movementComp.MoveDirection = Vector3.zero;
+                _groundItemLabelRenderer.TryPickupItem(item);
+                ClearPendingGroundItemPickup();
+                return;
+            }
+
+            _pendingGroundPickupItem = item;
+            _pendingGroundPickupPosition = itemWorldPos;
+            _walkingToGroundItem = true;
+            _prevHasTarget = true;
+
+            Vector3 direction = itemWorldPos - playerPos;
+            direction.y = 0f;
+            Vector3 targetPos = itemWorldPos;
+            if (direction.sqrMagnitude > 0.0001f)
+                targetPos = itemWorldPos - direction.normalized * Mathf.Max(0.05f, GroundPickupStopDistance - 0.1f);
+
+            targetPos.y = playerPos.y;
+            _movementComp.TargetPosition = targetPos;
+            _movementComp.HasTarget = true;
+        }
+
+        private void CheckGroundItemArrival()
+        {
+            if (!_walkingToGroundItem || _groundItemLabelRenderer == null || _pendingGroundPickupItem == null)
+                return;
+
+            if (!_groundItemLabelRenderer.ContainsItem(_pendingGroundPickupItem))
+            {
+                ClearPendingGroundItemPickup();
+                return;
+            }
+
+            if (_transformComp == null || _movementComp == null)
+                return;
+
+            Vector3 playerPos = _transformComp.Position;
+            float distance = Vector3.Distance(
+                new Vector3(playerPos.x, 0f, playerPos.z),
+                new Vector3(_pendingGroundPickupPosition.x, 0f, _pendingGroundPickupPosition.z));
+
+            if (distance <= GroundPickupStopDistance)
+            {
+                _movementComp.HasTarget = false;
+                _movementComp.MoveDirection = Vector3.zero;
+                _groundItemLabelRenderer.TryPickupItem(_pendingGroundPickupItem);
+                ClearPendingGroundItemPickup();
+                return;
+            }
+
+            if (!_movementComp.HasTarget && _prevHasTarget)
+            {
+                _groundItemLabelRenderer.TryPickupItem(_pendingGroundPickupItem);
+                ClearPendingGroundItemPickup();
+                return;
+            }
+
+            _prevHasTarget = _movementComp.HasTarget;
+        }
+
+
+        private void ClearPendingGroundItemPickup()
+        {
+            _pendingGroundPickupItem = null;
+            _pendingGroundPickupPosition = Vector3.zero;
+            _walkingToGroundItem = false;
+        }
+
         /// <summary>
-        /// 每帧检测是否到达目标NPC（基于距离检测，避免碰撞系统提前清除HasTarget）
+        /// 每帧检测是否到达目标NPC（基于距离检测，进入交互范围后立即停下并打开对话）
         /// </summary>
         private void CheckNpcArrival()
         {
             if (!_walkingToNpc || _targetNpcEntity == null) return;
-            if (_transformComp == null) return;
+            if (_transformComp == null || _movementComp == null) return;
 
             var npcTransform = _targetNpcEntity.GetComponent<TransformComponent>();
             if (npcTransform == null) return;
 
             const float playerR = 0.4f;
-            float stopDist = NPCSpawner.CollisionRadius + playerR + 0.3f; // 稍大于停止距离
+            float interactDist = NPCSpawner.CollisionRadius + playerR + 0.3f;
 
             Vector3 playerPos = _transformComp.Position;
             Vector3 npcPos    = npcTransform.Position;
@@ -1031,21 +1171,20 @@ namespace POELike.Game
                 new Vector3(playerPos.x, 0f, playerPos.z),
                 new Vector3(npcPos.x,    0f, npcPos.z));
 
-            // 玩家进入停止距离范围内，且不再有寻路目标（已停下）
-            if (dist <= stopDist && !_movementComp.HasTarget)
+            if (dist <= interactDist)
+            {
+                _movementComp.HasTarget = false;
+                _movementComp.MoveDirection = Vector3.zero;
+                _walkingToNpc = false;
+                OpenNpcDialog(_targetNpcEntity);
+                return;
+            }
+
+            if (!_movementComp.HasTarget && _prevHasTarget)
             {
                 _walkingToNpc = false;
                 OpenNpcDialog(_targetNpcEntity);
-            }
-            // 如果玩家已停下但距离还不够（被其他原因停止），也触发对话框
-            else if (!_movementComp.HasTarget && _prevHasTarget)
-            {
-                // HasTarget 刚变为 false，检查距离是否足够近
-                if (dist <= stopDist + 1.0f) // 容差范围稍大
-                {
-                    _walkingToNpc = false;
-                    OpenNpcDialog(_targetNpcEntity);
-                }
+                return;
             }
 
             _prevHasTarget = _movementComp.HasTarget;
@@ -1107,6 +1246,7 @@ namespace POELike.Game
                     _npcMeshRenderer?.SetTalkingNpc(null);
                     _targetNpcEntity = null;
                     _walkingToNpc    = false;
+                    ClearPendingGroundItemPickup();
                     break;
 
                 case NpcButtonEventType.EnhanceEquipment:
@@ -1116,6 +1256,10 @@ namespace POELike.Game
 
                 case NpcButtonEventType.OpenShop:
                     OpenShop();
+                    break;
+
+                case NpcButtonEventType.OpenDoorPanel:
+                    OpenDoorPanel();
                     break;
 
                 default:
@@ -1158,6 +1302,7 @@ namespace POELike.Game
             _npcMeshRenderer?.SetTalkingNpc(null);
             _targetNpcEntity = null;
             _walkingToNpc    = false;
+            ClearPendingGroundItemPickup();
         }
 
         // ── 摄像机 ────────────────────────────────────────────────────
@@ -1201,6 +1346,8 @@ namespace POELike.Game
             }
 
             _groundItemLabelRenderer = camGo.GetComponent<GroundItemLabelRenderer>();
+            if (_groundItemLabelRenderer != null)
+                _groundItemLabelRenderer.OnGroundItemLabelClicked += OnGroundItemLabelClicked;
 
             // 从 Resources 加载 ChatPanel 预制体，确保 Inspector 绑定的引用有效
 
@@ -1240,7 +1387,36 @@ namespace POELike.Game
                 Debug.LogError("[GameSceneManager] 未能加载 UI/CustomPanel，请检查 Resources 路径。");
             }
 
+            // 从 Resources 加载 DoorPanel 预制体（传送门面板）
+            var doorPanelGo = UIManager.Instance.GetUI("UI/DoorPanel");
+            if (doorPanelGo != null)
+            {
+                _doorPanel = doorPanelGo.GetComponent<DoorPanel>();
+                if (_doorPanel == null)
+                    _doorPanel = doorPanelGo.AddComponent<DoorPanel>();
+
+                if (_doorPanel != null)
+                {
+                    _doorPanel.MapSelected -= OnDoorPanelMapSelected;
+                    _doorPanel.MapSelected += OnDoorPanelMapSelected;
+
+                    if (_currentMapLevel == null)
+                        _currentMapLevel = BuildDefaultMapContext();
+
+                    // 进入场景时确保传送门面板处于关闭状态
+                    _doorPanel.Close();
+                }
+                else
+                    Debug.LogError("[GameSceneManager] DoorPanel 预制体初始化失败。");
+
+            }
+            else
+            {
+                Debug.LogError("[GameSceneManager] 未能加载 UI/DoorPanel，请检查 Resources 路径。");
+            }
+
             Debug.Log("[GameSceneManager] SetupCamera 完成");
+
         }
 
         // ── GM 面板 ────────────────────────────────────────────────
@@ -1278,5 +1454,345 @@ namespace POELike.Game
             _npcMeshRenderer?.SetTalkingNpc(null);
             _shopPanel.Open();
         }
+
+        /// <summary>
+        /// 打开传送门面板
+        /// </summary>
+        private void OpenDoorPanel()
+        {
+            if (_doorPanel == null) return;
+            _npcDialogPanel?.Close();
+            _npcMeshRenderer?.SetTalkingNpc(null);
+            _doorPanel.Open();
+        }
+
+        private void OnDoorPanelMapSelected(MapLevelData mapLevel)
+        {
+            if (mapLevel == null)
+                return;
+
+            _currentMapLevel = mapLevel;
+            TeleportPlayerToCurrentMap();
+            RefreshCurrentMapDecoration();
+            RefreshCurrentMapLayout();
+            RefreshCurrentMapContent();
+            _doorPanel?.Close();
+
+            UIManager.Instance?.RefreshCharactorMainPanel();
+        }
+
+        private void TeleportPlayerToCurrentMap()
+        {
+            if (_currentMapLevel == null || _playerEntity == null || !_playerEntity.IsAlive)
+                return;
+
+            MapLayoutConfigLoader.Reload();
+            Vector3 targetPosition = ResolveMapSpawnPoint(_currentMapLevel);
+            _playerSpawnPoint = targetPosition;
+
+            if (_transformComp != null)
+                _transformComp.Position = targetPosition;
+
+            if (_movementComp != null)
+            {
+                _movementComp.TargetPosition = targetPosition;
+                _movementComp.MoveDirection = Vector3.zero;
+                _movementComp.Velocity = Vector3.zero;
+                _movementComp.HasTarget = false;
+            }
+
+            if (_inputComp != null)
+            {
+                _inputComp.HasClickTarget = false;
+                _inputComp.ClickTargetPosition = targetPosition;
+                _inputComp.MouseWorldPosition = targetPosition;
+            }
+
+            _walkingToNpc = false;
+            _prevHasTarget = false;
+            _targetNpcEntity = null;
+            _npcMeshRenderer?.SetTalkingNpc(null);
+            ClearPendingGroundItemPickup();
+
+            Debug.Log($"[DoorPanel] 已传送到 {_currentMapLevel.MapName}（MapID={_currentMapLevel.MapID}, SceneID={_currentMapLevel.SceneID}, CfgID={_currentMapLevel.CfgID}），出生点：{targetPosition}");
+        }
+
+        private void RefreshCurrentMapLayout()
+        {
+            ClearCurrentMapNpcs();
+
+            if (_currentMapLevel == null)
+                return;
+
+            var world = GameManager.Instance?.World;
+            if (world == null)
+                return;
+
+            MapLayoutConfigLoader.Reload();
+            IReadOnlyList<MapNpcLayoutData> npcLayouts = MapLayoutConfigLoader.GetNpcLayoutsByCfgId(_currentMapLevel.CfgID);
+            if (npcLayouts == null || npcLayouts.Count == 0)
+            {
+                _npcEntities = NPCSpawner.SpawnAllNPCs(world);
+                Debug.LogWarning($"[GameSceneManager] 地图 {_currentMapLevel.MapName}（CfgID={_currentMapLevel.CfgID}）未配置 NPC 布局，已回退到 NPCDataConf 默认布局。");
+                return;
+            }
+
+            WarnIfMapLayoutMissingDoorPanelNpc(npcLayouts);
+
+            Vector3 layoutOrigin = _playerSpawnPoint;
+            var requests = new List<NPCSpawnRequest>(npcLayouts.Count);
+
+            foreach (var layout in npcLayouts)
+            {
+                if (layout == null || layout.NPCIDInt <= 0)
+                {
+                    Debug.LogWarning($"[GameSceneManager] 跳过非法地图 NPC 布局：CfgID={layout?.CfgID}, NPCID={layout?.NPCID}");
+                    continue;
+                }
+
+                Vector3 npcPosition = layoutOrigin + new Vector3(layout.OffsetXFloat, 0f, layout.OffsetZFloat);
+                requests.Add(new NPCSpawnRequest
+                {
+                    NPCID = layout.NPCIDInt,
+                    Position = npcPosition,
+                });
+            }
+
+            _npcEntities = NPCSpawner.SpawnNPCs(world, requests);
+            Debug.Log($"[GameSceneManager] 已按 CfgID={_currentMapLevel.CfgID} 刷新地图布局，当前地图：{_currentMapLevel.MapName}，NPC 实体数：{_npcEntities.Count}，玩家出生点：{_playerSpawnPoint}");
+        }
+
+        private void WarnIfMapLayoutMissingDoorPanelNpc(IReadOnlyList<MapNpcLayoutData> npcLayouts)
+        {
+            if (npcLayouts == null || npcLayouts.Count == 0)
+                return;
+
+            foreach (var layout in npcLayouts)
+            {
+                if (layout == null || layout.NPCIDInt <= 0)
+                    continue;
+
+                List<(string name, string eventId)> buttons = NpcConfigLoader.GetButtons(layout.NPCIDInt);
+                if (buttons == null || buttons.Count == 0)
+                    continue;
+
+                foreach (var button in buttons)
+                {
+                    if (int.TryParse(button.eventId, out int eventId) && eventId == (int)NpcButtonEventType.OpenDoorPanel)
+                        return;
+                }
+            }
+
+            Debug.LogWarning($"[GameSceneManager] 当前地图 {_currentMapLevel.MapName}（CfgID={_currentMapLevel.CfgID}）的 NPC 布局中不存在可打开 DoorPanel 的 NPC；如需继续切图，请至少保留一个带 EventID=1004 的 NPC。");
+        }
+
+        private void RefreshCurrentMapContent()
+
+        {
+
+            ClearCurrentMapMonsters();
+
+            if (_currentMapLevel == null)
+                return;
+
+            var world = GameManager.Instance?.World;
+            if (world == null)
+                return;
+
+            MapContentConfigLoader.Reload();
+            IReadOnlyList<MapContentData> contents = MapContentConfigLoader.GetByCfgId(_currentMapLevel.CfgID);
+            if (contents == null || contents.Count == 0)
+            {
+                Debug.LogWarning($"[GameSceneManager] 地图 {_currentMapLevel.MapName}（CfgID={_currentMapLevel.CfgID}）未配置地图内容。");
+                return;
+            }
+
+            Vector3 playerPosition = _transformComp != null ? _transformComp.Position : _playerSpawnPoint;
+
+            foreach (var content in contents)
+            {
+                if (content == null)
+                    continue;
+
+                if (content.MonsterIDInt <= 0 || content.CountInt <= 0)
+                {
+                    Debug.LogWarning($"[GameSceneManager] 跳过非法地图内容配置：CfgID={content.CfgID}, MonsterID={content.MonsterID}, Count={content.Count}");
+                    continue;
+                }
+
+                Vector3 spawnCenter = playerPosition + new Vector3(content.OffsetXFloat, 0f, content.OffsetZFloat);
+                var spawned = MonsterSpawner.SpawnMonsters(world, content.MonsterIDInt, content.CountInt, spawnCenter);
+                if (spawned == null || spawned.Count == 0)
+                    continue;
+
+                _currentMapMonsterEntities.AddRange(spawned);
+            }
+
+            Debug.Log($"[GameSceneManager] 已按 CfgID={_currentMapLevel.CfgID} 刷新地图内容，当前地图：{_currentMapLevel.MapName}，怪物实体数：{_currentMapMonsterEntities.Count}");
+        }
+
+        private void ClearCurrentMapMonsters()
+        {
+            var world = GameManager.Instance?.World;
+            if (world == null)
+            {
+                _currentMapMonsterEntities.Clear();
+                return;
+            }
+
+            foreach (var monster in _currentMapMonsterEntities)
+            {
+                if (monster != null && monster.IsAlive)
+                    world.DestroyEntity(monster);
+            }
+
+            _currentMapMonsterEntities.Clear();
+        }
+
+        private void RefreshCurrentMapDecoration()
+        {
+            ClearCurrentMapDecorations();
+
+            if (!_autoGenerateEnvironment || _currentMapLevel == null)
+                return;
+
+            MapDecorationConfigLoader.Reload();
+            IReadOnlyList<MapDecorationData> decorations = MapDecorationConfigLoader.GetByCfgId(_currentMapLevel.CfgID);
+            if (decorations == null || decorations.Count == 0)
+            {
+                Debug.LogWarning($"[GameSceneManager] 地图 {_currentMapLevel.MapName}（CfgID={_currentMapLevel.CfgID}）未配置地图装饰布局。");
+                return;
+            }
+
+            Transform root = EnsureMapDecorationRoot();
+            Vector3 layoutOrigin = _playerSpawnPoint;
+
+            foreach (var decoration in decorations)
+            {
+                if (decoration == null || string.IsNullOrWhiteSpace(decoration.DecorationType))
+                {
+                    Debug.LogWarning($"[GameSceneManager] 跳过非法地图装饰配置：CfgID={decoration?.CfgID}, DecorationType={decoration?.DecorationType}");
+                    continue;
+                }
+
+                GameObject decorationObject = CreateDecorationObject(decoration, layoutOrigin, root);
+                if (decorationObject != null)
+                    _currentMapDecorationObjects.Add(decorationObject);
+            }
+
+            Debug.Log($"[GameSceneManager] 已按 CfgID={_currentMapLevel.CfgID} 刷新地图装饰，当前地图：{_currentMapLevel.MapName}，装饰物数量：{_currentMapDecorationObjects.Count}");
+        }
+
+        private void ClearCurrentMapDecorations()
+        {
+            foreach (var decorationObject in _currentMapDecorationObjects)
+            {
+                if (decorationObject != null)
+                    Destroy(decorationObject);
+            }
+
+            _currentMapDecorationObjects.Clear();
+        }
+
+        private Transform EnsureMapDecorationRoot()
+        {
+            if (_mapDecorationRoot != null)
+                return _mapDecorationRoot;
+
+            var root = new GameObject("MapDecorations");
+            root.transform.SetParent(transform, false);
+            _mapDecorationRoot = root.transform;
+            return _mapDecorationRoot;
+        }
+
+        private GameObject CreateDecorationObject(MapDecorationData decoration, Vector3 layoutOrigin, Transform parent)
+        {
+            PrimitiveType primitiveType;
+            string objectName;
+            Color color;
+            Vector3 defaultScale;
+            float baseHeight;
+
+            switch (decoration.DecorationType.Trim().ToLowerInvariant())
+            {
+                case "pillar":
+                    primitiveType = PrimitiveType.Cylinder;
+                    objectName = "MapPillar";
+                    color = new Color(0.42f, 0.39f, 0.34f);
+                    defaultScale = new Vector3(1f, 2f, 1f);
+                    baseHeight = 2f;
+                    break;
+                case "crate":
+                    primitiveType = PrimitiveType.Cube;
+                    objectName = "MapCrate";
+                    color = new Color(0.45f, 0.27f, 0.14f);
+                    defaultScale = new Vector3(1.6f, 1f, 1.6f);
+                    baseHeight = 1f;
+                    break;
+                case "marker":
+                    primitiveType = PrimitiveType.Sphere;
+                    objectName = "MapMarker";
+                    color = new Color(0.22f, 0.62f, 0.83f);
+                    defaultScale = new Vector3(1.2f, 1.2f, 1.2f);
+                    baseHeight = 1f;
+                    break;
+                case "shrine":
+                    primitiveType = PrimitiveType.Capsule;
+                    objectName = "MapShrine";
+                    color = new Color(0.72f, 0.67f, 0.4f);
+                    defaultScale = new Vector3(1.5f, 2f, 1.5f);
+                    baseHeight = 2f;
+                    break;
+                default:
+                    Debug.LogWarning($"[GameSceneManager] 未知地图装饰类型：{decoration.DecorationType}，已跳过。可选值：Pillar / Crate / Marker / Shrine");
+                    return null;
+            }
+
+            var decorationObject = GameObject.CreatePrimitive(primitiveType);
+            decorationObject.name = objectName;
+            decorationObject.transform.SetParent(parent, false);
+
+            Vector3 scale = new Vector3(
+                decoration.ScaleXFloat > 0f ? decoration.ScaleXFloat : defaultScale.x,
+                decoration.ScaleYFloat > 0f ? decoration.ScaleYFloat : defaultScale.y,
+                decoration.ScaleZFloat > 0f ? decoration.ScaleZFloat : defaultScale.z);
+
+            decorationObject.transform.localScale = scale;
+            decorationObject.transform.rotation = Quaternion.Euler(0f, decoration.RotationYFloat, 0f);
+
+            Vector3 position = layoutOrigin + new Vector3(decoration.OffsetXFloat, 0f, decoration.OffsetZFloat);
+            position.y = baseHeight * scale.y * 0.5f;
+            decorationObject.transform.position = position;
+
+            SetMaterialColor(decorationObject, color);
+            return decorationObject;
+        }
+
+        private static Vector3 ResolveMapSpawnPoint(MapLevelData mapLevel)
+        {
+
+            int anchorIndex = 0;
+            if (!string.IsNullOrWhiteSpace(mapLevel.MapID) && int.TryParse(mapLevel.MapID, out int parsedMapId))
+                anchorIndex = Mathf.Abs(parsedMapId - 1) % MapTeleportAnchors.Length;
+
+            Vector3 anchor = MapTeleportAnchors[anchorIndex];
+            if (mapLevel == null)
+                return anchor;
+
+            Vector3 layoutOffset = MapLayoutConfigLoader.GetPlayerSpawnOffset(mapLevel.CfgID);
+            return anchor + layoutOffset;
+        }
+
+        private static MapLevelData BuildDefaultMapContext()
+        {
+            return new MapLevelData
+            {
+                MapID = "1",
+                SceneID = "1",
+                CfgID = "1001",
+                MapName = "遗忘之林"
+            };
+        }
+
     }
 }

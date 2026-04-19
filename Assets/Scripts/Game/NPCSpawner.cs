@@ -7,6 +7,12 @@ using POELike.ECS.Components;
 
 namespace POELike.Game
 {
+    public struct NPCSpawnRequest
+    {
+        public int NPCID;
+        public Vector3 Position;
+    }
+
     /// <summary>
     /// NPC生成器
     /// 从 Assets/Cfg/NPCDataConf.pb 读取NPC配置，创建ECS实体
@@ -45,16 +51,59 @@ namespace POELike.Game
         }
 
         /// <summary>
+        /// 根据 NPCID 模板与指定坐标创建地图布局中的 NPC 实体
+        /// </summary>
+        public static List<Entity> SpawnNPCs(World world, IReadOnlyList<NPCSpawnRequest> requests)
+        {
+            var entities = new List<Entity>();
+            if (world == null || requests == null || requests.Count == 0)
+                return entities;
+
+            var npcDataList = LoadNPCData();
+            if (npcDataList == null || npcDataList.Count == 0)
+            {
+                Debug.LogWarning("[NPCSpawner] NPCDataConf.pb 中没有NPC数据");
+                return entities;
+            }
+
+            var templateMap = new Dictionary<int, NPCData>();
+            foreach (var data in npcDataList)
+            {
+                if (data == null || data.NPCIDInt <= 0)
+                    continue;
+
+                templateMap[data.NPCIDInt] = data;
+            }
+
+            foreach (var request in requests)
+            {
+                if (!templateMap.TryGetValue(request.NPCID, out var template))
+                {
+                    Debug.LogWarning($"[NPCSpawner] 找不到 NPCID={request.NPCID} 的模板配置，已跳过地图布局刷怪请求");
+                    continue;
+                }
+
+                var entity = CreateNPCEntity(world, template, request.Position);
+                if (entity != null)
+                    entities.Add(entity);
+            }
+
+            Debug.Log($"[NPCSpawner] 按地图布局创建 {entities.Count} 个NPC实体");
+            return entities;
+        }
+
+        /// <summary>
         /// 创建单个NPC的ECS实体
         /// </summary>
-        private static Entity CreateNPCEntity(World world, NPCData data)
+        private static Entity CreateNPCEntity(World world, NPCData data, Vector3? overridePosition = null)
         {
+            Vector3 spawnPosition = overridePosition ?? data.Position;
             var entity = world.CreateEntity("NPC");
 
             // 变换组件（纯逻辑，不绑定Unity Transform）
             entity.AddComponent(new TransformComponent
             {
-                Position = data.Position
+                Position = spawnPosition
             });
 
             // NPC组件
@@ -65,7 +114,7 @@ namespace POELike.Game
                 NPCMesh = data.NPCMesh ?? ""
             });
 
-            Debug.Log($"[NPCSpawner] 创建NPC实体: ID={data.NPCIDInt}, 名称={data.NPCName}, 位置={data.Position}");
+            Debug.Log($"[NPCSpawner] 创建NPC实体: ID={data.NPCIDInt}, 名称={data.NPCName}, 位置={spawnPosition}");
             return entity;
         }
 

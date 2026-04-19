@@ -51,10 +51,15 @@ namespace POELike.Game.UI
 
         private void Awake()
         {
-            _rt            = GetComponent<RectTransform>();
-            _canvasGroup   = GetComponent<CanvasGroup>();
-            _image         = GetComponent<Image>();
-            _equipmentItem = GetComponent<EquipmentItem>();
+            EnsureCachedReferences();
+        }
+
+        private void EnsureCachedReferences()
+        {
+            _rt ??= GetComponent<RectTransform>();
+            _canvasGroup ??= GetComponent<CanvasGroup>();
+            _image ??= GetComponent<Image>();
+            _equipmentItem ??= GetComponent<EquipmentItem>();
         }
 
         /// <summary>
@@ -62,6 +67,7 @@ namespace POELike.Game.UI
         /// </summary>
         public void Setup(BagItemData data)
         {
+            EnsureCachedReferences();
             Data = data;
             if (data == null)
                 return;
@@ -101,6 +107,7 @@ namespace POELike.Game.UI
         /// </summary>
         public void BindToBag(BagBox bag)
         {
+            EnsureCachedReferences();
             if (bag == null || Data == null)
                 return;
 
@@ -139,6 +146,7 @@ namespace POELike.Game.UI
         /// </summary>
         public void BindToEquipmentSlot(EquipmentSlotView slot)
         {
+            EnsureCachedReferences();
             if (slot == null)
                 return;
 
@@ -157,6 +165,7 @@ namespace POELike.Game.UI
         /// </summary>
         public void BindToSocket(SocketItem socket)
         {
+            EnsureCachedReferences();
             if (socket == null)
                 return;
 
@@ -245,6 +254,7 @@ namespace POELike.Game.UI
 
         public void TryBeginMove(PointerEventData eventData)
         {
+            EnsureCachedReferences();
             if (Data == null)
                 return;
 

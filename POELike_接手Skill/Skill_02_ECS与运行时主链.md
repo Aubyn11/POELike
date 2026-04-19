@@ -53,7 +53,10 @@ flowchart TD
   - 技能输入采集与写入 `PlayerInputComponent`
   - 药剂快捷键处理
   - 左键 `Skill1 / Move / Blocked` 判定分流
+  - 传送门地图选择后的玩家真实传送、地图装饰刷新、地图布局刷新与地图内容刷新
+
   - 监听 `EntityDiedEvent` 并桥接怪物地面掉落到 `GroundItemDroppedEvent`
+
 - 如果现象与“玩家输入后发生了什么”有关，优先查这里
 
 ### 系统层阅读顺序
@@ -138,6 +141,8 @@ flowchart TD
   - `Skill1`
   - `Move`
   - `Blocked`
+- 点击 NPC 名称或地面掉落名称时，当前也会立即把本次左键锁定为交互路径，避免同一帧继续落入普通点地移动
+- 进入 NPC / 地面掉落交互距离后，当前由 `GameSceneManager` 立即停下并继续执行下一步（打开对话 / 执行拾取），不再依赖寻路完全结束后的额外时机
 - 整次按住过程中不会中途切换
 - 若要改 POE 风格左键行为，优先查：
   - `ResolveLeftMouseIntent()`

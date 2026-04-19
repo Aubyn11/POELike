@@ -6,7 +6,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "35",
       "EquipmentModMaxValue": "45",
-      "EquipmentModValueDesc": "\u589E\u52A0\u6700\u5C0F\u7269\u7406\u4F24\u5BB3"
+      "EquipmentModValueDesc": "\u589e\u52a0\u6700\u5c0f\u7269\u7406\u4f24\u5bb3"
     },
     {
       "EquipmentModValueId": "2",
@@ -14,7 +14,7 @@
       "EquipmentModValueIndex": "2",
       "EquipmentModMinValue": "70",
       "EquipmentModMaxValue": "80",
-      "EquipmentModValueDesc": "\u589E\u52A0\u6700\u5927\u7269\u7406\u4F24\u5BB3"
+      "EquipmentModValueDesc": "\u589e\u52a0\u6700\u5927\u7269\u7406\u4f24\u5bb3"
     },
     {
       "EquipmentModValueId": "3",
@@ -22,7 +22,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "25",
       "EquipmentModMaxValue": "32",
-      "EquipmentModValueDesc": "\u589E\u52A0\u6700\u5C0F\u7269\u7406\u4F24\u5BB3"
+      "EquipmentModValueDesc": "\u589e\u52a0\u6700\u5c0f\u7269\u7406\u4f24\u5bb3"
     },
     {
       "EquipmentModValueId": "4",
@@ -30,7 +30,7 @@
       "EquipmentModValueIndex": "2",
       "EquipmentModMinValue": "50",
       "EquipmentModMaxValue": "62",
-      "EquipmentModValueDesc": "\u589E\u52A0\u6700\u5927\u7269\u7406\u4F24\u5BB3"
+      "EquipmentModValueDesc": "\u589e\u52a0\u6700\u5927\u7269\u7406\u4f24\u5bb3"
     },
     {
       "EquipmentModValueId": "5",
@@ -38,7 +38,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "18",
       "EquipmentModMaxValue": "22",
-      "EquipmentModValueDesc": "\u589E\u52A0\u6700\u5C0F\u7269\u7406\u4F24\u5BB3"
+      "EquipmentModValueDesc": "\u589e\u52a0\u6700\u5c0f\u7269\u7406\u4f24\u5bb3"
     },
     {
       "EquipmentModValueId": "6",
@@ -46,7 +46,7 @@
       "EquipmentModValueIndex": "2",
       "EquipmentModMinValue": "36",
       "EquipmentModMaxValue": "44",
-      "EquipmentModValueDesc": "\u589E\u52A0\u6700\u5927\u7269\u7406\u4F24\u5BB3"
+      "EquipmentModValueDesc": "\u589e\u52a0\u6700\u5927\u7269\u7406\u4f24\u5bb3"
     },
     {
       "EquipmentModValueId": "7",
@@ -54,7 +54,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "12",
       "EquipmentModMaxValue": "15",
-      "EquipmentModValueDesc": "\u589E\u52A0\u6700\u5C0F\u7269\u7406\u4F24\u5BB3"
+      "EquipmentModValueDesc": "\u589e\u52a0\u6700\u5c0f\u7269\u7406\u4f24\u5bb3"
     },
     {
       "EquipmentModValueId": "8",
@@ -62,7 +62,7 @@
       "EquipmentModValueIndex": "2",
       "EquipmentModMinValue": "24",
       "EquipmentModMaxValue": "30",
-      "EquipmentModValueDesc": "\u589E\u52A0\u6700\u5927\u7269\u7406\u4F24\u5BB3"
+      "EquipmentModValueDesc": "\u589e\u52a0\u6700\u5927\u7269\u7406\u4f24\u5bb3"
     },
     {
       "EquipmentModValueId": "9",
@@ -70,7 +70,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "7",
       "EquipmentModMaxValue": "9",
-      "EquipmentModValueDesc": "\u589E\u52A0\u6700\u5C0F\u7269\u7406\u4F24\u5BB3"
+      "EquipmentModValueDesc": "\u589e\u52a0\u6700\u5c0f\u7269\u7406\u4f24\u5bb3"
     },
     {
       "EquipmentModValueId": "10",
@@ -78,7 +78,7 @@
       "EquipmentModValueIndex": "2",
       "EquipmentModMinValue": "14",
       "EquipmentModMaxValue": "18",
-      "EquipmentModValueDesc": "\u589E\u52A0\u6700\u5927\u7269\u7406\u4F24\u5BB3"
+      "EquipmentModValueDesc": "\u589e\u52a0\u6700\u5927\u7269\u7406\u4f24\u5bb3"
     },
     {
       "EquipmentModValueId": "11",
@@ -86,7 +86,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "2",
       "EquipmentModMaxValue": "4",
-      "EquipmentModValueDesc": "\u589E\u52A0\u6700\u5C0F\u7269\u7406\u4F24\u5BB3"
+      "EquipmentModValueDesc": "\u589e\u52a0\u6700\u5c0f\u7269\u7406\u4f24\u5bb3"
     },
     {
       "EquipmentModValueId": "12",
@@ -94,7 +94,7 @@
       "EquipmentModValueIndex": "2",
       "EquipmentModMinValue": "5",
       "EquipmentModMaxValue": "8",
-      "EquipmentModValueDesc": "\u589E\u52A0\u6700\u5927\u7269\u7406\u4F24\u5BB3"
+      "EquipmentModValueDesc": "\u589e\u52a0\u6700\u5927\u7269\u7406\u4f24\u5bb3"
     },
     {
       "EquipmentModValueId": "13",
@@ -102,7 +102,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "20",
       "EquipmentModMaxValue": "24",
-      "EquipmentModValueDesc": "\u653B\u51FB\u901F\u5EA6\u63D0\u9AD8%"
+      "EquipmentModValueDesc": "\u653b\u51fb\u901f\u5ea6\u63d0\u9ad8%"
     },
     {
       "EquipmentModValueId": "14",
@@ -110,7 +110,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "15",
       "EquipmentModMaxValue": "19",
-      "EquipmentModValueDesc": "\u653B\u51FB\u901F\u5EA6\u63D0\u9AD8%"
+      "EquipmentModValueDesc": "\u653b\u51fb\u901f\u5ea6\u63d0\u9ad8%"
     },
     {
       "EquipmentModValueId": "15",
@@ -118,7 +118,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "11",
       "EquipmentModMaxValue": "14",
-      "EquipmentModValueDesc": "\u653B\u51FB\u901F\u5EA6\u63D0\u9AD8%"
+      "EquipmentModValueDesc": "\u653b\u51fb\u901f\u5ea6\u63d0\u9ad8%"
     },
     {
       "EquipmentModValueId": "16",
@@ -126,7 +126,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "7",
       "EquipmentModMaxValue": "10",
-      "EquipmentModValueDesc": "\u653B\u51FB\u901F\u5EA6\u63D0\u9AD8%"
+      "EquipmentModValueDesc": "\u653b\u51fb\u901f\u5ea6\u63d0\u9ad8%"
     },
     {
       "EquipmentModValueId": "17",
@@ -134,7 +134,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "3",
       "EquipmentModMaxValue": "6",
-      "EquipmentModValueDesc": "\u653B\u51FB\u901F\u5EA6\u63D0\u9AD8%"
+      "EquipmentModValueDesc": "\u653b\u51fb\u901f\u5ea6\u63d0\u9ad8%"
     },
     {
       "EquipmentModValueId": "18",
@@ -142,7 +142,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "35",
       "EquipmentModMaxValue": "40",
-      "EquipmentModValueDesc": "\u66B4\u51FB\u7387\u63D0\u9AD8%"
+      "EquipmentModValueDesc": "\u66b4\u51fb\u7387\u63d0\u9ad8%"
     },
     {
       "EquipmentModValueId": "19",
@@ -150,7 +150,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "25",
       "EquipmentModMaxValue": "29",
-      "EquipmentModValueDesc": "\u66B4\u51FB\u7387\u63D0\u9AD8%"
+      "EquipmentModValueDesc": "\u66b4\u51fb\u7387\u63d0\u9ad8%"
     },
     {
       "EquipmentModValueId": "20",
@@ -158,7 +158,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "18",
       "EquipmentModMaxValue": "22",
-      "EquipmentModValueDesc": "\u66B4\u51FB\u7387\u63D0\u9AD8%"
+      "EquipmentModValueDesc": "\u66b4\u51fb\u7387\u63d0\u9ad8%"
     },
     {
       "EquipmentModValueId": "21",
@@ -166,7 +166,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "10",
       "EquipmentModMaxValue": "14",
-      "EquipmentModValueDesc": "\u66B4\u51FB\u7387\u63D0\u9AD8%"
+      "EquipmentModValueDesc": "\u66b4\u51fb\u7387\u63d0\u9ad8%"
     },
     {
       "EquipmentModValueId": "22",
@@ -174,7 +174,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "5",
       "EquipmentModMaxValue": "9",
-      "EquipmentModValueDesc": "\u66B4\u51FB\u7387\u63D0\u9AD8%"
+      "EquipmentModValueDesc": "\u66b4\u51fb\u7387\u63d0\u9ad8%"
     },
     {
       "EquipmentModValueId": "23",
@@ -182,7 +182,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "20",
       "EquipmentModMaxValue": "24",
-      "EquipmentModValueDesc": "\u7269\u7406\u4F24\u5BB3\u751F\u547D\u5077\u53D6\u2030"
+      "EquipmentModValueDesc": "\u7269\u7406\u4f24\u5bb3\u751f\u547d\u5077\u53d6\u2030"
     },
     {
       "EquipmentModValueId": "24",
@@ -190,7 +190,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "15",
       "EquipmentModMaxValue": "19",
-      "EquipmentModValueDesc": "\u7269\u7406\u4F24\u5BB3\u751F\u547D\u5077\u53D6\u2030"
+      "EquipmentModValueDesc": "\u7269\u7406\u4f24\u5bb3\u751f\u547d\u5077\u53d6\u2030"
     },
     {
       "EquipmentModValueId": "25",
@@ -198,7 +198,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "10",
       "EquipmentModMaxValue": "14",
-      "EquipmentModValueDesc": "\u7269\u7406\u4F24\u5BB3\u751F\u547D\u5077\u53D6\u2030"
+      "EquipmentModValueDesc": "\u7269\u7406\u4f24\u5bb3\u751f\u547d\u5077\u53d6\u2030"
     },
     {
       "EquipmentModValueId": "26",
@@ -206,7 +206,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "4",
       "EquipmentModMaxValue": "9",
-      "EquipmentModValueDesc": "\u7269\u7406\u4F24\u5BB3\u751F\u547D\u5077\u53D6\u2030"
+      "EquipmentModValueDesc": "\u7269\u7406\u4f24\u5bb3\u751f\u547d\u5077\u53d6\u2030"
     },
     {
       "EquipmentModValueId": "27",
@@ -214,7 +214,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "20",
       "EquipmentModMaxValue": "24",
-      "EquipmentModValueDesc": "\u7269\u7406\u4F24\u5BB3\u9B54\u529B\u5077\u53D6\u2030"
+      "EquipmentModValueDesc": "\u7269\u7406\u4f24\u5bb3\u9b54\u529b\u5077\u53d6\u2030"
     },
     {
       "EquipmentModValueId": "28",
@@ -222,7 +222,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "15",
       "EquipmentModMaxValue": "19",
-      "EquipmentModValueDesc": "\u7269\u7406\u4F24\u5BB3\u9B54\u529B\u5077\u53D6\u2030"
+      "EquipmentModValueDesc": "\u7269\u7406\u4f24\u5bb3\u9b54\u529b\u5077\u53d6\u2030"
     },
     {
       "EquipmentModValueId": "29",
@@ -230,7 +230,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "10",
       "EquipmentModMaxValue": "14",
-      "EquipmentModValueDesc": "\u7269\u7406\u4F24\u5BB3\u9B54\u529B\u5077\u53D6\u2030"
+      "EquipmentModValueDesc": "\u7269\u7406\u4f24\u5bb3\u9b54\u529b\u5077\u53d6\u2030"
     },
     {
       "EquipmentModValueId": "30",
@@ -238,7 +238,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "4",
       "EquipmentModMaxValue": "9",
-      "EquipmentModValueDesc": "\u7269\u7406\u4F24\u5BB3\u9B54\u529B\u5077\u53D6\u2030"
+      "EquipmentModValueDesc": "\u7269\u7406\u4f24\u5bb3\u9b54\u529b\u5077\u53d6\u2030"
     },
     {
       "EquipmentModValueId": "31",
@@ -246,7 +246,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "50",
       "EquipmentModMaxValue": "59",
-      "EquipmentModValueDesc": "\u66B4\u51FB\u4F24\u5BB3\u52A0\u6210%"
+      "EquipmentModValueDesc": "\u66b4\u51fb\u4f24\u5bb3\u52a0\u6210%"
     },
     {
       "EquipmentModValueId": "32",
@@ -254,7 +254,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "35",
       "EquipmentModMaxValue": "44",
-      "EquipmentModValueDesc": "\u66B4\u51FB\u4F24\u5BB3\u52A0\u6210%"
+      "EquipmentModValueDesc": "\u66b4\u51fb\u4f24\u5bb3\u52a0\u6210%"
     },
     {
       "EquipmentModValueId": "33",
@@ -262,7 +262,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "25",
       "EquipmentModMaxValue": "29",
-      "EquipmentModValueDesc": "\u66B4\u51FB\u4F24\u5BB3\u52A0\u6210%"
+      "EquipmentModValueDesc": "\u66b4\u51fb\u4f24\u5bb3\u52a0\u6210%"
     },
     {
       "EquipmentModValueId": "34",
@@ -270,7 +270,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "15",
       "EquipmentModMaxValue": "19",
-      "EquipmentModValueDesc": "\u66B4\u51FB\u4F24\u5BB3\u52A0\u6210%"
+      "EquipmentModValueDesc": "\u66b4\u51fb\u4f24\u5bb3\u52a0\u6210%"
     },
     {
       "EquipmentModValueId": "35",
@@ -278,7 +278,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "5",
       "EquipmentModMaxValue": "9",
-      "EquipmentModValueDesc": "\u66B4\u51FB\u4F24\u5BB3\u52A0\u6210%"
+      "EquipmentModValueDesc": "\u66b4\u51fb\u4f24\u5bb3\u52a0\u6210%"
     },
     {
       "EquipmentModValueId": "36",
@@ -286,7 +286,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "13",
       "EquipmentModMaxValue": "15",
-      "EquipmentModValueDesc": "\u653B\u51FB\u901F\u5EA6\u63D0\u9AD8%"
+      "EquipmentModValueDesc": "\u653b\u51fb\u901f\u5ea6\u63d0\u9ad8%"
     },
     {
       "EquipmentModValueId": "37",
@@ -294,7 +294,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "9",
       "EquipmentModMaxValue": "12",
-      "EquipmentModValueDesc": "\u653B\u51FB\u901F\u5EA6\u63D0\u9AD8%"
+      "EquipmentModValueDesc": "\u653b\u51fb\u901f\u5ea6\u63d0\u9ad8%"
     },
     {
       "EquipmentModValueId": "38",
@@ -302,7 +302,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "5",
       "EquipmentModMaxValue": "8",
-      "EquipmentModValueDesc": "\u653B\u51FB\u901F\u5EA6\u63D0\u9AD8%"
+      "EquipmentModValueDesc": "\u653b\u51fb\u901f\u5ea6\u63d0\u9ad8%"
     },
     {
       "EquipmentModValueId": "39",
@@ -310,7 +310,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "2",
       "EquipmentModMaxValue": "4",
-      "EquipmentModValueDesc": "\u653B\u51FB\u901F\u5EA6\u63D0\u9AD8%"
+      "EquipmentModValueDesc": "\u653b\u51fb\u901f\u5ea6\u63d0\u9ad8%"
     },
     {
       "EquipmentModValueId": "40",
@@ -318,7 +318,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "25",
       "EquipmentModMaxValue": "30",
-      "EquipmentModValueDesc": "\u66B4\u51FB\u7387\u63D0\u9AD8%"
+      "EquipmentModValueDesc": "\u66b4\u51fb\u7387\u63d0\u9ad8%"
     },
     {
       "EquipmentModValueId": "41",
@@ -326,7 +326,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "15",
       "EquipmentModMaxValue": "19",
-      "EquipmentModValueDesc": "\u66B4\u51FB\u7387\u63D0\u9AD8%"
+      "EquipmentModValueDesc": "\u66b4\u51fb\u7387\u63d0\u9ad8%"
     },
     {
       "EquipmentModValueId": "42",
@@ -334,7 +334,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "8",
       "EquipmentModMaxValue": "12",
-      "EquipmentModValueDesc": "\u66B4\u51FB\u7387\u63D0\u9AD8%"
+      "EquipmentModValueDesc": "\u66b4\u51fb\u7387\u63d0\u9ad8%"
     },
     {
       "EquipmentModValueId": "43",
@@ -342,7 +342,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "3",
       "EquipmentModMaxValue": "7",
-      "EquipmentModValueDesc": "\u66B4\u51FB\u7387\u63D0\u9AD8%"
+      "EquipmentModValueDesc": "\u66b4\u51fb\u7387\u63d0\u9ad8%"
     },
     {
       "EquipmentModValueId": "44",
@@ -350,7 +350,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "300",
       "EquipmentModMaxValue": "350",
-      "EquipmentModValueDesc": "\u547D\u4E2D\u503C\u002B"
+      "EquipmentModValueDesc": "\u547d\u4e2d\u503c+"
     },
     {
       "EquipmentModValueId": "45",
@@ -358,7 +358,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "175",
       "EquipmentModMaxValue": "225",
-      "EquipmentModValueDesc": "\u547D\u4E2D\u503C\u002B"
+      "EquipmentModValueDesc": "\u547d\u4e2d\u503c+"
     },
     {
       "EquipmentModValueId": "46",
@@ -366,7 +366,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "100",
       "EquipmentModMaxValue": "150",
-      "EquipmentModValueDesc": "\u547D\u4E2D\u503C\u002B"
+      "EquipmentModValueDesc": "\u547d\u4e2d\u503c+"
     },
     {
       "EquipmentModValueId": "47",
@@ -374,7 +374,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "30",
       "EquipmentModMaxValue": "60",
-      "EquipmentModValueDesc": "\u547D\u4E2D\u503C\u002B"
+      "EquipmentModValueDesc": "\u547d\u4e2d\u503c+"
     },
     {
       "EquipmentModValueId": "48",
@@ -382,7 +382,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "23",
       "EquipmentModMaxValue": "27",
-      "EquipmentModValueDesc": "\u529B\u91CF\u002B"
+      "EquipmentModValueDesc": "\u529b\u91cf+"
     },
     {
       "EquipmentModValueId": "49",
@@ -390,7 +390,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "16",
       "EquipmentModMaxValue": "22",
-      "EquipmentModValueDesc": "\u529B\u91CF\u002B"
+      "EquipmentModValueDesc": "\u529b\u91cf+"
     },
     {
       "EquipmentModValueId": "50",
@@ -398,7 +398,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "9",
       "EquipmentModMaxValue": "15",
-      "EquipmentModValueDesc": "\u529B\u91CF\u002B"
+      "EquipmentModValueDesc": "\u529b\u91cf+"
     },
     {
       "EquipmentModValueId": "51",
@@ -406,7 +406,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "3",
       "EquipmentModMaxValue": "8",
-      "EquipmentModValueDesc": "\u529B\u91CF\u002B"
+      "EquipmentModValueDesc": "\u529b\u91cf+"
     },
     {
       "EquipmentModValueId": "52",
@@ -414,7 +414,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "23",
       "EquipmentModMaxValue": "27",
-      "EquipmentModValueDesc": "\u654F\u6377\u002B"
+      "EquipmentModValueDesc": "\u654f\u6377+"
     },
     {
       "EquipmentModValueId": "53",
@@ -422,7 +422,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "16",
       "EquipmentModMaxValue": "22",
-      "EquipmentModValueDesc": "\u654F\u6377\u002B"
+      "EquipmentModValueDesc": "\u654f\u6377+"
     },
     {
       "EquipmentModValueId": "54",
@@ -430,7 +430,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "9",
       "EquipmentModMaxValue": "15",
-      "EquipmentModValueDesc": "\u654F\u6377\u002B"
+      "EquipmentModValueDesc": "\u654f\u6377+"
     },
     {
       "EquipmentModValueId": "55",
@@ -438,7 +438,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "3",
       "EquipmentModMaxValue": "8",
-      "EquipmentModValueDesc": "\u654F\u6377\u002B"
+      "EquipmentModValueDesc": "\u654f\u6377+"
     },
     {
       "EquipmentModValueId": "56",
@@ -446,7 +446,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "23",
       "EquipmentModMaxValue": "27",
-      "EquipmentModValueDesc": "\u667A\u6167\u002B"
+      "EquipmentModValueDesc": "\u667a\u6167+"
     },
     {
       "EquipmentModValueId": "57",
@@ -454,7 +454,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "16",
       "EquipmentModMaxValue": "22",
-      "EquipmentModValueDesc": "\u667A\u6167\u002B"
+      "EquipmentModValueDesc": "\u667a\u6167+"
     },
     {
       "EquipmentModValueId": "58",
@@ -462,7 +462,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "9",
       "EquipmentModMaxValue": "15",
-      "EquipmentModValueDesc": "\u667A\u6167\u002B"
+      "EquipmentModValueDesc": "\u667a\u6167+"
     },
     {
       "EquipmentModValueId": "59",
@@ -470,7 +470,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "3",
       "EquipmentModMaxValue": "8",
-      "EquipmentModValueDesc": "\u667A\u6167\u002B"
+      "EquipmentModValueDesc": "\u667a\u6167+"
     },
     {
       "EquipmentModValueId": "60",
@@ -478,7 +478,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "24",
       "EquipmentModMaxValue": "28",
-      "EquipmentModValueDesc": "\u706B\u7130\u6297\u6027\u002B%"
+      "EquipmentModValueDesc": "\u706b\u7130\u6297\u6027+%"
     },
     {
       "EquipmentModValueId": "61",
@@ -486,7 +486,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "16",
       "EquipmentModMaxValue": "23",
-      "EquipmentModValueDesc": "\u706B\u7130\u6297\u6027\u002B%"
+      "EquipmentModValueDesc": "\u706b\u7130\u6297\u6027+%"
     },
     {
       "EquipmentModValueId": "62",
@@ -494,7 +494,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "9",
       "EquipmentModMaxValue": "15",
-      "EquipmentModValueDesc": "\u706B\u7130\u6297\u6027\u002B%"
+      "EquipmentModValueDesc": "\u706b\u7130\u6297\u6027+%"
     },
     {
       "EquipmentModValueId": "63",
@@ -502,7 +502,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "3",
       "EquipmentModMaxValue": "8",
-      "EquipmentModValueDesc": "\u706B\u7130\u6297\u6027\u002B%"
+      "EquipmentModValueDesc": "\u706b\u7130\u6297\u6027+%"
     },
     {
       "EquipmentModValueId": "64",
@@ -510,7 +510,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "24",
       "EquipmentModMaxValue": "28",
-      "EquipmentModValueDesc": "\u51B0\u971C\u6297\u6027\u002B%"
+      "EquipmentModValueDesc": "\u51b0\u971c\u6297\u6027+%"
     },
     {
       "EquipmentModValueId": "65",
@@ -518,7 +518,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "16",
       "EquipmentModMaxValue": "23",
-      "EquipmentModValueDesc": "\u51B0\u971C\u6297\u6027\u002B%"
+      "EquipmentModValueDesc": "\u51b0\u971c\u6297\u6027+%"
     },
     {
       "EquipmentModValueId": "66",
@@ -526,7 +526,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "9",
       "EquipmentModMaxValue": "15",
-      "EquipmentModValueDesc": "\u51B0\u971C\u6297\u6027\u002B%"
+      "EquipmentModValueDesc": "\u51b0\u971c\u6297\u6027+%"
     },
     {
       "EquipmentModValueId": "67",
@@ -534,7 +534,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "3",
       "EquipmentModMaxValue": "8",
-      "EquipmentModValueDesc": "\u51B0\u971C\u6297\u6027\u002B%"
+      "EquipmentModValueDesc": "\u51b0\u971c\u6297\u6027+%"
     },
     {
       "EquipmentModValueId": "68",
@@ -542,7 +542,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "24",
       "EquipmentModMaxValue": "28",
-      "EquipmentModValueDesc": "\u95EA\u7535\u6297\u6027\u002B%"
+      "EquipmentModValueDesc": "\u95ea\u7535\u6297\u6027+%"
     },
     {
       "EquipmentModValueId": "69",
@@ -550,7 +550,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "16",
       "EquipmentModMaxValue": "23",
-      "EquipmentModValueDesc": "\u95EA\u7535\u6297\u6027\u002B%"
+      "EquipmentModValueDesc": "\u95ea\u7535\u6297\u6027+%"
     },
     {
       "EquipmentModValueId": "70",
@@ -558,7 +558,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "9",
       "EquipmentModMaxValue": "15",
-      "EquipmentModValueDesc": "\u95EA\u7535\u6297\u6027\u002B%"
+      "EquipmentModValueDesc": "\u95ea\u7535\u6297\u6027+%"
     },
     {
       "EquipmentModValueId": "71",
@@ -566,7 +566,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "3",
       "EquipmentModMaxValue": "8",
-      "EquipmentModValueDesc": "\u95EA\u7535\u6297\u6027\u002B%"
+      "EquipmentModValueDesc": "\u95ea\u7535\u6297\u6027+%"
     },
     {
       "EquipmentModValueId": "72",
@@ -574,7 +574,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "60",
       "EquipmentModMaxValue": "79",
-      "EquipmentModValueDesc": "\u6700\u5927\u751F\u547D\u002B"
+      "EquipmentModValueDesc": "\u6700\u5927\u751f\u547d+"
     },
     {
       "EquipmentModValueId": "73",
@@ -582,7 +582,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "45",
       "EquipmentModMaxValue": "59",
-      "EquipmentModValueDesc": "\u6700\u5927\u751F\u547D\u002B"
+      "EquipmentModValueDesc": "\u6700\u5927\u751f\u547d+"
     },
     {
       "EquipmentModValueId": "74",
@@ -590,7 +590,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "30",
       "EquipmentModMaxValue": "44",
-      "EquipmentModValueDesc": "\u6700\u5927\u751F\u547D\u002B"
+      "EquipmentModValueDesc": "\u6700\u5927\u751f\u547d+"
     },
     {
       "EquipmentModValueId": "75",
@@ -598,7 +598,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "15",
       "EquipmentModMaxValue": "29",
-      "EquipmentModValueDesc": "\u6700\u5927\u751F\u547D\u002B"
+      "EquipmentModValueDesc": "\u6700\u5927\u751f\u547d+"
     },
     {
       "EquipmentModValueId": "76",
@@ -606,7 +606,7 @@
       "EquipmentModValueIndex": "1",
       "EquipmentModMinValue": "3",
       "EquipmentModMaxValue": "14",
-      "EquipmentModValueDesc": "\u6700\u5927\u751F\u547D\u002B"
+      "EquipmentModValueDesc": "\u6700\u5927\u751f\u547d+"
     }
   ]
 }

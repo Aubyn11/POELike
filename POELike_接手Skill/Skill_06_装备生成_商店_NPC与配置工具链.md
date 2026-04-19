@@ -45,6 +45,39 @@
 
 - NPC / 对话 / 按钮配置读取入口
 
+#### [MapLevelConfigLoader.cs](../Assets/Scripts/Game/MapLevelConfigLoader.cs)
+
+- 传送门地图关卡配置读取入口
+- 当前读取 `MapLevelConf.pb`
+
+#### [MapLayoutConfigLoader.cs](../Assets/Scripts/Game/MapLayoutConfigLoader.cs)
+
+- 地图布局配置读取入口
+- 当前读取 `MapLayoutConf.pb`
+- 按 `CfgID` 返回玩家出生偏移与 NPC 组合 / 布局
+- 当前 A1 测试数据：`CfgID=1001` 会刷 `NPCID=1001 + 1002`，`CfgID=1002` 会刷 `NPCID=1001 + 1003`
+
+#### [MapDecorationConfigLoader.cs](../Assets/Scripts/Game/MapDecorationConfigLoader.cs)
+
+- 地图装饰配置读取入口
+- 当前读取 `MapDecorationConf.pb`
+- 按 `CfgID` 返回地图装饰布局
+- 当前 A2 测试数据：`CfgID=1001` 会刷柱子 + 祭坛布局，`CfgID=1002` 会刷箱体 + 标记物布局
+
+#### [MapContentConfigLoader.cs](../Assets/Scripts/Game/MapContentConfigLoader.cs)
+
+- 地图内容配置读取入口
+- 当前读取 `MapContentConf.pb`
+- 按 `CfgID` 返回当前地图应刷新的怪物组
+
+#### [DoorPanel.cs](../Assets/Scripts/Game/UI/DoorPanel.cs)
+
+- 传送门面板入口
+- 打开时按 `MapLevelConf.pb` 条目数量动态创建地图按钮
+- 每个条目的文本当前显示 `MapName`
+- 点击地图按钮后会在当前 `GameScene` 内把玩家真实传送到对应地图出生点，并触发对应 `CfgID` 的玩家出生布局、地图装饰布局、NPC 组合、NPC 布局与地图内容刷新
+- 如某张地图在 `MapLayoutConf.pb` 中没有保留可打开 `DoorPanel` 的 NPC，`GameSceneManager` 当前会输出明确警告；当前测试数据里的入口 NPC 是 `NPCID=1001`
+
 #### [NpcDialogPanel.cs](../Assets/Scripts/Game/UI/NpcDialogPanel.cs)
 
 - NPC 对话面板
@@ -69,7 +102,9 @@ flowchart LR
 #### 关键文件
 
 - [Program.cs](../Tools/GenEquipmentExcel/Program.cs)
+- [export_excel_to_cfg.py](../Tools/excelConvert/export_excel_to_cfg.py)
 - [启动ExcelConvert.bat](../启动ExcelConvert.bat)
+  - 当前会优先启动内部 `ExcelExporter / excelConvert` 发布产物；若仓库里未提供这些内部工具，则自动走仓库内降级链：先刷新 `equipment.xlsx`，再把 `common/excel/xls/*.xlsx` 全量导出到 `Assets/Cfg/*.pb`
 - 各类 `ConfigLoader`
 
 ### 当前已知数据链约定

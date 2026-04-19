@@ -1,0 +1,10 @@
+MapDecorationConf{
+    int32 CfgID = 1,
+    string DecorationType = 2,
+    float OffsetX = 3,
+    float OffsetZ = 4,
+    float ScaleX = 5,
+    float ScaleY = 6,
+    float ScaleZ = 7,
+    float RotationY = 8
+}

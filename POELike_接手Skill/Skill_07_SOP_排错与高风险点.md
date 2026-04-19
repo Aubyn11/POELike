@@ -40,7 +40,7 @@
 
 1. 看 [EquipmentConfigLoader.cs](../Assets/Scripts/Game/Equipment/EquipmentConfigLoader.cs)
 2. 看 [Program.cs](../Tools/GenEquipmentExcel/Program.cs)
-3. 看 [启动ExcelConvert.bat](../启动ExcelConvert.bat)
+3. 看 [启动ExcelConvert.bat](../启动ExcelConvert.bat)（当前会优先使用内部 ExcelConvert；缺失时会先刷新 `equipment.xlsx`，再把 `common/excel/xls/*.xlsx` 全量导出到 `Assets/Cfg/*.pb`）
 4. 看 [EquipmentGenerator.cs](../Assets/Scripts/Game/Equipment/EquipmentGenerator.cs)
 5. 看 [ShopPanel.cs](../Assets/Scripts/Game/UI/ShopPanel.cs)
 6. 看 [BagItemData.cs](../Assets/Scripts/Game/UI/BagItemData.cs)
@@ -76,8 +76,12 @@
 
 1. 看 [NpcButtonEventType.cs](../Assets/Scripts/Game/NpcButtonEventType.cs)
 2. 看 [NpcConfigLoader.cs](../Assets/Scripts/Game/NpcConfigLoader.cs)
-3. 看 [NpcDialogPanel.cs](../Assets/Scripts/Game/UI/NpcDialogPanel.cs)
-4. 看 [GameSceneManager.cs](../Assets/Scripts/Game/GameSceneManager.cs)
+3. 如涉及传送门地图列表、点击后传送、玩家出生布局、NPC 布局、地图装饰布局或地图内容刷新，再看 [MapLevelConfigLoader.cs](../Assets/Scripts/Game/MapLevelConfigLoader.cs) / [MapLayoutConfigLoader.cs](../Assets/Scripts/Game/MapLayoutConfigLoader.cs) / [MapDecorationConfigLoader.cs](../Assets/Scripts/Game/MapDecorationConfigLoader.cs) / [MapContentConfigLoader.cs](../Assets/Scripts/Game/MapContentConfigLoader.cs) / [DoorPanel.cs](../Assets/Scripts/Game/UI/DoorPanel.cs)
+   - A1 之后还要额外检查：当前地图在 `MapLayoutConf.pb` 中是否至少保留了一个可打开 `DoorPanel` 的 NPC；当前测试数据里的入口 NPC 是 `NPCID=1001`
+   - A2 之后还要额外检查：当前地图在 `MapDecorationConf.pb` 中是否真的配置了装饰数据；若 `DecorationType` 不是 `Pillar / Crate / Marker / Shrine` 之一，运行时会跳过并输出警告
+
+4. 看 [NpcDialogPanel.cs](../Assets/Scripts/Game/UI/NpcDialogPanel.cs)
+5. 看 [GameSceneManager.cs](../Assets/Scripts/Game/GameSceneManager.cs)
 
 #### SOP 6：修改技能释放或支持宝石
 

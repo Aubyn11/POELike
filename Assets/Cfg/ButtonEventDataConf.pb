@@ -11,6 +11,10 @@
     {
       "EventID": "1003",
       "EventType": "3"
+    },
+    {
+      "EventID": "1004",
+      "EventType": "4"
     }
   ]
 }
