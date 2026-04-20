@@ -24,6 +24,8 @@ namespace POELike.Game
         private const float DefaultMoveSpeed   = 3.5f;
         private const float DefaultAttackRange = 1.5f;
         private const float DefaultDetectionRange = 10f;
+        private const float DefaultAttackDuration = 0.5f;
+        private const float DefaultAttackInterval = 1.5f;
 
         // ── 配置缓存 ──────────────────────────────────────────────────
         private static Dictionary<int, MonsterData> _configCache;
@@ -100,6 +102,8 @@ namespace POELike.Game
             // 如果没有显式攻击距离配置，当前回退默认近战距离，避免怪物在玩家周围远距离停住并抖动。
             float attackRange = Mathf.Max(0.1f, data.MonsterAttackRangeFloat);
             float detectionRange = Mathf.Max(0f, data.MonsterDetectionRangeFloat);
+            float attackDuration = Mathf.Max(0f, data.MonsterAttackDurationFloat);
+            float attackInterval = Mathf.Max(0f, data.MonsterAttackIntervalFloat);
 
             var entity = world.CreateEntity("Monster");
 
@@ -117,6 +121,8 @@ namespace POELike.Game
                 Defense     = defense,
                 MoveSpeed   = moveSpeed,
                 AttackRange = attackRange,
+                AttackDuration = attackDuration,
+                AttackInterval = attackInterval,
                 FaceYaw     = UnityEngine.Random.Range(0f, 360f)
             });
 
@@ -137,7 +143,9 @@ namespace POELike.Game
                 DetectionRange = detectionRange,
                 ChaseRange     = 100f,  // 追击放弃距离
                 AttackRange    = attackRange,
-                AttackCooldown = 1.5f,
+                AttackDuration = attackDuration,
+                AttackInterval = attackInterval,
+                AttackCooldown = attackDuration + attackInterval,
                 SpawnPoint     = position,
             });
 
@@ -207,6 +215,8 @@ namespace POELike.Game
             public string MonsterRadius;
             public string MonsterAttackRange;
             public string MonsterDetectionRange;
+            public string MonsterAttackDuration;
+            public string MonsterAttackInterval;
 
             public int MonsterIDInt => int.TryParse(MonsterID, out int id) ? id : 0;
             public float MonsterHpFloat => ParseFloat(MonsterHp, DefaultHp);
@@ -216,6 +226,8 @@ namespace POELike.Game
             public float MonsterRadiusFloat => ParseFloat(MonsterRadius, CollisionRadius);
             public float MonsterAttackRangeFloat => ParseFloat(MonsterAttackRange, DefaultAttackRange);
             public float MonsterDetectionRangeFloat => ParseFloat(MonsterDetectionRange, DefaultDetectionRange);
+            public float MonsterAttackDurationFloat => ParseFloat(MonsterAttackDuration, DefaultAttackDuration);
+            public float MonsterAttackIntervalFloat => ParseFloat(MonsterAttackInterval, DefaultAttackInterval);
 
             private static float ParseFloat(string value, float fallback)
             {

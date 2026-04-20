@@ -95,6 +95,15 @@
 - [PlayerController.cs](../Assets/Scripts/Game/Character/PlayerController.cs)
 - [CharactorMainPanelController.cs](../Assets/Scripts/Game/UI/CharactorMainPanelController.cs) 的 `ResolveDefaultSkillKey(...)`
 
+#### 药剂键位
+
+- 当前顶排数字键 **`1 / 2 / 3 / 4 / 5`（非小键盘）** 会直接使用对应药剂槽
+- 输入采集入口仍在 [GameSceneManager.cs](../Assets/Scripts/Game/GameSceneManager.cs)
+- 输入写入 [PlayerInputComponent.cs](../Assets/Scripts/ECS/Components/PlayerInputComponent.cs) 的 `FlaskInputs`
+- 每次使用当前都会扣除药剂的 `FlaskChargesPerUse`
+- 药剂总充能当前会在生成时同时受**品质百分比**与**稀有度**加成影响
+- [CharactorMainPanelController.cs](../Assets/Scripts/Game/UI/CharactorMainPanelController.cs) 当前会让底栏对应药剂槽 `Mask` 按“已消耗充能 / 总充能”显示遮罩；因此剩余充能越少，遮罩越多
+
 ### 左键分流约定
 
 #### 当前行为

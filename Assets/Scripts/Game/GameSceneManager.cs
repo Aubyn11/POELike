@@ -860,10 +860,11 @@ namespace POELike.Game
                 return;
             }
 
-            flask.FlaskCurrentCharges -= chargeCost;
+            flask.FlaskCurrentCharges = Mathf.Max(0, flask.FlaskCurrentCharges - chargeCost);
 
             ApplyRecoveryFlask(flask, health, combat);
             ApplyUtilityFlask(flask, stats, combat);
+            UIManager.Instance?.RefreshCharactorMainPanel();
 
             Debug.Log($"[Flask] 使用 {flask.Name}，剩余充能 {flask.FlaskCurrentCharges}/{flask.FlaskMaxCharges}");
         }

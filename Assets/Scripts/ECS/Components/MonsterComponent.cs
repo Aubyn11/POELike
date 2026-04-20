@@ -31,6 +31,12 @@ namespace POELike.ECS.Components
         /// <summary>怪物攻击半径</summary>
         public float AttackRange { get; set; } = 1.5f;
 
+        /// <summary>怪物攻击持续时间</summary>
+        public float AttackDuration { get; set; } = 0.5f;
+
+        /// <summary>怪物攻击间隔时间</summary>
+        public float AttackInterval { get; set; } = 1f;
+
         /// <summary>怪物当前朝向角（Y 轴，度）</summary>
         public float FaceYaw { get; set; } = 0f;
 
@@ -43,6 +49,8 @@ namespace POELike.ECS.Components
             Defense      = 0f;
             MoveSpeed    = 3.5f;
             AttackRange  = 1.5f;
+            AttackDuration = 0.5f;
+            AttackInterval = 1f;
             FaceYaw      = 0f;
         }
     }

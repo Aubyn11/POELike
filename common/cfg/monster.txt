@@ -7,5 +7,8 @@
     int32 MonsterSpeed = 6,
     int32 MonsterRadius = 7,
     int32 MonsterDetectionRange = 8,
-    int32 MonsterBaseExp = 9
+    int32 MonsterBaseExp = 9,
+    float MonsterAttackRange = 10,
+    float MonsterAttackDuration = 11,
+    float MonsterAttackInterval = 12
 }

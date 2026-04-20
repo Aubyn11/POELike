@@ -101,7 +101,7 @@
 
 - **NPC 按钮 `EventID=1004` 当前会打开 `DoorPanel`，并从 `MapLevelConf.pb` 读取地图关卡数据后动态生成地图按钮；点击地图按钮后不再停留在原 `GameScene` 内瞬移，而是会把当前角色与目标 `MapLevelData` 一起带入 `MissionScene`**：但这条链路当前会先经过 `LoadingScene`；`MissionScene` 启动时由 `GameSceneManager` 消费待传入地图，并按对应 `CfgID` 从 `MapLayoutConf.pb` 构建玩家出生点与 NPC 布局，从 `MapDecorationConf.pb` 构建地图装饰，从 `MapContentConf.pb` 构建怪物内容，同时基础地表/环境色也会随当前地图配置切换；按钮文字显示 `MapName`；当前 A1 / A2 测试数据要求每张地图至少保留一个带 `EventID=1004` 的 NPC（当前是 `NPCID=1001`），且 `CfgID=1001` 额外会刷柱子 + 祭坛布局、`CfgID=1002` 额外会刷箱体 + 标记物布局；由于玩家当前在 `MissionScene` 中仍走纯逻辑 ECS 位移，`GameSceneManager` 现已把无交互地图装饰的 collider 也纳入 XZ 平面阻挡，角色撞到箱体 / 柱子 / 祭坛 / 标记物时会被拦住，不再穿模；并且碰撞修正当前会持续把角色推出障碍体外，只取消当次继续往障碍里钻的目标，不会让后续新的点击寻路永久失效；另外当前 `GameScene` 已与任务地图构建链分流，只保留 `NPCDataConf.pb` 中的默认 3 个 NPC，不再按 `MapLayoutConf.pb / MapContentConf.pb` 刷地图 NPC 或怪物；并且 `NPCDataConf.pb` 现已新增 `SceneName` 字段，`GameScene` 默认 NPC 会按 `SceneName` 过滤并使用 `NPCPosition` 固定坐标生成，`MissionScene` 则继续按 `MapLayoutConf.pb` 的地图布局坐标生成 NPC；当前 `GameScene` 的主角出生点也已改为配置驱动：`MapLayoutConf.pb` 的 `MapPlayerSpawnConf` 现新增 `GameSceneSpawnX / GameSceneSpawnY / GameSceneSpawnZ` 字段，`GameSceneManager` 会优先读取该固定坐标，缺省回退到 `2,0,0`，而 `MissionScene` 仍继续使用地图锚点 + `OffsetX / OffsetZ` 偏移出生**
 
-- **怪物配置里的 `MonsterRadius` 当前不能再直接映射为 AI 攻击距离**：`MonsterSpawner` 现在只会读取显式 `MonsterAttackRange`，若配置缺失则回退默认近战范围 `1.5`；否则怪物会在离玩家过远时就进入围攻停位 / 攻击圈，表现为围在角色周围固定抖动
+- **怪物配置里的 `MonsterRadius` 当前不能再直接映射为 AI 攻击距离**：`MonsterSpawner` 现在只会读取显式 `MonsterAttackRange`，若配置缺失则回退默认近战范围 `1.5`；否则怪物会在离玩家过远时就进入围攻停位 / 攻击圈，表现为围在角色周围固定抖动。并且怪物攻击节奏当前还新增了 `MonsterAttackDuration` 与 `MonsterAttackInterval`：怪物进入攻击态后，会先完整走完“攻击持续时间 + 攻击间隔”，在这两个时间都结束前不会恢复追踪玩家；结束后才会根据玩家当前位置重新进入追击或下一轮攻击
 
 - **怪物死亡地面掉落 / GM 入包当前可能走隐藏背包路径：`GroundItemLabelRenderer` 与 `GMPanel` 会通过 `UIManager.GetOrCreateBagPanel(false)` 在背包不可见时创建运行时物品视图；因此 `BagItemView` / `EquipmentItem` 当前都已改为惰性缓存组件引用，不能再假设 `Awake()` 一定先于 `Setup()` / `BindToBag()` 执行**
 - **`EquipmentItem.EnsureStackCountText()` 运行时创建 `TextMeshProUGUI` 数量角标时，必须先解析并绑定 `TMP_FontAsset`（必要时同步写入 `fontSharedMaterial`），再去设置 `outlineWidth / outlineColor`**：否则在隐藏背包路径或运行时动态生成物品视图时，TMP 可能因为材质源为空而在 `CreateMaterialInstance(new Material(source))` 里抛 `ArgumentNullException: source`
@@ -116,6 +116,7 @@
 
 - **地面掉落名称标签当前自带背景，鼠标移入时会按名称实际宽高整块高亮背景与文字**
 - **多个同点或近距离地面掉落标签当前仍会做有限的屏幕空间避让，尽量避免彼此遮挡；但标签位置现已改为缓存布局：只会在刚掉落时，或后续当前位置第一次被背包等 UI 面板遮挡时才重新排位。其余时间只保持原有避让槽位并跟随真实世界投影移动，不会再每帧自行换位置；被面板遮住时会按重叠区域裁剪遮挡，未被遮住的部分继续显示，超出屏幕时按真实投影直接裁切；并且当前布局避让只按真正可见的标签片段参与，被面板遮住或已经裁到屏幕外的不可见区域不会再把附近标签“吸附”挤走**
+- **顶排数字键 `1 / 2 / 3 / 4 / 5`（非小键盘）当前会直接使用对应药剂槽；每次使用都会按 `FlaskChargesPerUse` 扣除充能，药剂总充能当前会在生成时同时受药剂品质百分比与稀有度加成影响，角色底栏对应药剂槽 `Mask` 会按“已消耗充能 / 总充能”显示遮罩，因此剩余充能越少，槽位遮罩越多**
 
 - **点击 NPC 名称或地面掉落名称时，当前会先锁定为交互意图，避免被同一左键的普通地面移动覆盖；角色进入交互距离后会立即停下并继续执行下一步（打开对话 / 执行拾取）**
 - **点击地面掉落名称时，当前不会再直接秒捡，而是由 `GameSceneManager` 驱动角色先走近掉落；进入拾取范围后才会做背包空间检测，放不下时提示“背包放不下了”，放得下才真正入包并移除地面标签；这里的寻路目标始终使用原始掉落世界坐标，而不是避让重排后的 UI 位置**

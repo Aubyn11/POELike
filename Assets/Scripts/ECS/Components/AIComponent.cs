@@ -19,6 +19,12 @@ namespace POELike.ECS.Components
         /// <summary>攻击范围</summary>
         public float AttackRange { get; set; } = 2f;
 
+        /// <summary>单次攻击持续时间</summary>
+        public float AttackDuration { get; set; } = 0.5f;
+
+        /// <summary>两次攻击之间的间隔时间</summary>
+        public float AttackInterval { get; set; } = 1f;
+
         /// <summary>追击范围（超出此范围放弃追击）</summary>
         public float ChaseRange { get; set; } = 20f;
 
@@ -39,6 +45,9 @@ namespace POELike.ECS.Components
 
         /// <summary>攻击冷却计时器</summary>
         public float AttackCooldownTimer { get; set; } = 0f;
+
+        /// <summary>当前攻击轮次是否已经触发过伤害事件</summary>
+        public bool HasAppliedAttackThisCycle { get; set; } = false;
 
         /// <summary>上一帧分配的编队环索引（-1 表示未参与）</summary>
         public int PreviousFormationRingIndex { get; set; } = -1;
@@ -70,6 +79,7 @@ namespace POELike.ECS.Components
             Target              = null;
             StateTimer          = 0f;
             AttackCooldownTimer = 0f;
+            HasAppliedAttackThisCycle = false;
             PreviousFormationRingIndex = -1;
             FormationRingIndex  = -1;
             PreviousFormationSlotIndex = -1;

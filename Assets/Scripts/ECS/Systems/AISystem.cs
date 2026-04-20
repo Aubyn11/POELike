@@ -220,6 +220,9 @@ namespace POELike.ECS.Systems
                 if (ai.AttackCooldownTimer > 0)
                     ai.AttackCooldownTimer -= aiDelta;
 
+                if (ai.AttackCooldownTimer < 0f)
+                    ai.AttackCooldownTimer = 0f;
+
                 ai.StateTimer += aiDelta;
 
                 // 状态机更新
@@ -423,21 +426,27 @@ namespace POELike.ECS.Systems
             float dx     = transform.Position.x - targetTransform.Position.x;
             float dz     = transform.Position.z - targetTransform.Position.z;
             float sqDist = dx * dx + dz * dz;
-
-            float threshold = ai.AttackRange + FormationAttackBreakExtraDist;
-            if (sqDist > threshold * threshold)
-            {
-                TransitionTo(ai, AIState.Chase);
-                return;
-            }
+            float chaseRangeSq = ai.ChaseRange * ai.ChaseRange;
 
             movement.MoveDirection = Vector3.zero;
 
-            if (ai.AttackCooldownTimer <= 0)
+            if (!ai.HasAppliedAttackThisCycle)
             {
-                ai.AttackCooldownTimer = ai.AttackCooldown;
+                ai.HasAppliedAttackThisCycle = true;
                 World.EventBus.Publish(new AIAttackEvent { Attacker = entity, Target = ai.Target });
             }
+
+            if (!HasAttackCycleCompleted(ai))
+                return;
+
+            if (sqDist > chaseRangeSq)
+            {
+                ai.Target = null;
+                TransitionTo(ai, AIState.Idle);
+                return;
+            }
+
+            TransitionTo(ai, AIState.Chase);
         }
 
         private void UpdateFleeState(Entity entity, AIComponent ai, MovementComponent movement, TransformComponent transform, float deltaTime)
@@ -594,7 +603,10 @@ namespace POELike.ECS.Systems
 
                     var entry = _ringEntries[ringEntryIndex];
                     if (ringIndex > 0 && entry.AI.CurrentState == AIState.Attack)
-                        TransitionTo(entry.AI, AIState.Chase);
+                    {
+                        if (HasAttackCycleCompleted(entry.AI))
+                            TransitionTo(entry.AI, AIState.Chase);
+                    }
 
                     float currentRadius = Mathf.Sqrt(entry.SqDistToPlayer);
                     float slotRadius = ringRadius;
@@ -865,6 +877,12 @@ namespace POELike.ECS.Systems
                     return;
                 }
 
+                if (entry.AI.AttackCooldownTimer > 0f)
+                {
+                    entry.Movement.MoveDirection = Vector3.zero;
+                    return;
+                }
+
                 TransitionTo(entry.AI, AIState.Chase);
             }
 
@@ -1074,6 +1092,24 @@ namespace POELike.ECS.Systems
         {
             ai.CurrentState = newState;
             ai.StateTimer   = 0f;
+
+            if (newState == AIState.Attack)
+                StartAttackCycle(ai);
+            else
+                ai.HasAppliedAttackThisCycle = false;
+        }
+
+        private void StartAttackCycle(AIComponent ai)
+        {
+            ai.CurrentState = AIState.Attack;
+            ai.StateTimer = 0f;
+            ai.HasAppliedAttackThisCycle = false;
+            ai.AttackCooldownTimer = Mathf.Max(0f, ai.AttackDuration) + Mathf.Max(0f, ai.AttackInterval);
+        }
+
+        private static bool HasAttackCycleCompleted(AIComponent ai)
+        {
+            return ai == null || ai.AttackCooldownTimer <= 0f;
         }
 
         protected override void OnDispose()

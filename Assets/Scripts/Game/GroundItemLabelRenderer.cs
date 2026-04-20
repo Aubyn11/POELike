@@ -201,8 +201,6 @@ namespace POELike.Game
                 else if (TryBuildCurrentLabelRect(label, content, out var currentRect))
                 {
                     isBlocked = IsGuiRectOccluded(currentRect);
-                    if (isBlocked && !label.WasLayoutBlocked)
-                        shouldRefreshLayout = true;
                 }
 
                 label.WasLayoutBlocked = isBlocked;

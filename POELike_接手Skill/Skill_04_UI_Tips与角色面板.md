@@ -129,6 +129,19 @@
   - 自下而上显示
 - 面板激活后还会订阅血蓝变化，因此技能耗蓝、受伤、回血时会实时刷新
 
+### 角色主面板药剂遮罩约定
+
+同样看 [CharactorMainPanelController.cs](../Assets/Scripts/Game/UI/CharactorMainPanelController.cs)：
+
+- `PotionArr` 下每个药剂槽当前都会使用子节点 `Mask` 作为充能遮罩；若旧 prefab 缺失该节点，运行时会自动补一个覆盖层
+- 当前药剂遮罩使用：
+  - `Image.Type.Filled`
+  - `Vertical`
+  - 自上而下显示“已消耗部分”
+- 对应药剂槽剩余充能百分比 = `当前充能 / 总充能`
+- 槽位遮罩显示的是 `1 - 剩余充能百分比`，因此**药剂剩余充能越少，遮罩越多；满充能时不显示遮罩**
+- 药剂使用后，`GameSceneManager` 会立即刷新角色主面板，所以底栏药剂遮罩会同步变化
+
 ### 技能栏显示约定
 
 #### 默认键位标签

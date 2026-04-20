@@ -105,6 +105,7 @@ namespace POELike.Game.UI
                 return;
 
             UpdateSkillCooldownMasks();
+            UpdatePotionChargeMasks();
         }
 
         public void RefreshFromCurrentState()
@@ -182,9 +183,11 @@ namespace POELike.Game.UI
                 if (supportSlotListBox != null)
                     supportSlotListBox.StretchItemsOnCrossAxis = false;
 
-                var cooldownMask = includeLabel
-                    ? (child.Find("Mask") ?? FindChildRecursive(child, "Mask"))?.GetComponent<Image>()
-                    : null;
+                var cooldownMask = (child.Find("Mask") ?? FindChildRecursive(child, "Mask"))?.GetComponent<Image>();
+                if (cooldownMask == null && !includeLabel)
+                    cooldownMask = CreateSlotOverlayMask(child);
+                if (cooldownMask != null)
+                    cooldownMask.raycastTarget = false;
 
                 SkillBarSlotButton skillButton = null;
                 if (includeLabel)
@@ -258,6 +261,12 @@ namespace POELike.Game.UI
                 _equippedPotions[i] = new BagItemData(item.Id, item.Name, 1, 1)
                 {
                     ItemKind = BagItemKind.Flask,
+                    Rarity = item.Rarity,
+                    FlaskType = item.FlaskType,
+                    FlaskMaxCharges = item.FlaskMaxCharges,
+                    FlaskCurrentCharges = item.FlaskCurrentCharges,
+                    FlaskChargesPerUse = item.FlaskChargesPerUse,
+                    FlaskQualityPercent = item.FlaskQualityPercent,
                     RuntimeItemData = item,
                     ItemColor = Color.white,
                 };
@@ -280,6 +289,7 @@ namespace POELike.Game.UI
             {
                 var data = i < _equippedPotions.Length ? _equippedPotions[i] : null;
                 ApplyItemToSlot(_potionSlots[i], data, false, null);
+                ApplyFlaskChargeMask(_potionSlots[i], data);
             }
         }
 
@@ -327,6 +337,18 @@ namespace POELike.Game.UI
                 ApplySkillCooldownMask(_skillSlots[i], skillComp.GetSlot(i));
         }
 
+        private void UpdatePotionChargeMasks()
+        {
+            if (_potionSlots.Count == 0)
+                return;
+
+            for (int i = 0; i < _potionSlots.Count; i++)
+            {
+                var data = i < _equippedPotions.Length ? _equippedPotions[i] : null;
+                ApplyFlaskChargeMask(_potionSlots[i], data);
+            }
+        }
+
         private static void ApplySkillCooldownMask(SlotView slot, SkillSlot runtimeSlot)
         {
             if (slot?.CooldownMask == null)
@@ -346,6 +368,62 @@ namespace POELike.Game.UI
             slot.CooldownMask.fillClockwise = true;
             slot.CooldownMask.fillAmount = cooldownPercent;
 
+        }
+
+        private static void ApplyFlaskChargeMask(SlotView slot, BagItemData flaskData)
+        {
+            if (slot?.CooldownMask == null)
+                return;
+
+            bool hasFlask = flaskData != null && flaskData.IsFlask;
+            if (!hasFlask)
+            {
+                if (slot.CooldownMask.gameObject.activeSelf)
+                    slot.CooldownMask.gameObject.SetActive(false);
+                return;
+            }
+
+            float remainingPercent = flaskData.ResolveFlaskChargePercent();
+            float consumedPercent = 1f - remainingPercent;
+            bool showMask = consumedPercent > 0f;
+            if (slot.CooldownMask.gameObject.activeSelf != showMask)
+                slot.CooldownMask.gameObject.SetActive(showMask);
+
+            if (!showMask)
+                return;
+
+            slot.CooldownMask.sprite = SharedWhiteSprite;
+            slot.CooldownMask.color = new Color(0f, 0f, 0f, 0.72f);
+            slot.CooldownMask.type = Image.Type.Filled;
+            slot.CooldownMask.fillMethod = Image.FillMethod.Vertical;
+            slot.CooldownMask.fillOrigin = (int)Image.OriginVertical.Top;
+            slot.CooldownMask.fillClockwise = false;
+            slot.CooldownMask.fillAmount = consumedPercent;
+        }
+
+        private static Image CreateSlotOverlayMask(Transform slotTransform)
+        {
+            if (slotTransform == null)
+                return null;
+
+            var maskObject = new GameObject("Mask", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            maskObject.transform.SetParent(slotTransform, false);
+            maskObject.transform.SetAsLastSibling();
+
+            var rectTransform = maskObject.GetComponent<RectTransform>();
+            rectTransform.anchorMin = Vector2.zero;
+            rectTransform.anchorMax = Vector2.one;
+            rectTransform.offsetMin = Vector2.zero;
+            rectTransform.offsetMax = Vector2.zero;
+            rectTransform.localScale = Vector3.one;
+            rectTransform.localRotation = Quaternion.identity;
+
+            var image = maskObject.GetComponent<Image>();
+            image.sprite = SharedWhiteSprite;
+            image.color = new Color(0f, 0f, 0f, 0.72f);
+            image.raycastTarget = false;
+            image.gameObject.SetActive(false);
+            return image;
         }
 
         private static float ResolveSkillCooldownPercent(SkillSlot runtimeSlot)

@@ -84,6 +84,8 @@ namespace POELike.Game.Equipment
         public int MaxCharges;
         public int CurrentCharges;
         public int ChargesPerUse;
+        public ItemRarity Rarity = ItemRarity.Normal;
+        public int QualityPercent;
         public bool IsInstant;
         public int InstantPercent;
         public int UtilityEffectValue;
@@ -239,6 +241,12 @@ namespace POELike.Game.Equipment
             if (baseData == null)
                 return null;
 
+            int requireLevel = ParseInt(baseData.FlaskRequireLevel);
+            int baseMaxCharges = Mathf.Max(0, ParseInt(baseData.FlaskMaxCharges));
+            ItemRarity rarity = RollFlaskRarity(requireLevel);
+            int qualityPercent = RollFlaskQualityPercent(rarity);
+            int maxCharges = ResolveGeneratedFlaskMaxCharges(baseMaxCharges, qualityPercent, rarity);
+
             return new GeneratedFlask
             {
                 BaseData = baseData,
@@ -247,13 +255,15 @@ namespace POELike.Game.Equipment
                 AllowedSlots = ParseAllowedSlots(baseData.FlaskAllowedSlots),
                 GridWidth = Mathf.Max(1, ParseInt(baseData.FlaskWidth, 1)),
                 GridHeight = Mathf.Max(1, ParseInt(baseData.FlaskHeight, 1)),
-                RequireLevel = ParseInt(baseData.FlaskRequireLevel),
+                RequireLevel = requireLevel,
                 RecoverLife = Mathf.Max(0, ParseInt(baseData.FlaskRecoverLife)),
                 RecoverMana = Mathf.Max(0, ParseInt(baseData.FlaskRecoverMana)),
                 DurationMs = Mathf.Max(0, ParseInt(baseData.FlaskDurationMs)),
-                MaxCharges = Mathf.Max(0, ParseInt(baseData.FlaskMaxCharges)),
-                CurrentCharges = Mathf.Max(0, ParseInt(baseData.FlaskMaxCharges)),
+                MaxCharges = maxCharges,
+                CurrentCharges = maxCharges,
                 ChargesPerUse = Mathf.Max(0, ParseInt(baseData.FlaskChargesPerUse)),
+                Rarity = rarity,
+                QualityPercent = qualityPercent,
                 IsInstant = ParseBool(baseData.FlaskIsInstant),
                 InstantPercent = Mathf.Clamp(ParseInt(baseData.FlaskInstantPercent), 0, 100),
                 UtilityEffectValue = ParseInt(baseData.FlaskUtilityEffectValue),
@@ -298,6 +308,62 @@ namespace POELike.Game.Equipment
         }
 
         // ── 内部辅助 ──────────────────────────────────────────────────
+
+        private static ItemRarity RollFlaskRarity(int requireLevel)
+        {
+            float levelFactor = Mathf.Clamp01(requireLevel / 100f);
+            float roll = UnityEngine.Random.value;
+            float uniqueChance = Mathf.Lerp(0.01f, 0.03f, levelFactor);
+            float rareChance = uniqueChance + Mathf.Lerp(0.14f, 0.22f, levelFactor);
+            float magicChance = rareChance + Mathf.Lerp(0.35f, 0.45f, levelFactor);
+
+            if (roll < uniqueChance)
+                return ItemRarity.Unique;
+
+            if (roll < rareChance)
+                return ItemRarity.Rare;
+
+            if (roll < magicChance)
+                return ItemRarity.Magic;
+
+            return ItemRarity.Normal;
+        }
+
+        private static int RollFlaskQualityPercent(ItemRarity rarity)
+        {
+            Vector2Int range = rarity switch
+            {
+                ItemRarity.Unique => new Vector2Int(15, 20),
+                ItemRarity.Rare => new Vector2Int(10, 18),
+                ItemRarity.Magic => new Vector2Int(5, 12),
+                _ => new Vector2Int(0, 6),
+            };
+
+            return UnityEngine.Random.Range(range.x, range.y + 1);
+        }
+
+        private static int ResolveFlaskRarityChargeBonusPercent(ItemRarity rarity)
+        {
+            return rarity switch
+            {
+                ItemRarity.Magic => 5,
+                ItemRarity.Rare => 10,
+                ItemRarity.Unique => 15,
+                _ => 0,
+            };
+        }
+
+        private static int ResolveGeneratedFlaskMaxCharges(int baseMaxCharges, int qualityPercent, ItemRarity rarity)
+        {
+            if (baseMaxCharges <= 0)
+                return 0;
+
+            float multiplier = 1f
+                + Mathf.Clamp(qualityPercent, 0, 20) / 100f
+                + ResolveFlaskRarityChargeBonusPercent(rarity) / 100f;
+
+            return Mathf.Max(1, Mathf.RoundToInt(baseMaxCharges * multiplier));
+        }
 
         private static int ParseInt(string value, int fallback = 0)
         {

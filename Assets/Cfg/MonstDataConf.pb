@@ -8,7 +8,10 @@
       "MonsterDefense": "100",
       "MonsterSpeed": "15",
       "MonsterRadius": "5",
+      "MonsterAttackRange": "1.5",
       "MonsterDetectionRange": "10",
+      "MonsterAttackDuration": "0.5",
+      "MonsterAttackInterval": "1.5",
       "MonsterBaseExp": "100"
     },
     {
@@ -19,7 +22,10 @@
       "MonsterDefense": "80",
       "MonsterSpeed": "13",
       "MonsterRadius": "6",
+      "MonsterAttackRange": "1.5",
       "MonsterDetectionRange": "12",
+      "MonsterAttackDuration": "0.5",
+      "MonsterAttackInterval": "1.5",
       "MonsterBaseExp": "150"
     },
     {
@@ -30,7 +36,10 @@
       "MonsterDefense": "60",
       "MonsterSpeed": "11",
       "MonsterRadius": "7",
+      "MonsterAttackRange": "1.5",
       "MonsterDetectionRange": "14",
+      "MonsterAttackDuration": "0.5",
+      "MonsterAttackInterval": "1.5",
       "MonsterBaseExp": "300"
     },
     {
@@ -41,7 +50,10 @@
       "MonsterDefense": "40",
       "MonsterSpeed": "9",
       "MonsterRadius": "9",
+      "MonsterAttackRange": "1.5",
       "MonsterDetectionRange": "18",
+      "MonsterAttackDuration": "0.5",
+      "MonsterAttackInterval": "1.5",
       "MonsterBaseExp": "600"
     }
   ]

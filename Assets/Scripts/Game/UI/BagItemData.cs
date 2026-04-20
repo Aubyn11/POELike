@@ -44,6 +44,9 @@ namespace POELike.Game.UI
         /// <summary>背包道具类型</summary>
         public BagItemKind ItemKind { get; set; } = BagItemKind.Equipment;
 
+        /// <summary>物品稀有度</summary>
+        public ItemRarity Rarity { get; set; } = ItemRarity.Normal;
+
         /// <summary>基础描述（通货、杂项等非装备道具使用）</summary>
         public string Description { get; set; }
 
@@ -143,6 +146,9 @@ namespace POELike.Game.UI
         /// <summary>每次使用消耗的充能数</summary>
         public int FlaskChargesPerUse { get; set; }
 
+        /// <summary>药剂品质（百分比）</summary>
+        public int FlaskQualityPercent { get; set; }
+
         /// <summary>是否为瞬回药剂</summary>
         public bool FlaskIsInstant { get; set; }
 
@@ -238,6 +244,7 @@ namespace POELike.Game.UI
             var data = new BagItemData(flask.Code, flask.DisplayName, flask.GridWidth, flask.GridHeight)
             {
                 ItemKind = BagItemKind.Flask,
+                Rarity = flask.Rarity,
                 ItemColor = flask.QualityColor,
                 FlaskType = flask.FlaskType,
                 FlaskRequireLevel = flask.RequireLevel,
@@ -247,6 +254,7 @@ namespace POELike.Game.UI
                 FlaskMaxCharges = flask.MaxCharges,
                 FlaskCurrentCharges = flask.CurrentCharges,
                 FlaskChargesPerUse = flask.ChargesPerUse,
+                FlaskQualityPercent = flask.QualityPercent,
                 FlaskIsInstant = flask.IsInstant,
                 FlaskInstantPercent = flask.InstantPercent,
                 FlaskUtilityEffectType = flask.UtilityEffectType,
@@ -266,6 +274,48 @@ namespace POELike.Game.UI
             return RuntimeItemData != null && RuntimeItemData.Type == ItemType.Flask
                 ? RuntimeItemData.FlaskCurrentCharges
                 : FlaskCurrentCharges;
+        }
+
+        public int ResolveFlaskMaxCharges()
+        {
+            return RuntimeItemData != null && RuntimeItemData.Type == ItemType.Flask
+                ? RuntimeItemData.FlaskMaxCharges
+                : FlaskMaxCharges;
+        }
+
+        public float ResolveFlaskChargePercent()
+        {
+            int maxCharges = ResolveFlaskMaxCharges();
+            if (maxCharges <= 0)
+                return 0f;
+
+            return Mathf.Clamp01(ResolveFlaskCurrentCharges() / (float)maxCharges);
+        }
+
+        public void SyncFlaskStateFromRuntime()
+        {
+            if (!IsFlask || RuntimeItemData == null || RuntimeItemData.Type != ItemType.Flask)
+                return;
+
+            Rarity = RuntimeItemData.Rarity;
+            FlaskType = RuntimeItemData.FlaskType;
+            FlaskRequireLevel = RuntimeItemData.RequiredLevel;
+            FlaskRecoverLife = RuntimeItemData.FlaskRecoverLife;
+            FlaskRecoverMana = RuntimeItemData.FlaskRecoverMana;
+            FlaskDurationMs = RuntimeItemData.FlaskDurationMs;
+            FlaskMaxCharges = RuntimeItemData.FlaskMaxCharges;
+            FlaskCurrentCharges = RuntimeItemData.FlaskCurrentCharges;
+            FlaskChargesPerUse = RuntimeItemData.FlaskChargesPerUse;
+            FlaskQualityPercent = RuntimeItemData.FlaskQualityPercent;
+            FlaskIsInstant = RuntimeItemData.FlaskIsInstant;
+            FlaskInstantPercent = RuntimeItemData.FlaskInstantPercent;
+            FlaskUtilityEffectType = RuntimeItemData.FlaskUtilityEffectType;
+            FlaskUtilityEffectValue = RuntimeItemData.FlaskUtilityEffectValue;
+            FlaskEffectDescription = RuntimeItemData.FlaskEffectDescription;
+            AcceptedEquipmentSlot = RuntimeItemData.PrimaryEquipmentSlot;
+
+            if (RuntimeItemData.AllowedEquipmentSlots != null && RuntimeItemData.AllowedEquipmentSlots.Count > 0)
+                SetAcceptedEquipmentSlots(RuntimeItemData.AllowedEquipmentSlots);
         }
 
         public bool CanStackWith(BagItemData other)
@@ -316,6 +366,7 @@ namespace POELike.Game.UI
             var clone = new BagItemData(ItemId, Name, GridWidth, GridHeight)
             {
                 ItemKind = ItemKind,
+                Rarity = Rarity,
                 Description = Description,
                 IsStackable = IsStackable,
                 StackCount = stackCount,
@@ -347,6 +398,7 @@ namespace POELike.Game.UI
                 FlaskMaxCharges = FlaskMaxCharges,
                 FlaskCurrentCharges = FlaskCurrentCharges,
                 FlaskChargesPerUse = FlaskChargesPerUse,
+                FlaskQualityPercent = FlaskQualityPercent,
                 FlaskIsInstant = FlaskIsInstant,
                 FlaskInstantPercent = FlaskInstantPercent,
                 FlaskUtilityEffectType = FlaskUtilityEffectType,
@@ -439,6 +491,7 @@ namespace POELike.Game.UI
                 FlaskMaxCharges = RuntimeItemData.FlaskMaxCharges,
                 FlaskCurrentCharges = RuntimeItemData.FlaskCurrentCharges,
                 FlaskChargesPerUse = RuntimeItemData.FlaskChargesPerUse,
+                FlaskQualityPercent = RuntimeItemData.FlaskQualityPercent,
                 FlaskIsInstant = RuntimeItemData.FlaskIsInstant,
                 FlaskInstantPercent = RuntimeItemData.FlaskInstantPercent,
                 FlaskUtilityEffectType = RuntimeItemData.FlaskUtilityEffectType,
@@ -490,6 +543,7 @@ namespace POELike.Game.UI
             item.Name = Name;
             item.Description = Description;
             item.Type = ResolveItemType();
+            item.Rarity = RuntimeItemData != null ? RuntimeItemData.Rarity : Rarity;
             item.IsStackable = IsStackable;
             item.StackCount = StackCount;
             item.MaxStackCount = MaxStackCount;
@@ -543,20 +597,23 @@ namespace POELike.Game.UI
 
             if (IsFlask)
             {
-                item.FlaskType = FlaskType;
-                item.RequiredLevel = FlaskRequireLevel;
-                item.FlaskRecoverLife = FlaskRecoverLife;
-                item.FlaskRecoverMana = FlaskRecoverMana;
-                item.FlaskDurationMs = FlaskDurationMs;
-                item.FlaskMaxCharges = FlaskMaxCharges;
-                item.FlaskCurrentCharges = ResolveFlaskCurrentCharges();
-                item.FlaskChargesPerUse = FlaskChargesPerUse;
-                item.FlaskIsInstant = FlaskIsInstant;
-                item.FlaskInstantPercent = FlaskInstantPercent;
-                item.FlaskUtilityEffectType = FlaskUtilityEffectType;
-                item.FlaskUtilityEffectValue = FlaskUtilityEffectValue;
-                item.FlaskEffectDescription = FlaskEffectDescription;
+                bool hasRuntimeFlask = RuntimeItemData != null && RuntimeItemData.Type == ItemType.Flask;
+                item.FlaskType = hasRuntimeFlask ? RuntimeItemData.FlaskType : FlaskType;
+                item.RequiredLevel = hasRuntimeFlask ? RuntimeItemData.RequiredLevel : FlaskRequireLevel;
+                item.FlaskRecoverLife = hasRuntimeFlask ? RuntimeItemData.FlaskRecoverLife : FlaskRecoverLife;
+                item.FlaskRecoverMana = hasRuntimeFlask ? RuntimeItemData.FlaskRecoverMana : FlaskRecoverMana;
+                item.FlaskDurationMs = hasRuntimeFlask ? RuntimeItemData.FlaskDurationMs : FlaskDurationMs;
+                item.FlaskMaxCharges = hasRuntimeFlask ? RuntimeItemData.FlaskMaxCharges : FlaskMaxCharges;
+                item.FlaskCurrentCharges = hasRuntimeFlask ? RuntimeItemData.FlaskCurrentCharges : ResolveFlaskCurrentCharges();
+                item.FlaskChargesPerUse = hasRuntimeFlask ? RuntimeItemData.FlaskChargesPerUse : FlaskChargesPerUse;
+                item.FlaskQualityPercent = hasRuntimeFlask ? RuntimeItemData.FlaskQualityPercent : FlaskQualityPercent;
+                item.FlaskIsInstant = hasRuntimeFlask ? RuntimeItemData.FlaskIsInstant : FlaskIsInstant;
+                item.FlaskInstantPercent = hasRuntimeFlask ? RuntimeItemData.FlaskInstantPercent : FlaskInstantPercent;
+                item.FlaskUtilityEffectType = hasRuntimeFlask ? RuntimeItemData.FlaskUtilityEffectType : FlaskUtilityEffectType;
+                item.FlaskUtilityEffectValue = hasRuntimeFlask ? RuntimeItemData.FlaskUtilityEffectValue : FlaskUtilityEffectValue;
+                item.FlaskEffectDescription = hasRuntimeFlask ? RuntimeItemData.FlaskEffectDescription : FlaskEffectDescription;
                 FlaskCurrentCharges = item.FlaskCurrentCharges;
+                FlaskQualityPercent = item.FlaskQualityPercent;
             }
 
             if (IsEquipment)

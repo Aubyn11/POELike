@@ -155,7 +155,9 @@ flowchart LR
 #### 怪物配置字段语义要特别注意
 
 - 当前 [MonsterSpawner.cs](../Assets/Scripts/Game/MonsterSpawner.cs) **不能再把 `MonstDataConf.pb` 里的 `MonsterRadius` 直接当成 `AttackRange`**
-- 目前 `MonsterSpawner` 只会读取显式 `MonsterAttackRange`；若配置里没有该字段，则回退默认近战攻击距离 `1.5f`
+- 目前 `MonsterSpawner` 会读取显式 `MonsterAttackRange`；若配置里没有该字段，则回退默认近战攻击距离 `1.5f`
+- 当前怪物攻击节奏还新增了 `MonsterAttackDuration` 与 `MonsterAttackInterval`：两者都会由 `MonsterSpawner` 读入并写到 `AIComponent`，用于控制怪物进入攻击态后要在原地锁多久
+- 当前真实运行时语义是：怪物进入攻击态后，会先完整走完 `MonsterAttackDuration + MonsterAttackInterval`，在这两个时间都结束前不会恢复追踪；结束后才按玩家当前位置决定继续追击还是进入下一轮攻击
 - 如果再次把 `MonsterRadius` 误接到 `AttackRange`，怪物会在离玩家过远时就进入围攻停位 / 攻击圈，典型现象就是围在角色上、右、下等固定方位持续抖动
 
 #### 商店数据和背包数据不是一回事

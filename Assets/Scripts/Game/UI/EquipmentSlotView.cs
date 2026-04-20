@@ -1,6 +1,7 @@
 using POELike.ECS.Components;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using POELike.ECS.Systems;
 using POELike.Managers;
@@ -90,7 +91,11 @@ namespace POELike.Game.UI
             RefreshVisual();
 
             if (replacedItem?.Data != null)
+            {
+                NormalizeMissionSceneUnequippedFlask(replacedRuntimeItem);
                 replacedItem.Data.RuntimeItemData = replacedRuntimeItem;
+                replacedItem.Data.SyncFlaskStateFromRuntime();
+            }
 
             if (replacedItem != null)
                 replacedItem.TryBeginMove(eventData);
@@ -179,6 +184,7 @@ namespace POELike.Game.UI
 
             var oldItem = equipment.GetEquipped(SlotType);
             var newItem = itemView.Data.ToItemData();
+            ApplyFlaskChargeRuleOnEquip(newItem, itemView.Data);
             equipment.Equip(SlotType, newItem);
 
             world.EventBus.Publish(new EquipmentChangedEvent
@@ -203,8 +209,12 @@ namespace POELike.Game.UI
                 return;
 
             equipment.Unequip(SlotType);
+            NormalizeMissionSceneUnequippedFlask(oldItem);
             if (itemView?.Data != null)
+            {
                 itemView.Data.RuntimeItemData = oldItem;
+                itemView.Data.SyncFlaskStateFromRuntime();
+            }
 
             world.EventBus.Publish(new EquipmentChangedEvent
             {
@@ -224,6 +234,36 @@ namespace POELike.Game.UI
                 return null;
 
             return equipment.GetEquipped(SlotType);
+        }
+
+        private static void ApplyFlaskChargeRuleOnEquip(ItemData item, BagItemData bagData)
+        {
+            if (item == null || item.Type != ItemType.Flask)
+                return;
+
+            if (!IsMissionScene())
+                item.FlaskCurrentCharges = Mathf.Max(0, item.FlaskMaxCharges);
+            else
+                item.FlaskCurrentCharges = Mathf.Max(0, item.FlaskCurrentCharges);
+
+            if (bagData == null)
+                return;
+
+            bagData.RuntimeItemData = item;
+            bagData.SyncFlaskStateFromRuntime();
+        }
+
+        private static void NormalizeMissionSceneUnequippedFlask(ItemData item)
+        {
+            if (!IsMissionScene() || item == null || item.Type != ItemType.Flask)
+                return;
+
+            item.FlaskCurrentCharges = 0;
+        }
+
+        private static bool IsMissionScene()
+        {
+            return SceneManager.GetActiveScene().name == SceneLoader.SceneMission;
         }
     }
 }

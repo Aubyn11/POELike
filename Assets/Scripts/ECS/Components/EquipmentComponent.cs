@@ -137,6 +137,7 @@ namespace POELike.ECS.Components
         public int FlaskMaxCharges { get; set; }
         public int FlaskCurrentCharges { get; set; }
         public int FlaskChargesPerUse { get; set; }
+        public int FlaskQualityPercent { get; set; }
         public bool FlaskIsInstant { get; set; }
         public int FlaskInstantPercent { get; set; }
         public FlaskUtilityEffectKind FlaskUtilityEffectType { get; set; } = FlaskUtilityEffectKind.None;
