@@ -34,6 +34,17 @@ namespace POELike.ECS.Systems
         private const float PlayerRadius            = 0.4f;
         private const float PlayerMonsterMinDist    = PlayerRadius + MonsterRadius;
         private const float PlayerMonsterMinDistSq  = PlayerMonsterMinDist * PlayerMonsterMinDist;
+        private const float MonsterObstacleSkin     = 0.02f;
+        private const float MonsterObstacleResolveEpsilon = 0.01f;
+        private const int MonsterObstacleMaxResolvePasses = 4;
+
+        private struct ObstacleGpu
+        {
+            public float centerX;
+            public float centerZ;
+            public float halfX;
+            public float halfZ;
+        }
 
         // ── 玩家缓存 ──────────────────────────────────────────────────
         private Entity             _playerEntity;
@@ -56,6 +67,7 @@ namespace POELike.ECS.Systems
         private ComputeShader _simulateCS;
         private int           _kernelMove;
         private int           _kernelSeparate;
+        private int           _kernelObstacle;
 
         // GPU Buffer：位置常驻 GPU，仅每帧上传移动方向和速度
         // MonsterMoveInput: float3 moveDirection + float currentSpeed = 16 bytes
@@ -66,6 +78,12 @@ namespace POELike.ECS.Systems
         private ComputeBuffer _gpuInputBuffer;
         private ComputeBuffer _gpuOutputBuffer;
         private int           _gpuCapacity;
+        private ComputeBuffer _obstacleBuffer;
+        private int           _obstacleBufferCapacity;
+        private readonly List<GameSceneManager.MapBlockingObstacleSnapshot> _obstacleSnapshots = new List<GameSceneManager.MapBlockingObstacleSnapshot>(32);
+        private ObstacleGpu[] _obstacleUploadArray = System.Array.Empty<ObstacleGpu>();
+        private int _obstacleVersion = -1;
+        private int _activeObstacleCount = 0;
 
         // CPU 端暂存（NativeArray，SetData 零 GC）
         private NativeArray<MonsterMoveInputGpu>  _cpuInputArray;
@@ -115,6 +133,9 @@ namespace POELike.ECS.Systems
         private static readonly int ID_PlayerPosition      = Shader.PropertyToID("_PlayerPosition");
         private static readonly int ID_PlayerMonsterMinDist= Shader.PropertyToID("_PlayerMonsterMinDist");
         private static readonly int ID_SeparationDiam      = Shader.PropertyToID("_SeparationDiam");
+        private static readonly int ID_ObstacleCount       = Shader.PropertyToID("_ObstacleCount");
+        private static readonly int ID_MonsterObstacleMinDist = Shader.PropertyToID("_MonsterObstacleMinDist");
+        private static readonly int ID_Obstacles           = Shader.PropertyToID("_Obstacles");
 
         // ── 空间网格（怪物间分离，CPU）────────────────────────────────
         private readonly Dictionary<long, List<int>> _grid       = new Dictionary<long, List<int>>(512);
@@ -147,19 +168,41 @@ namespace POELike.ECS.Systems
             _pendingGpuDelta = 0f;
             _readbackFrame = 0;
             _simulateCS = Resources.Load<ComputeShader>("Shaders/MonsterSimulateCompute");
-            if (_simulateCS != null)
-            {
-                _kernelMove     = _simulateCS.FindKernel("CSMove");
-                _kernelSeparate = _simulateCS.FindKernel("CSSeparate");
-                Debug.Log("[MovementSystem] GPU 怪物模拟 ComputeShader 加载成功");
-            }
-            else
-            {
-                Debug.LogWarning("[MovementSystem] 找不到 MonsterSimulateCompute，将回退到 CPU 模式");
-            }
+            if (!TryInitializeGpuSimulation())
+                _simulateCS = null;
 
             World.EventBus.Subscribe<EntityCreatedEvent>(OnEntityCreated);
             World.EventBus.Subscribe<EntityDestroyedEvent>(OnEntityDestroyed);
+        }
+
+        private bool TryInitializeGpuSimulation()
+        {
+            if (_simulateCS == null)
+            {
+                Debug.LogWarning("[MovementSystem] 找不到 MonsterSimulateCompute，将回退到 CPU 模式");
+                return false;
+            }
+
+            if (!SystemInfo.supportsComputeShaders)
+            {
+                Debug.LogWarning("[MovementSystem] 当前平台不支持 ComputeShader，将回退到 CPU 模式");
+                return false;
+            }
+
+            bool hasMoveKernel = _simulateCS.HasKernel("CSMove");
+            bool hasSeparateKernel = _simulateCS.HasKernel("CSSeparate");
+            bool hasObstacleKernel = _simulateCS.HasKernel("CSResolveObstacles");
+            if (!hasMoveKernel || !hasSeparateKernel || !hasObstacleKernel)
+            {
+                Debug.LogWarning("[MovementSystem] MonsterSimulateCompute 缺少有效 kernel，将回退到 CPU 模式");
+                return false;
+            }
+
+            _kernelMove = _simulateCS.FindKernel("CSMove");
+            _kernelSeparate = _simulateCS.FindKernel("CSSeparate");
+            _kernelObstacle = _simulateCS.FindKernel("CSResolveObstacles");
+            Debug.Log("[MovementSystem] GPU 怪物模拟 ComputeShader 加载成功");
+            return true;
         }
 
         private void OnEntityCreated(EntityCreatedEvent evt)
@@ -215,6 +258,7 @@ namespace POELike.ECS.Systems
             {
                 _pendingGpuDelta += deltaTime;
                 ApplyPendingGpuReadback();
+                SyncBlockingObstacles();
 
                 if (_pendingGpuDelta > 0.0001f)
                 {
@@ -227,6 +271,7 @@ namespace POELike.ECS.Systems
             {
                 _pendingGpuDelta = 0f;
                 ApplyPendingGpuReadback();
+                SyncBlockingObstacles();
                 FallbackCpuMove(monsterCount, deltaTime);
             }
 
@@ -373,6 +418,7 @@ namespace POELike.ECS.Systems
             // 获取玩家位置
             RefreshPlayerTransform();
             Vector3 playerPos = _playerTransform != null ? _playerTransform.Position : Vector3.zero;
+            SyncBlockingObstacles();
 
             // 仅上传动态数据（移动方向 + 速度）
             for (int i = 0; i < count; i++)
@@ -415,6 +461,10 @@ namespace POELike.ECS.Systems
             _simulateCS.SetVector(ID_PlayerPosition, playerPos);
             _simulateCS.SetFloat(ID_PlayerMonsterMinDist, PlayerMonsterMinDist);
             _simulateCS.SetFloat(ID_SeparationDiam, SeparationDiam);
+            _simulateCS.SetInt(ID_ObstacleCount, _activeObstacleCount);
+            _simulateCS.SetFloat(ID_MonsterObstacleMinDist, MonsterRadius + MonsterObstacleSkin);
+            if (_obstacleBuffer != null)
+                _simulateCS.SetBuffer(_kernelObstacle, ID_Obstacles, _obstacleBuffer);
 
             // Kernel 0: CSMove（移动）
             _simulateCS.SetBuffer(_kernelMove, ID_MoveInputs,  _gpuInputBuffer);
@@ -425,6 +475,13 @@ namespace POELike.ECS.Systems
             _simulateCS.SetBuffer(_kernelSeparate, ID_MoveInputs,  _gpuInputBuffer);
             _simulateCS.SetBuffer(_kernelSeparate, ID_MoveOutputs, _gpuOutputBuffer);
             _simulateCS.Dispatch(_kernelSeparate, (count + 63) / 64, 1, 1);
+
+            // Kernel 2: CSResolveObstacles（怪物-场景障碍阻挡）
+            if (_activeObstacleCount > 0 && _obstacleBuffer != null)
+            {
+                _simulateCS.SetBuffer(_kernelObstacle, ID_MoveOutputs, _gpuOutputBuffer);
+                _simulateCS.Dispatch(_kernelObstacle, (count + 63) / 64, 1, 1);
+            }
 
             // 异步回读：GPU 每帧都可以继续推进，CPU 只按固定频率同步快照回 ECS，
             // 避免把“等待回读完成”变成 GPU 模拟的主循环节流点。
@@ -438,6 +495,54 @@ namespace POELike.ECS.Systems
             int readbackLayoutVersion = _layoutVersion;
             int readbackCount = count;
             AsyncGPUReadback.Request(_gpuOutputBuffer, req => OnGpuReadbackComplete(req, readbackGeneration, readbackLayoutVersion, readbackCount));
+        }
+
+        private void SyncBlockingObstacles()
+        {
+            int version = GameSceneManager.CurrentMapBlockingObstacleVersion;
+            if (version == _obstacleVersion)
+                return;
+
+            _obstacleVersion = version;
+            _obstacleSnapshots.Clear();
+            var source = GameSceneManager.CurrentMapBlockingObstacleSnapshots;
+            for (int i = 0; i < source.Count; i++)
+                _obstacleSnapshots.Add(source[i]);
+
+            _activeObstacleCount = _obstacleSnapshots.Count;
+            EnsureObstacleBufferCapacity(_activeObstacleCount);
+
+            if (_activeObstacleCount <= 0 || _obstacleBuffer == null)
+                return;
+
+            for (int i = 0; i < _activeObstacleCount; i++)
+            {
+                var obstacle = _obstacleSnapshots[i];
+                _obstacleUploadArray[i] = new ObstacleGpu
+                {
+                    centerX = obstacle.CenterXZ.x,
+                    centerZ = obstacle.CenterXZ.y,
+                    halfX   = obstacle.HalfSizeXZ.x,
+                    halfZ   = obstacle.HalfSizeXZ.y,
+                };
+            }
+
+            _obstacleBuffer.SetData(_obstacleUploadArray, 0, 0, _activeObstacleCount);
+        }
+
+        private void EnsureObstacleBufferCapacity(int count)
+        {
+            if (count <= 0)
+                return;
+
+            if (_obstacleBufferCapacity >= count && _obstacleUploadArray.Length >= count)
+                return;
+
+            int capacity = Mathf.Max(count, (int)(count * 1.5f));
+            _obstacleBuffer?.Release();
+            _obstacleBuffer = new ComputeBuffer(capacity, sizeof(float) * 4);
+            _obstacleBufferCapacity = capacity;
+            _obstacleUploadArray = new ObstacleGpu[capacity];
         }
 
         // ── 将 GPU 回读结果在固定时机写入 ECS / GPU，避免异步回调直接改写当前位置 ────────────────
@@ -490,6 +595,7 @@ namespace POELike.ECS.Systems
         {
             RefreshPlayerTransform();
             Vector3 playerPos = _playerTransform != null ? _playerTransform.Position : Vector3.zero;
+            SyncBlockingObstacles();
 
             for (int i = 0; i < count; i++)
             {
@@ -502,8 +608,72 @@ namespace POELike.ECS.Systems
                 if (!lockPosition && mc.MoveDirection.sqrMagnitude > 0.01f)
                     tc.Position += mc.MoveDirection * (mc.CurrentSpeed * deltaTime);
 
-                if (_playerTransform != null)
+                Vector3 resolvedPosition = tc.Position;
+                ResolveMonsterObstacleCollisions(ref resolvedPosition);
+                tc.Position = resolvedPosition;
+
+                // 攻击态需要稳定锁位，不能再被玩家碰撞分离持续推开，否则会表现成贴身跟随和震动。
+                if (_playerTransform != null && !lockPosition)
                     ResolvePlayerMonsterSeparationAt(i, playerPos);
+
+            }
+        }
+
+        private void ResolveMonsterObstacleCollisions(ref Vector3 position)
+        {
+            if (_activeObstacleCount <= 0)
+                return;
+
+            float requiredDistance = MonsterRadius + MonsterObstacleSkin;
+
+            for (int i = 0; i < _activeObstacleCount; i++)
+            {
+                var obstacle = _obstacleSnapshots[i];
+                for (int pass = 0; pass < MonsterObstacleMaxResolvePasses; pass++)
+                {
+                    float minX = obstacle.CenterXZ.x - obstacle.HalfSizeXZ.x;
+                    float maxX = obstacle.CenterXZ.x + obstacle.HalfSizeXZ.x;
+                    float minZ = obstacle.CenterXZ.y - obstacle.HalfSizeXZ.y;
+                    float maxZ = obstacle.CenterXZ.y + obstacle.HalfSizeXZ.y;
+
+                    float closestX = Mathf.Clamp(position.x, minX, maxX);
+                    float closestZ = Mathf.Clamp(position.z, minZ, maxZ);
+                    float dx = position.x - closestX;
+                    float dz = position.z - closestZ;
+                    float sqDist = dx * dx + dz * dz;
+
+                    if (sqDist > requiredDistance * requiredDistance - MonsterObstacleResolveEpsilon)
+                        break;
+
+                    Vector3 pushDir;
+                    float planarDistance = Mathf.Sqrt(Mathf.Max(sqDist, 0f));
+                    float pushDistance;
+
+                    if (planarDistance <= 0.0001f)
+                    {
+                        float offsetLeft = Mathf.Abs(position.x - minX);
+                        float offsetRight = Mathf.Abs(maxX - position.x);
+                        float offsetDown = Mathf.Abs(position.z - minZ);
+                        float offsetUp = Mathf.Abs(maxZ - position.z);
+                        float minOffset = Mathf.Min(Mathf.Min(offsetLeft, offsetRight), Mathf.Min(offsetDown, offsetUp));
+
+                        if (minOffset == offsetLeft)      pushDir = Vector3.left;
+                        else if (minOffset == offsetRight) pushDir = Vector3.right;
+                        else if (minOffset == offsetDown)  pushDir = Vector3.back;
+                        else                               pushDir = Vector3.forward;
+
+                        pushDistance = requiredDistance;
+                    }
+                    else
+                    {
+                        pushDir = new Vector3(dx / planarDistance, 0f, dz / planarDistance);
+                        pushDistance = requiredDistance - planarDistance;
+                        if (pushDistance <= 0.0001f)
+                            break;
+                    }
+
+                    position += pushDir * (pushDistance + MonsterObstacleResolveEpsilon);
+                }
             }
         }
 
@@ -516,6 +686,10 @@ namespace POELike.ECS.Systems
         private void ResolvePlayerMonsterSeparationAt(int idx, Vector3 playerPos)
         {
             var tc = _monsterTCs[idx];
+            var ai = _monsterAIs[idx];
+            if (ai != null && ai.CurrentState == AIState.Attack)
+                return;
+
             var pos = tc.Position;
             float dx = pos.x - playerPos.x;
             float dz = pos.z - playerPos.z;
@@ -831,6 +1005,7 @@ namespace POELike.ECS.Systems
 
             _gpuInputBuffer?.Release();
             _gpuOutputBuffer?.Release();
+            _obstacleBuffer?.Release();
             if (_cpuInputArray.IsCreated)    _cpuInputArray.Dispose();
             if (_cpuOutputArray.IsCreated)   _cpuOutputArray.Dispose();
             if (_cpuReadbackArray.IsCreated) _cpuReadbackArray.Dispose();

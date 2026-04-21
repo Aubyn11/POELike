@@ -11,15 +11,31 @@ namespace POELike.Game
         public string CfgID;
         public string GroupName;
         public string MonsterID;
+        public string MonsterCount;
         public string Count;
         public string OffsetX;
         public string OffsetZ;
 
         public int CfgIDInt => int.TryParse(CfgID, out int id) ? id : 0;
         public int MonsterIDInt => int.TryParse(MonsterID, out int id) ? id : 0;
-        public int CountInt => int.TryParse(Count, out int count) ? Mathf.Max(0, count) : 0;
+        public int MonsterCountInt => ParseNonNegativeInt(MonsterCount, Count);
+        public int CountInt => MonsterCountInt;
         public float OffsetXFloat => ParseFloat(OffsetX);
         public float OffsetZFloat => ParseFloat(OffsetZ);
+
+        private static int ParseNonNegativeInt(params string[] values)
+        {
+            if (values == null)
+                return 0;
+
+            foreach (var value in values)
+            {
+                if (int.TryParse(value, out int parsed))
+                    return Mathf.Max(0, parsed);
+            }
+
+            return 0;
+        }
 
         private static float ParseFloat(string value)
         {

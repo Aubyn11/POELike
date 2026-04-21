@@ -1,18 +1,20 @@
 // MonsterSimulateCompute.compute
 // 将怪物移动计算和碰撞分离卸载到 GPU，彻底解放 CPU
 //
-// Kernel 0: CSMove      —— 并行计算每只怪物的新位置（移动方向 × 速度 × deltaTime）
-// Kernel 1: CSSeparate  —— 并行计算怪物-玩家分离（只推怪物，不动玩家）
-// 约定：currentSpeed < 0 表示锁定主动移动（例如攻击状态），但仍然允许玩家分离
+// Kernel 0: CSMove               —— 并行计算每只怪物的新位置（移动方向 × 速度 × deltaTime）
+// Kernel 1: CSSeparate           —— 并行计算怪物-玩家分离（只推怪物，不动玩家）
+// Kernel 2: CSResolveObstacles   —— 并行计算怪物-场景障碍阻挡
+// 约定：currentSpeed < 0 表示锁定主动移动并跳过玩家分离（例如攻击状态）
 
 #pragma kernel CSMove
 #pragma kernel CSSeparate
+#pragma kernel CSResolveObstacles
 
 // ── 每只怪物的动态输入数据（CPU 每帧上传）────────────────────────────
 struct MonsterMoveInput
 {
     float3 moveDirection;   // 移动方向（归一化，零向量=静止）
-    float  currentSpeed;    // 当前速度，负数表示锁定当前位置
+    float  currentSpeed;    // 当前速度，负数表示锁定当前位置并跳过玩家分离
 };
 
 // ── 输出：当前位置（float3，GPU 常驻，CPU 低频回读）──────────────────
@@ -25,6 +27,7 @@ struct MonsterMoveOutput
 // ── Buffers ───────────────────────────────────────────────────────────
 StructuredBuffer<MonsterMoveInput>    _MoveInputs;   // 每帧上传的动态输入
 RWStructuredBuffer<MonsterMoveOutput> _MoveOutputs;  // 常驻 GPU 的怪物位置
+StructuredBuffer<float4>              _Obstacles;    // x=centerX, y=centerZ, z=halfX, w=halfZ
 
 // ── 参数 ──────────────────────────────────────────────────────────────
 int    _MonsterCount;
@@ -32,6 +35,14 @@ float  _DeltaTime;
 float3 _PlayerPosition;
 float  _PlayerMonsterMinDist;   // 玩家+怪物碰撞半径之和
 float  _SeparationDiam;         // 怪物直径（碰撞分离距离）
+int    _ObstacleCount;
+float  _MonsterObstacleMinDist; // 怪物与障碍最小平面距离
+
+float2 GetFallbackObstacleDirection(uint idx)
+{
+    float angle = (float)(idx & 1023u) * (6.2831853f / 1024.0f);
+    return float2(sin(angle), cos(angle));
+}
 
 // ═══════════════════════════════════════════════════════════════════════
 // Kernel 0: CSMove —— 并行移动（每线程处理一只怪物）
@@ -51,7 +62,7 @@ void CSMove(uint3 id : SV_DispatchThreadID)
     float3 newPos = _MoveOutputs[idx].position;
     if (speed >= 0.0f && lenSq > 0.0001f)
     {
-        float3 normDir = dir * rsqrt(lenSq); // GPU 内置快速归一化
+        float3 normDir = dir * rsqrt(lenSq);
         newPos += normDir * (speed * _DeltaTime);
     }
 
@@ -69,6 +80,10 @@ void CSSeparate(uint3 id : SV_DispatchThreadID)
 {
     uint idx = id.x;
     if ((int)idx >= _MonsterCount) return;
+
+    MonsterMoveInput input = _MoveInputs[idx];
+    if (input.currentSpeed < 0.0f)
+        return;
 
     float3 pos = _MoveOutputs[idx].position;
 
@@ -91,5 +106,107 @@ void CSSeparate(uint3 id : SV_DispatchThreadID)
         pos.z += (dz / dist) * push;
     }
 
+    _MoveOutputs[idx].position = pos;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Kernel 2: CSResolveObstacles —— 怪物-场景障碍阻挡
+// 复用 CPU 侧传入的 AABB 快照，把怪物推出地图装饰体外
+// ═══════════════════════════════════════════════════════════════════════
+[numthreads(64, 1, 1)]
+void CSResolveObstacles(uint3 id : SV_DispatchThreadID)
+{
+    uint idx = id.x;
+    if ((int)idx >= _MonsterCount) return;
+    if (_ObstacleCount <= 0) return;
+
+    float3 pos = _MoveOutputs[idx].position;
+    float posX = pos.x;
+    float posZ = pos.z;
+    float requiredDist = _MonsterObstacleMinDist;
+    float requiredSq = requiredDist * requiredDist;
+
+    for (int obstacleIndex = 0; obstacleIndex < _ObstacleCount; obstacleIndex++)
+    {
+        float4 obstacle = _Obstacles[obstacleIndex];
+        float centerX = obstacle.x;
+        float centerZ = obstacle.y;
+        float halfX = obstacle.z;
+        float halfZ = obstacle.w;
+        float minX = centerX - halfX;
+        float maxX = centerX + halfX;
+        float minZ = centerZ - halfZ;
+        float maxZ = centerZ + halfZ;
+
+        for (int resolvePass = 0; resolvePass < 4; resolvePass++)
+        {
+            float closestX = clamp(posX, minX, maxX);
+            float closestZ = clamp(posZ, minZ, maxZ);
+            float dx = posX - closestX;
+            float dz = posZ - closestZ;
+
+            float sqDist = dx * dx + dz * dz;
+            if (sqDist >= requiredSq - 0.0001f)
+                break;
+
+            float pushX;
+            float pushZ;
+            float planarDist = sqrt(max(sqDist, 0.0f));
+            float pushDistance;
+
+            if (planarDist <= 0.0001f)
+            {
+                float leftGap = abs(posX - minX);
+                float rightGap = abs(maxX - posX);
+                float downGap = abs(posZ - minZ);
+                float upGap = abs(maxZ - posZ);
+                float minGap = min(min(leftGap, rightGap), min(downGap, upGap));
+
+                if (minGap == leftGap)
+                {
+                    pushX = -1.0f;
+                    pushZ = 0.0f;
+                }
+                else if (minGap == rightGap)
+                {
+                    pushX = 1.0f;
+                    pushZ = 0.0f;
+                }
+                else if (minGap == downGap)
+                {
+                    pushX = 0.0f;
+                    pushZ = -1.0f;
+                }
+                else
+                {
+                    pushX = 0.0f;
+                    pushZ = 1.0f;
+                }
+
+                if (pushX == 0.0f && pushZ == 0.0f)
+                {
+                    float2 fallback = GetFallbackObstacleDirection(idx);
+                    pushX = fallback.x;
+                    pushZ = fallback.y;
+                }
+
+                pushDistance = requiredDist;
+            }
+            else
+            {
+                pushX = dx / planarDist;
+                pushZ = dz / planarDist;
+                pushDistance = requiredDist - planarDist;
+                if (pushDistance <= 0.0001f)
+                    break;
+            }
+
+            posX += pushX * (pushDistance + 0.01f);
+            posZ += pushZ * (pushDistance + 0.01f);
+        }
+    }
+
+    pos.x = posX;
+    pos.z = posZ;
     _MoveOutputs[idx].position = pos;
 }

@@ -45,13 +45,33 @@ namespace POELike.Game
 
         // 当前地图内容刷出的怪物实体列表
         private readonly List<Entity> _currentMapMonsterEntities = new List<Entity>();
+        private readonly List<PendingMapMonsterSpawnGroup> _pendingMapMonsterSpawnGroups = new List<PendingMapMonsterSpawnGroup>();
 
         // 当前地图刷出的运行时装饰物
+
+        public readonly struct MapBlockingObstacleSnapshot
+        {
+            public readonly Vector2 CenterXZ;
+            public readonly Vector2 HalfSizeXZ;
+
+            public MapBlockingObstacleSnapshot(Vector2 centerXZ, Vector2 halfSizeXZ)
+            {
+                CenterXZ = centerXZ;
+                HalfSizeXZ = halfSizeXZ;
+            }
+        }
+
+        private static readonly List<MapBlockingObstacleSnapshot> s_currentMapBlockingObstacleSnapshots = new List<MapBlockingObstacleSnapshot>(32);
+        private static int s_currentMapBlockingObstacleVersion = 1;
+        public static IReadOnlyList<MapBlockingObstacleSnapshot> CurrentMapBlockingObstacleSnapshots => s_currentMapBlockingObstacleSnapshots;
+        public static int CurrentMapBlockingObstacleVersion => s_currentMapBlockingObstacleVersion;
+
         private readonly List<GameObject> _currentMapDecorationObjects = new List<GameObject>();
         private readonly List<Collider> _currentMapBlockingColliders = new List<Collider>();
         private Transform _mapDecorationRoot;
 
         private const float PlayerCollisionRadius = 0.4f;
+
         private const float MapDecorationCollisionSkin = 0.02f;
         private const float MapDecorationResolveEpsilon = 0.01f;
         private const int MapDecorationMaxResolvePasses = 6;
@@ -105,7 +125,18 @@ namespace POELike.Game
             new Vector3(-28f, MapTeleportHeight, 0f),
         };
 
+        private sealed class PendingMapMonsterSpawnGroup
+        {
+            public string GroupName;
+            public int MonsterId;
+            public int MonsterCount;
+            public float TriggerRadius;
+            public Vector3 SpawnCenter;
+            public bool Spawned;
+        }
+
         // 当前寻路目标NPC实体（点击NPC名称时记录）
+
         private Entity _targetNpcEntity;
 
         // 是否正在前往NPC（用于到达检测）
@@ -157,6 +188,9 @@ namespace POELike.Game
 
         private void Start()
         {
+            s_currentMapBlockingObstacleSnapshots.Clear();
+            s_currentMapBlockingObstacleVersion++;
+
             var data = SceneLoader.PendingCharacterData;
             if (data == null)
             {
@@ -210,12 +244,17 @@ namespace POELike.Game
             ResolveMapDecorationCollisions();
             CheckNpcArrival();
             CheckGroundItemArrival();
+            CheckPendingMapMonsterSpawnGroups();
         }
 
         private void OnDestroy()
         {
+            s_currentMapBlockingObstacleSnapshots.Clear();
+            s_currentMapBlockingObstacleVersion++;
+
             _mouseClickAction?.Dispose();
             _skill1Action?.Dispose();
+
             _skill2Action?.Dispose();
             _skill3Action?.Dispose();
             _skill4Action?.Dispose();
@@ -1920,10 +1959,6 @@ namespace POELike.Game
             if (_currentMapLevel == null)
                 return;
 
-            var world = GameManager.Instance?.World;
-            if (world == null)
-                return;
-
             MapContentConfigLoader.Reload();
             IReadOnlyList<MapContentData> contents = MapContentConfigLoader.GetByCfgId(_currentMapLevel.CfgID);
             if (contents == null || contents.Count == 0)
@@ -1932,32 +1967,45 @@ namespace POELike.Game
                 return;
             }
 
-            Vector3 playerPosition = _transformComp != null ? _transformComp.Position : _playerSpawnPoint;
+            Vector3 layoutOrigin = _playerSpawnPoint;
 
             foreach (var content in contents)
             {
                 if (content == null)
                     continue;
 
-                if (content.MonsterIDInt <= 0 || content.CountInt <= 0)
+                if (content.MonsterIDInt <= 0 || content.MonsterCountInt <= 0)
                 {
-                    Debug.LogWarning($"[GameSceneManager] 跳过非法地图内容配置：CfgID={content.CfgID}, MonsterID={content.MonsterID}, Count={content.Count}");
+                    Debug.LogWarning($"[GameSceneManager] 跳过非法地图内容配置：CfgID={content.CfgID}, MonsterID={content.MonsterID}, MonsterCount={content.MonsterCount}, Count={content.Count}");
                     continue;
                 }
 
-                Vector3 spawnCenter = playerPosition + new Vector3(content.OffsetXFloat, 0f, content.OffsetZFloat);
-                var spawned = MonsterSpawner.SpawnMonsters(world, content.MonsterIDInt, content.CountInt, spawnCenter);
-                if (spawned == null || spawned.Count == 0)
+                if (!MonsterSpawner.TryGetConfig(content.MonsterIDInt, out var monsterData, forceReload: true))
+                {
+                    Debug.LogWarning($"[GameSceneManager] 跳过缺少怪物配置的地图内容：CfgID={content.CfgID}, MonsterID={content.MonsterID}");
                     continue;
+                }
 
-                _currentMapMonsterEntities.AddRange(spawned);
+                Vector3 spawnCenter = layoutOrigin + new Vector3(content.OffsetXFloat, 0f, content.OffsetZFloat);
+                spawnCenter.y = 0.5f;
+                _pendingMapMonsterSpawnGroups.Add(new PendingMapMonsterSpawnGroup
+                {
+                    GroupName = string.IsNullOrWhiteSpace(content.GroupName) ? $"MonsterGroup_{content.MonsterIDInt}" : content.GroupName,
+                    MonsterId = content.MonsterIDInt,
+                    MonsterCount = content.MonsterCountInt,
+                    TriggerRadius = Mathf.Max(0.1f, monsterData.MonsterSpawnTriggerRadiusFloat),
+                    SpawnCenter = spawnCenter,
+                    Spawned = false,
+                });
             }
 
-            Debug.Log($"[GameSceneManager] 已按 CfgID={_currentMapLevel.CfgID} 刷新地图内容，当前地图：{_currentMapLevel.MapName}，怪物实体数：{_currentMapMonsterEntities.Count}");
+            Debug.Log($"[GameSceneManager] 已按 CfgID={_currentMapLevel.CfgID} 刷新地图内容，当前地图：{_currentMapLevel.MapName}，待触发怪物组数：{_pendingMapMonsterSpawnGroups.Count}");
         }
 
         private void ClearCurrentMapMonsters()
         {
+            _pendingMapMonsterSpawnGroups.Clear();
+
             var world = GameManager.Instance?.World;
             if (world == null)
             {
@@ -1974,7 +2022,37 @@ namespace POELike.Game
             _currentMapMonsterEntities.Clear();
         }
 
+        private void CheckPendingMapMonsterSpawnGroups()
+        {
+            if (_pendingMapMonsterSpawnGroups.Count == 0)
+                return;
+
+            var world = GameManager.Instance?.World;
+            if (world == null)
+                return;
+
+            Vector3 playerPosition = _transformComp != null ? _transformComp.Position : _playerSpawnPoint;
+            for (int i = 0; i < _pendingMapMonsterSpawnGroups.Count; i++)
+            {
+                var group = _pendingMapMonsterSpawnGroups[i];
+                if (group == null || group.Spawned)
+                    continue;
+
+                float sqrDistance = (playerPosition - group.SpawnCenter).sqrMagnitude;
+                if (sqrDistance > group.TriggerRadius * group.TriggerRadius)
+                    continue;
+
+                var spawned = MonsterSpawner.SpawnMonsters(world, group.MonsterId, group.MonsterCount, group.SpawnCenter);
+                group.Spawned = true;
+                if (spawned != null && spawned.Count > 0)
+                    _currentMapMonsterEntities.AddRange(spawned);
+
+                Debug.Log($"[GameSceneManager] 玩家进入怪物组触发范围：{group.GroupName}，MonsterID={group.MonsterId}，生成数量={group.MonsterCount}，触发半径={group.TriggerRadius}");
+            }
+        }
+
         private void RefreshCurrentMapDecoration()
+
         {
             ClearCurrentMapDecorations();
 
@@ -2018,6 +2096,7 @@ namespace POELike.Game
 
             _currentMapDecorationObjects.Clear();
             _currentMapBlockingColliders.Clear();
+            RebuildCurrentMapBlockingObstacleSnapshots();
         }
 
         private Transform EnsureMapDecorationRoot()
@@ -2095,13 +2174,40 @@ namespace POELike.Game
             {
                 collider.isTrigger = false;
                 _currentMapBlockingColliders.Add(collider);
+                RebuildCurrentMapBlockingObstacleSnapshots();
             }
 
             SetMaterialColor(decorationObject, color);
             return decorationObject;
         }
 
+        private void RebuildCurrentMapBlockingObstacleSnapshots()
+        {
+            s_currentMapBlockingObstacleSnapshots.Clear();
+
+            for (int i = _currentMapBlockingColliders.Count - 1; i >= 0; i--)
+            {
+                Collider blocker = _currentMapBlockingColliders[i];
+                if (blocker == null)
+                {
+                    _currentMapBlockingColliders.RemoveAt(i);
+                    continue;
+                }
+
+                Bounds bounds = blocker.bounds;
+                Vector3 extents = bounds.extents;
+                float halfX = Mathf.Max(extents.x, 0.05f);
+                float halfZ = Mathf.Max(extents.z, 0.05f);
+                s_currentMapBlockingObstacleSnapshots.Add(new MapBlockingObstacleSnapshot(
+                    new Vector2(bounds.center.x, bounds.center.z),
+                    new Vector2(halfX, halfZ)));
+            }
+
+            s_currentMapBlockingObstacleVersion++;
+        }
+
         private static Vector3 ResolveMapSpawnPoint(MapLevelData mapLevel)
+
         {
             if (mapLevel == null)
                 return DefaultGameScenePlayerSpawnPoint;

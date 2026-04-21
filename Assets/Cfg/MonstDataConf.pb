@@ -12,6 +12,7 @@
       "MonsterDetectionRange": "10",
       "MonsterAttackDuration": "0.5",
       "MonsterAttackInterval": "1.5",
+      "MonsterSpawnTriggerRadius": "9",
       "MonsterBaseExp": "100"
     },
     {
@@ -26,6 +27,7 @@
       "MonsterDetectionRange": "12",
       "MonsterAttackDuration": "0.5",
       "MonsterAttackInterval": "1.5",
+      "MonsterSpawnTriggerRadius": "10",
       "MonsterBaseExp": "150"
     },
     {
@@ -40,6 +42,7 @@
       "MonsterDetectionRange": "14",
       "MonsterAttackDuration": "0.5",
       "MonsterAttackInterval": "1.5",
+      "MonsterSpawnTriggerRadius": "11",
       "MonsterBaseExp": "300"
     },
     {
@@ -54,6 +57,7 @@
       "MonsterDetectionRange": "18",
       "MonsterAttackDuration": "0.5",
       "MonsterAttackInterval": "1.5",
+      "MonsterSpawnTriggerRadius": "14",
       "MonsterBaseExp": "600"
     }
   ]

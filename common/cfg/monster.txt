@@ -10,5 +10,6 @@
     int32 MonsterBaseExp = 9,
     float MonsterAttackRange = 10,
     float MonsterAttackDuration = 11,
-    float MonsterAttackInterval = 12
+    float MonsterAttackInterval = 12,
+    float MonsterSpawnTriggerRadius = 13
 }

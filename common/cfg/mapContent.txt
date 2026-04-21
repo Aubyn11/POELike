@@ -2,7 +2,8 @@ MapContentConf{
     int32 CfgID = 1,
     string GroupName = 2,
     int32 MonsterID = 3,
-    int32 Count = 4,
-    float OffsetX = 5,
-    float OffsetZ = 6
+    int32 MonsterCount = 4,
+    int32 Count = 5,
+    float OffsetX = 6,
+    float OffsetZ = 7
 }

@@ -349,8 +349,9 @@ namespace POELike.ECS.Systems
             float dz     = transform.Position.z - targetTransform.Position.z;
             float sqDist = dx * dx + dz * dz;
 
-            float chaseRangeSq  = ai.ChaseRange  * ai.ChaseRange;
-            float attackRangeSq = ai.AttackRange * ai.AttackRange;
+            float chaseRangeSq   = ai.ChaseRange * ai.ChaseRange;
+            float attackEnterDist = ai.AttackRange + ChaseStopExtraDist;
+            float attackEnterDistSq = attackEnterDist * attackEnterDist;
 
             if (sqDist > chaseRangeSq)
             {
@@ -359,7 +360,9 @@ namespace POELike.ECS.Systems
                 return;
             }
 
-            if (sqDist <= attackRangeSq)
+            // 进入攻击态的距离至少要覆盖追击停止圈，
+            // 否则怪物会在“已经不该继续追”的近距离里停在 Chase 和 Attack 之间来回抢状态。
+            if (sqDist <= attackEnterDistSq)
             {
                 if (CanEnterAttackState(ai, transform))
                 {
@@ -370,8 +373,8 @@ namespace POELike.ECS.Systems
             }
 
             // ── 停止圈：已经足够近，停下等待 ──────────────────────────
-            float stopDist   = ai.AttackRange + ChaseStopExtraDist;
-            float stopDistSq = stopDist * stopDist;
+            float stopDist   = attackEnterDist;
+            float stopDistSq = attackEnterDistSq;
 
             if (sqDist <= stopDistSq)
             {
@@ -427,6 +430,10 @@ namespace POELike.ECS.Systems
             float dz     = transform.Position.z - targetTransform.Position.z;
             float sqDist = dx * dx + dz * dz;
             float chaseRangeSq = ai.ChaseRange * ai.ChaseRange;
+            float attackResumeDist = ai.AttackRange + ChaseStopExtraDist;
+            float attackResumeDistSq = attackResumeDist * attackResumeDist;
+            float attackHoldDist = ai.AttackRange + FormationAttackBreakExtraDist;
+            float attackHoldDistSq = attackHoldDist * attackHoldDist;
 
             movement.MoveDirection = Vector3.zero;
 
@@ -446,7 +453,21 @@ namespace POELike.ECS.Systems
                 return;
             }
 
+            // 攻击轮次结束后，如果目标仍在近战恢复距离内，则直接开启下一轮攻击。
+            // 这里使用和 Chase 停止圈一致的容差，避免“明明已经贴身停住，却先切回 Chase 再抢回 Attack”。
+            if (sqDist <= attackResumeDistSq && CanEnterAttackState(ai, transform))
+            {
+                StartAttackCycle(ai);
+                return;
+            }
+
+            // 玩家只要还没真正脱离攻击保持壳层，就继续留在 Attack 锁位等待下一次可续攻。
+            // 这样可以把攻击态退出和编队/追击的恢复拉开，消掉贴身跟随与震动。
+            if (sqDist <= attackHoldDistSq)
+                return;
+
             TransitionTo(ai, AIState.Chase);
+
         }
 
         private void UpdateFleeState(Entity entity, AIComponent ai, MovementComponent movement, TransformComponent transform, float deltaTime)
@@ -602,13 +623,10 @@ namespace POELike.ECS.Systems
                         : startAngle + slotIndex * angleStep;
 
                     var entry = _ringEntries[ringEntryIndex];
-                    if (ringIndex > 0 && entry.AI.CurrentState == AIState.Attack)
-                    {
-                        if (HasAttackCycleCompleted(entry.AI))
-                            TransitionTo(entry.AI, AIState.Chase);
-                    }
-
+                    // Attack 状态退出统一交给 UpdateAttackState() 按真实距离判定，
+                    // 编队层不再直接把攻击中的怪物打回 Chase，避免和状态机互相抢切换。
                     float currentRadius = Mathf.Sqrt(entry.SqDistToPlayer);
+
                     float slotRadius = ringRadius;
                     if (slotRadius > currentRadius)
                         slotRadius = Mathf.Min(slotRadius, currentRadius + FormationMaxOutwardShift);
@@ -649,11 +667,16 @@ namespace POELike.ECS.Systems
             float attackRingRadius = GetAttackRingRadius(ai.AttackRange);
             float attackEnterTolerance = Mathf.Max(FormationAttackSlotTolerance, FormationAttackHoldTolerance);
 
-            // 已经进入攻击距离时不再强制要求贴合编队环，否则会表现成“明明已经够近却一直追”
-            if (radius > attackHoldDist && Mathf.Abs(radius - attackRingRadius) > attackEnterTolerance)
+            // 已经真正贴身时，直接允许进入攻击态。
+            // 否则会因为攻击名额 / 编队环判定把怪物继续留在 Chase，表现成明明进了攻击范围却还跟着玩家抖动。
+            if (radius <= attackHoldDist)
+                return true;
+
+            if (Mathf.Abs(radius - attackRingRadius) > attackEnterTolerance)
                 return false;
 
             int attackCapacity = Mathf.Max(1, Mathf.FloorToInt((2f * Mathf.PI * attackRingRadius) / FormationSpacing));
+
             int attackerCount = 0;
 
             for (int i = 0; i < _aiCache.Count; i++)
@@ -877,17 +900,15 @@ namespace POELike.ECS.Systems
                     return;
                 }
 
-                if (entry.AI.AttackCooldownTimer > 0f)
-                {
-                    entry.Movement.MoveDirection = Vector3.zero;
-                    return;
-                }
-
-                TransitionTo(entry.AI, AIState.Chase);
+                // Attack 状态退出统一交给 UpdateAttackState() 按真实距离判定，
+                // 编队层这里只负责锁位，避免和状态机互相抢切换导致贴身震动。
+                entry.Movement.MoveDirection = Vector3.zero;
+                return;
             }
 
             float chaseHoldDist = entry.AI.AttackRange + ChaseStopExtraDist;
-            float attackEnterDist = entry.AI.AttackRange + AttackPushExtraDist;
+
+            float attackEnterDist = entry.AI.AttackRange + ChaseStopExtraDist;
 
             if (slotSqDist <= 0.0001f)
             {

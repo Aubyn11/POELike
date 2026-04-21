@@ -68,7 +68,9 @@
 
 - 地图内容配置读取入口
 - 当前读取 `MapContentConf.pb`
-- 按 `CfgID` 返回当前地图应刷新的怪物组
+- 按 `CfgID` 返回当前地图的怪物组刷怪点配置
+- 每组当前可配置 `MonsterID / MonsterCount / OffsetX / OffsetZ`
+- 地图怪物当前不会在进图时立即生成，而是等玩家进入该刷怪点附近、达到怪物配置里的触发半径后，整组生成
 
 #### [DoorPanel.cs](../Assets/Scripts/Game/UI/DoorPanel.cs)
 
@@ -105,7 +107,8 @@ flowchart LR
 - [Program.cs](../Tools/GenEquipmentExcel/Program.cs)
 - [export_excel_to_cfg.py](../Tools/excelConvert/export_excel_to_cfg.py)
 - [启动ExcelConvert.bat](../启动ExcelConvert.bat)
-  - 当前会优先启动内部 `ExcelExporter / excelConvert` 发布产物；若仓库里未提供这些内部工具，则自动走仓库内降级链：先刷新 `equipment.xlsx`，再把 `common/excel/xls/*.xlsx` 全量导出到 `Assets/Cfg/*.pb`
+  - 当前同时支持两种模式：优先使用内部 `ExcelExporter / excelConvert` 发布产物；若只有源码仓库且本机可用 `dotnet`，则会先自动 `publish` 到约定目录后再运行；若这两类内部工具都不可用，则自动走仓库内降级链：先刷新 `equipment.xlsx`，再把 `common/excel/xls/*.xlsx` 全量导出到 `Assets/Cfg/*.pb`
+
 - 各类 `ConfigLoader`
 
 ### 当前已知数据链约定

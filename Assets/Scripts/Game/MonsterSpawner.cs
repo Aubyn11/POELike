@@ -47,6 +47,11 @@ namespace POELike.Game
             return _configCache;
         }
 
+        public static bool TryGetConfig(int monsterId, out MonsterData data, bool forceReload = false)
+        {
+            return GetAllConfigs(forceReload).TryGetValue(monsterId, out data);
+        }
+
         /// <summary>
         /// 根据 MonsterID 和数量，在玩家附近生成怪物实体
         /// </summary>
@@ -60,8 +65,7 @@ namespace POELike.Game
             var entities = new List<Entity>();
 
             // 生成时强制刷新配置，确保运行中修改 MonstDataConf.pb 后下一次生成即可生效
-            var configs = GetAllConfigs(forceReload: true);
-            if (!configs.TryGetValue(monsterId, out var data))
+            if (!TryGetConfig(monsterId, out var data, forceReload: true))
             {
                 Debug.LogWarning($"[MonsterSpawner] 找不到 MonsterID={monsterId} 的配置");
                 return entities;
@@ -217,6 +221,7 @@ namespace POELike.Game
             public string MonsterDetectionRange;
             public string MonsterAttackDuration;
             public string MonsterAttackInterval;
+            public string MonsterSpawnTriggerRadius;
 
             public int MonsterIDInt => int.TryParse(MonsterID, out int id) ? id : 0;
             public float MonsterHpFloat => ParseFloat(MonsterHp, DefaultHp);
@@ -228,11 +233,13 @@ namespace POELike.Game
             public float MonsterDetectionRangeFloat => ParseFloat(MonsterDetectionRange, DefaultDetectionRange);
             public float MonsterAttackDurationFloat => ParseFloat(MonsterAttackDuration, DefaultAttackDuration);
             public float MonsterAttackIntervalFloat => ParseFloat(MonsterAttackInterval, DefaultAttackInterval);
+            public float MonsterSpawnTriggerRadiusFloat => ParseFloat(MonsterSpawnTriggerRadius, MonsterDetectionRangeFloat);
 
             private static float ParseFloat(string value, float fallback)
             {
                 return float.TryParse(value, out float parsed) ? parsed : fallback;
             }
         }
+
     }
 }

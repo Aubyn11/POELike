@@ -62,8 +62,10 @@ namespace POELike.Game
         // MonsterInput 结构体：position(float3) + faceYaw(float) + meshTypeIndex(int) + typeInstanceIndex(int) + pad*2
         // 对应 ComputeShader 中的 MonsterInput，stride = 32 bytes
         private const int InputStride = 32;
+        private const int PositionStride = 16;
         private ComputeBuffer _inputGpuBuffer;
         private int           _inputGpuCapacity;
+        private ComputeBuffer _fallbackGpuPositions;
 
         // CPU 端输入暂存（NativeArray，用于 SetData，避免托管数组 GC）
         private NativeArray<MonsterInputGpu> _inputCpuBuffer;
@@ -382,18 +384,16 @@ namespace POELike.Game
             }
 
             // GPU 位置 Buffer 绑定（每帧检查，因为 MovementSystem 可能重建 Buffer）
-            if (useGpuPos)
-            {
-                _matrixCompute.SetBuffer(_csKernel, ID_GpuPositions, _movementSystem.GpuPositionBuffer);
-                _matrixCompute.SetInt(ID_UseGpuPosition, 1);
-            }
-            else
-            {
-                _matrixCompute.SetInt(ID_UseGpuPosition, 0);
-            }
+            ComputeBuffer gpuPositionBuffer = useGpuPos
+                ? _movementSystem.GpuPositionBuffer
+                : _fallbackGpuPositions;
+            if (gpuPositionBuffer != null)
+                _matrixCompute.SetBuffer(_csKernel, ID_GpuPositions, gpuPositionBuffer);
+            _matrixCompute.SetInt(ID_UseGpuPosition, useGpuPos ? 1 : 0);
 
             // 动态 Buffer 和实体数量每帧更新
             _matrixCompute.SetBuffer(_csKernel, ID_Inputs, _inputGpuBuffer);
+
             _matrixCompute.SetInt(ID_EntityCount, validCount);
             _matrixCompute.Dispatch(_csKernel, (validCount + 63) / 64, 1, 1);
 
@@ -497,8 +497,10 @@ namespace POELike.Game
             if (_inputGpuCapacity < capacity)
             {
                 _inputGpuBuffer?.Release();
-                _inputGpuBuffer    = new ComputeBuffer(capacity, InputStride);
-                _inputGpuCapacity  = capacity;
+                _fallbackGpuPositions?.Release();
+                _inputGpuBuffer       = new ComputeBuffer(capacity, InputStride);
+                _fallbackGpuPositions = new ComputeBuffer(capacity, PositionStride);
+                _inputGpuCapacity     = capacity;
 
                 if (_inputCpuBuffer.IsCreated) _inputCpuBuffer.Dispose();
                 _inputCpuBuffer    = new NativeArray<MonsterInputGpu>(capacity, Allocator.Persistent);
@@ -688,6 +690,7 @@ namespace POELike.Game
         private void OnDestroy()
         {
             _inputGpuBuffer?.Release();
+            _fallbackGpuPositions?.Release();
             _outputMatricesGpu?.Release();
             _localMatricesGpu?.Release();
             _partCountsGpu?.Release();

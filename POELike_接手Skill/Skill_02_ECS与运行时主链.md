@@ -200,6 +200,12 @@ flowchart TD
 - **`MonsterRadius` 不能再直接映射成怪物 `AttackRange`**
 - 若把配置里的半径字段误当攻击距离，怪物会离玩家过远就进入围攻停位 / 攻击圈，表现为围在角色附近固定站位并持续抖动
 - **怪物攻击态当前不是“站住后按冷却无限打”**：`AISystem` 现在会在进入 `Attack` 时开启一整轮攻击周期，先走 `AttackDuration`，再走 `AttackInterval`；这两个时间没走完之前怪物不会恢复追踪。整轮结束后，才会按玩家当前位置重新进入 `Chase` 或下一轮 `Attack`
+- **`UpdateAttackState()` 在攻击轮次结束时不能无条件切回 `Chase`**：如果玩家仍在近身容差内，应该直接重开下一轮 `Attack`；编队层和攻击名额判断都不应抢先把它打回 `Chase`，否则会和追击逻辑互相抢状态，表现成怪物贴身来回震动
+- **`CanEnterAttackState()` 在怪物已经贴身时不能再被攻击名额 / 编队环拦住**：若怪物中心距离已经进入 `AttackRange + AttackPushExtraDist`，应直接允许进入 `Attack`；否则会出现“明明已进攻击范围却仍沿着编队槽位跟随玩家抖动”
+- **`ApplyPlayerChaserFormation()` 不应直接把 `Attack` 态切回 `Chase`**：攻击态退出统一由 `UpdateAttackState()` 按真实距离决定；编队层只负责朝向与站位，否则会和状态机重复改状态，形成贴身震动
+- **`MovementSystem / MonsterSimulateCompute` 在 `AIState.Attack` 下不能继续做玩家-怪物分离**：攻击态若还被 GPU / CPU 分离持续从玩家身边推开，就会表现成“已经进攻击态却还跟随玩家并震动”；当前攻击锁位应同时表示“停止主动移动 + 跳过玩家分离”
+- **地图装饰阻挡当前不再只作用于玩家**：`GameSceneManager` 现会把 `_currentMapBlockingColliders` 同步成怪物可读的障碍快照，`MovementSystem` 会在 CPU 回退和 GPU `MonsterSimulateCompute` 两条链里都执行怪物-障碍物推离；因此任务地图里的柱子 / 箱体 / 祭坛 / 标记物现在也会阻挡生成后的怪物，不再只拦玩家
+- **`Chase -> Attack` 的进入阈值必须至少覆盖 `Chase` 的停止圈，`Attack` 结束后也要有独立保持壳层**：如果进入攻击仍用更小的 `AttackRange`，但追击停止却用更大的 `AttackRange + ChaseStopExtraDist`，怪物就会在“已贴身停住但又进不了 Attack”的区间里停在 `Chase` 和 `Attack` 之间来回抢状态；当前 `AISystem` 已统一让进入攻击覆盖停止圈，并在攻击轮次结束后只有真正脱离 `AttackRange + FormationAttackBreakExtraDist` 才恢复追击
 
 ### 从本模块跳到哪里
 
